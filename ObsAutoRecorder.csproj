@@ -266,6 +266,9 @@
 	<Reference Include="Newtonsoft.Json">
 	  <HintPath>G:\SteamLibrary\steamapps\common\RUMBLE\MelonLoader\net6\Newtonsoft.Json.dll</HintPath>
 	</Reference>
+	<Reference Include="OBS_Control_API">
+	  <HintPath>G:\SteamLibrary\steamapps\common\RUMBLE\Mods\OBS_Control_API.dll</HintPath>
+	</Reference>
 	<Reference Include="RumbleModdingAPI">
 	  <HintPath>G:\SteamLibrary\steamapps\common\RUMBLE\Mods\RumbleModdingAPI.dll</HintPath>
 	</Reference>
