@@ -29,17 +29,34 @@ namespace ObsAutoRecorder
 		public const string Author = "iListen2Sound";
 		public const string Version = "1.0.0";
 	}
+	public class FriendInfo
+	{
+		public string PlayFabID { get; private set; }
+		public string PublicName { get; private set; }
+		private GameObject _tagObject;
+		public GameObject TagObject
+		{ 	get { return _tagObject; }
+			set 
+			{ 
+				PlayFabID = value.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
+				PublicName = value.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName;
+				_tagObject = value; 
+			}
+		}
 
+
+	}
 	public class ObsAutoRecorder : MelonMod
 	{
 		//Hold button location 
 		//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
 		string _sceneName;
 		private static bool debugMode = true;
-		GameObject tagsCollection;
-		List<GameObject> DisplayedFriendTags = new();
+		bool isFirstLoad = true;
+		GameObject TagFrame;
+		List<FriendInfo> friendTags = new();
 		GameObject HoldButton;
-		List<GameObject> HoldButtons;
+		List<GameObject> HoldButtons = new();
 
 		List<string> _displayedFriends = new();
 		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
@@ -56,21 +73,7 @@ namespace ObsAutoRecorder
 		private void OnMapInitialized()
 		{
 			Log(_sceneName, true);
-			if (_sceneName == "gym" || _sceneName == "park")
-			{
-				MelonCoroutines.Start(PollPlayerTagsCoroutine());
-				//TODO: fix null ref
-				HoldButton = GameObject.Instantiate(Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.InteractionButton1.Button.GetGameObject());
-				for (int i = 0; i < tagsCollection.transform.childCount; i++)
-				{
-					HoldButtons.Add(GameObject.Instantiate(HoldButton));
-					HoldButtons[i].transform.SetParent(tagsCollection.transform.GetChild(i).transform);
-				}
-			}
-
-			
-
-			
+			addButtonsToFriendsScreen();
 		}
 
 		
@@ -83,11 +86,18 @@ namespace ObsAutoRecorder
 		bool FindPlayerTags()
 		{
 			List<string> foundPlayers = new();
-			tagsCollection = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
-			for (int i = 0; i < tagsCollection.transform.childCount; i++)
+
+			List<FriendInfo> friendInfos = new();
+			TagFrame = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+			for (int i = 0; i < TagFrame.transform.childCount; i++)
 			{
-				string playFabID = tagsCollection.transform.GetChild(i).GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
-				string publicName = tagsCollection.transform.GetChild(i).GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName;
+				
+				FriendInfo friendInfo = new FriendInfo();
+				
+				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
+
+				string playFabID = TagFrame.transform.GetChild(i).GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
+				string publicName = TagFrame.transform.GetChild(i).GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName;
 
 				if(string.IsNullOrEmpty(playFabID))
 					return false;
@@ -111,14 +121,48 @@ namespace ObsAutoRecorder
 			}
 			Log("\n", true);
 			Log("\n" + string.Join("\n", _displayedFriends), true);
-			
+		}
 
+		private void addButtonsToFriendsScreen()
+		{
+			if (_sceneName == "gym")
+			{
+				try
+				{
+					Log("Starting poll for player tags...", true);	
+					MelonCoroutines.Start(PollPlayerTagsCoroutine());
+					Log("retrieving hold button...", true);
+					if (isFirstLoad)
+					{
+						HoldButton = GameObject.Instantiate(Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.InteractionButton1.Button.GetGameObject());
+						HoldButton.transform.localPosition = new Vector3(0, 0.4f, 0);
+						HoldButton.transform.localScale = new Vector3(10, 10, 10);
+						HoldButton.transform.localRotation = Quaternion.Euler(0, 270, 0);
+						GameObject.DontDestroyOnLoad(HoldButton);
+						HoldButton.SetActive(false);
+						isFirstLoad = false;
+					}
+				}
+				catch (System.Exception ex)
+				{
+					Log($"Error during OnMapInitialized: {ex}", false);
+				}
+				Log("Adding hold buttons to list...", true);
+				HoldButtons.Clear();
+				for (int i = 0; i < TagFrame.transform.childCount; i++)
+				{
+					HoldButtons.Add(GameObject.Instantiate(HoldButton));
+					HoldButtons[i].transform.SetParent(TagFrame.transform.GetChild(i).GetChild(0).GetChild(0).GetChild(0).transform, false);
+					HoldButtons[i].SetActive(true);
+				}
+			}
 		}
 
 		public override void OnFixedUpdate()
 		{
 
 		}
+
 
 		/// <summary>
 		/// Logs a message to the console
