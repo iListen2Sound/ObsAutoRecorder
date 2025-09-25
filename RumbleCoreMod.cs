@@ -1,20 +1,20 @@
-﻿using MelonLoader;
-using RumbleModdingAPI;
-using UnityEngine;
-using Il2CppRUMBLE.Social;
-using Il2CppRUMBLE;
-using OBS_Control_API;
-using Il2CppTMPro;
-using Il2CppRUMBLE.Managers;
-using Il2CppRUMBLE.UI;
+﻿using Il2CppRUMBLE;
 using Il2CppRUMBLE.Interactions.InteractionBase;
+using Il2CppRUMBLE.Managers;
+using Il2CppRUMBLE.Social;
+using Il2CppRUMBLE.UI;
+using Il2CppTMPro;
+using JetBrains.Annotations;
+using MelonLoader;
+using OBS_Control_API;
+using RumbleModdingAPI;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Media;
+using UnityEngine;
 using UnityEngine.UIElements;
-
-using JetBrains.Annotations;
-using System.Collections;
-
+using UnityEngine.Video;
 
 [assembly: MelonInfo(typeof(ObsAutoRecorder.ObsAutoRecorder), ObsAutoRecorder.BuildInfo.Name, ObsAutoRecorder.BuildInfo.Version, ObsAutoRecorder.BuildInfo.Author)]
 [assembly: MelonGame("Buckethead Entertainment", "RUMBLE")]
@@ -31,18 +31,35 @@ namespace ObsAutoRecorder
 	}
 	public class FriendInfo
 	{
-		public string PlayFabID { get; private set; }
-		public string PublicName { get; private set; }
+		public string PlayFabID
+		{
+			get
+			{
+				return _tagObject.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
+			}
+		}
+		public string PublicName 
+		{
+			get
+			{
+				return _tagObject.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName;
+			}
+		}
 		private GameObject _tagObject;
+
+		public string GetFriendString()
+		{
+			return $"{PlayFabID} - {PublicName}";
+		}
+
 		public GameObject TagObject
 		{ 	get { return _tagObject; }
 			set 
 			{ 
-				PlayFabID = value.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
-				PublicName = value.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName;
 				_tagObject = value; 
 			}
 		}
+
 
 
 	}
@@ -54,11 +71,13 @@ namespace ObsAutoRecorder
 		private static bool debugMode = true;
 		bool isFirstLoad = true;
 		GameObject TagFrame;
-		List<FriendInfo> friendTags = new();
+		List<FriendInfo> _friendTags = new();
 		GameObject HoldButton;
 		List<GameObject> HoldButtons = new();
 
-		List<string> _displayedFriends = new();
+		List<string> _previousList = new();
+
+		GameObject IndicatorBase;
 		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
 		{
 			_sceneName = sceneName.ToLower();
@@ -73,55 +92,63 @@ namespace ObsAutoRecorder
 		private void OnMapInitialized()
 		{
 			Log(_sceneName, true);
-			addButtonsToFriendsScreen();
+			//addButtonsToFriendsScreen();
+			Log("Starting poll for player tags...", true);
+			if (_sceneName == "gym")
+			{
+				_friendTags = GetPlayerTags();
+				MelonCoroutines.Start(PollPlayerTagsCoroutine());
+				
+			}
+
+			//TODO: Fix Asset Bundles
+			if(isFirstLoad)
+			{
+				IndicatorBase = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.recorderasset", "video"));
+				GameObject.DontDestroyOnLoad(IndicatorBase);
+				IndicatorBase.SetActive(true);
+			}
+			isFirstLoad	= false;
 		}
 
-		
 
+		
+		private List<FriendInfo> GetPlayerTags()
+		{
+			List<FriendInfo> friendInfos = new();
+			TagFrame = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+			for (int i = 0; i < TagFrame.transform.childCount; i++)
+			{
+				FriendInfo friendInfo = new FriendInfo();
+				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
+				friendInfos.Add(friendInfo);
+			}
+			return friendInfos;
+		}
+
+
+		IEnumerator PollPlayerTagsCoroutine()
+		{
+			Log("Starting to poll for player tags...", true);
+			while (!IsFriendInfoLoaded())
+			{
+				yield return null;
+			}
+			Log("\n", true);
+			Log("\n" + string.Join("\n", _previousList), true);
+		}
 		/// <summary>
 		/// Scans the player tags collection and updates the displayed friend tags list.
 		/// </summary>
 		/// <remarks></remarks>
 		/// <returns>true if all player tags are found and processed successfully; otherwise, false.</returns>
-		bool FindPlayerTags()
+		bool IsFriendInfoLoaded()
 		{
-			List<string> foundPlayers = new();
 
-			List<FriendInfo> friendInfos = new();
-			TagFrame = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
-			for (int i = 0; i < TagFrame.transform.childCount; i++)
-			{
-				
-				FriendInfo friendInfo = new FriendInfo();
-				
-				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
-
-				string playFabID = TagFrame.transform.GetChild(i).GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
-				string publicName = TagFrame.transform.GetChild(i).GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName;
-
-				if(string.IsNullOrEmpty(playFabID))
-					return false;
-
-
-				foundPlayers.Add($"{playFabID} - {publicName}");
-
-
-				//Log($"Found tag: {testString}", true);
-			}
-			_displayedFriends = foundPlayers;
-			return true;
+			return _friendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
 		}
 
-		IEnumerator PollPlayerTagsCoroutine()
-		{
-			Log("Starting to poll for player tags...", true);
-			while (!FindPlayerTags())
-			{
-				yield return null;
-			}
-			Log("\n", true);
-			Log("\n" + string.Join("\n", _displayedFriends), true);
-		}
+		
 
 		private void addButtonsToFriendsScreen()
 		{
@@ -129,8 +156,7 @@ namespace ObsAutoRecorder
 			{
 				try
 				{
-					Log("Starting poll for player tags...", true);	
-					MelonCoroutines.Start(PollPlayerTagsCoroutine());
+					
 					Log("retrieving hold button...", true);
 					if (isFirstLoad)
 					{
