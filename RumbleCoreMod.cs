@@ -37,6 +37,13 @@ namespace ObsAutoRecorder
 		//status block location: playertag 0 0 0 
 		public GameObject AutoRecordIcon { get; private set; }
 		private bool _autoRecordable = false;
+		public GameObject InteractionButton
+		{
+			get
+			{
+				return _tagObject.transform.GetChild(0).gameObject;
+			}
+		}
 		public bool AutoRecordable
 		{
 			get { return _autoRecordable; }
@@ -138,17 +145,20 @@ namespace ObsAutoRecorder
 				_selectedFriend = new FriendInfo() { TagObject = _selectedTag };
 				_friendTags = GetPlayerTags();
 				MelonCoroutines.Start(PollPlayerTagsCoroutine());
-				
+				_selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+				{
+					ToggleAutoRecord(_selectedFriend);
+				});
 			}
 
-			//TODO: Fix Asset Bundles
-			/*if(isFirstLoad)
-			{
-				IndicatorBase = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.recorderasset", "video"));
-				GameObject.DontDestroyOnLoad(IndicatorBase);
-				IndicatorBase.SetActive(true);
-			}*/
-			isFirstLoad	= false;
+				//TODO: Fix Asset Bundles
+				/*if(isFirstLoad)
+				{
+					IndicatorBase = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.recorderasset", "video"));
+					GameObject.DontDestroyOnLoad(IndicatorBase);
+					IndicatorBase.SetActive(true);
+				}*/
+				isFirstLoad	= false;
 		}
 
 
@@ -193,6 +203,11 @@ namespace ObsAutoRecorder
 			return _friendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
 		}
 
+		public void ToggleAutoRecord(FriendInfo selected)
+		{
+			selected.AutoRecordable = !selected.AutoRecordable;
+
+		}
 		
 
 		private void addButtonsToFriendsScreen()
