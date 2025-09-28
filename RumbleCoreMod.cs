@@ -14,8 +14,10 @@ using System.Linq;
 using System.Media;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.UIElements;
 using UnityEngine.Video;
+
 
 [assembly: MelonInfo(typeof(ObsAutoRecorder.ObsAutoRecorder), ObsAutoRecorder.BuildInfo.Name, ObsAutoRecorder.BuildInfo.Version, ObsAutoRecorder.BuildInfo.Author)]
 [assembly: MelonGame("Buckethead Entertainment", "RUMBLE")]
@@ -35,7 +37,8 @@ namespace ObsAutoRecorder
 		//ideal location for autorecord status 0.2391 -0.0336 -0.0091
 		//friendblock path --------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Friend Screen/Player Tags/Player Tag 2.0/InteractionButton/Meshes/
 		//status block location: playertag 0 0 0 
-		public GameObject AutoRecordIcon { get; private set; }
+		public GameObject RecordIconBlock { get; private set; }
+		public GameObject RecordIcon { get; private set; }
 		private bool _autoRecordable = false;
 		public GameObject InteractionButton
 		{
@@ -50,10 +53,7 @@ namespace ObsAutoRecorder
 			set
 			{
 				_autoRecordable = value;
-				if (AutoRecordIcon != null)
-				{
-					AutoRecordIcon.SetActive(value);
-				}
+				
 			}
 		}
 		public string PlayFabID
@@ -70,13 +70,13 @@ namespace ObsAutoRecorder
 				return _tagObject.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName;
 			}
 		}
-		public GameObject StatusIcon
+		/*public GameObject StatusIcon
 		{
 			get
 			{
 				return _tagObject.transform.GetChild(0).GetChild(1).GetChild(3).GetChild(0).gameObject;
 			}
-		}
+		}*/
 		private GameObject _tagObject;
 
 		public string GetFriendString()
@@ -90,17 +90,32 @@ namespace ObsAutoRecorder
 			set
 			{
 				_tagObject = value;
-				ObsAutoRecorder.Instance.Log($"Found player tag: {GetFriendString()}", true);
+				ObsAutoRecorder.Instance.Log($"TagObject set for {PublicName}", true);
 				CreateAutoRecordBlock();
 			}
 		}
 
 		private void CreateAutoRecordBlock()
 		{
-			AutoRecordIcon = GameObject.Instantiate(TagObject.transform.GetChild(0).GetChild(0).GetChild(0).gameObject);
-			AutoRecordIcon.transform.SetParent(TagObject.transform.GetChild(0).GetChild(0), false);
-			AutoRecordIcon.transform.localPosition = new Vector3(0.2391f, -0.0336f, -0.0091f);
+			RecordIconBlock = GameObject.Instantiate(TagObject.transform.GetChild(0).GetChild(0).GetChild(0).gameObject);
+			RecordIconBlock.transform.SetParent(TagObject.transform.GetChild(0).GetChild(0), false);
+			RecordIconBlock.transform.localPosition = new Vector3(0.2391f, -0.0336f, -0.0091f);
 
+			RecordIcon = ObsAutoRecorder.GetIndicator();
+			RecordIcon.transform.SetParent(RecordIconBlock.transform, false);
+			RecordIcon.SetActive(true);
+			RecordIcon.transform.localPosition = new Vector3(0, 0.5f, 0);
+			//0.0017 0.0017 0.0017
+			RecordIcon.transform.localScale = new Vector3(0.0017f, 0.0017f, 0.0017f);
+			RecordIcon.transform.localRotation = Quaternion.Euler(90, 0, 0);
+			//new Color (R = .45, G = .31, B = .22)
+			RecordIcon.transform.GetChild(0).GetComponent<RawImage>().color = new Color(0.45f, 0.31f, 0.22f, 1f);
+		}
+
+		public FriendInfo()
+		{
+			
+			
 		}
 	}
 	public class ObsAutoRecorder : MelonMod
@@ -112,16 +127,20 @@ namespace ObsAutoRecorder
 		string _sceneName;
 		private static bool debugMode = true;
 		bool isFirstLoad = true;
-		GameObject TagFrame;
-		List<FriendInfo> _friendTags = new();
-		GameObject HoldButton;
-		List<GameObject> HoldButtons = new();
+		private GameObject TagFrame;
+		private List<FriendInfo> _friendTags = new();
+		private GameObject HoldButton;
+		private List<GameObject> HoldButtons = new();
 
-		List<string> _previousList = new();
-		GameObject _selectedTag = new();
-		FriendInfo _selectedFriend;
+		private List<string> _previousList = new();
+		private GameObject _selectedTag = new();
+		private FriendInfo _selectedFriend;
 
-		GameObject IndicatorBase;
+		private static GameObject IndicatorsBase;
+		public static GameObject GetIndicator()
+		{ 			
+			return GameObject.Instantiate(IndicatorsBase);
+		}
 		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
 		{
 			_sceneName = sceneName.ToLower();
@@ -141,6 +160,16 @@ namespace ObsAutoRecorder
 			Log("Starting poll for player tags...", true);
 			if (_sceneName == "gym")
 			{
+				//TODO: Fix Asset Bundles
+				if (isFirstLoad)
+				{
+					IndicatorsBase = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "LogoCanvas"));
+					GameObject.DontDestroyOnLoad(IndicatorsBase);
+					IndicatorsBase.transform.GetChild(0).GetComponent<RawImage>().color = Color.black;
+					IndicatorsBase.SetActive(false);
+					IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+				}
+				
 				_selectedTag = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
 				_selectedFriend = new FriendInfo() { TagObject = _selectedTag };
 				_friendTags = GetPlayerTags();
@@ -149,16 +178,11 @@ namespace ObsAutoRecorder
 				{
 					ToggleAutoRecord(_selectedFriend);
 				});
+
+				isFirstLoad = false;
 			}
 
-				//TODO: Fix Asset Bundles
-				/*if(isFirstLoad)
-				{
-					IndicatorBase = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.recorderasset", "video"));
-					GameObject.DontDestroyOnLoad(IndicatorBase);
-					IndicatorBase.SetActive(true);
-				}*/
-				isFirstLoad	= false;
+			
 		}
 
 
@@ -171,7 +195,6 @@ namespace ObsAutoRecorder
 				FriendInfo friendInfo = new FriendInfo();
 				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
 				friendInfos.Add(friendInfo);
-				friendInfo.StatusIcon.SetActive(false);
 			}
 			return friendInfos;
 		}
@@ -189,7 +212,7 @@ namespace ObsAutoRecorder
 			Log("\n" + string.Join("\n", _previousList), true);
 			foreach (FriendInfo info in _friendTags)
 			{
-				info.StatusIcon.SetActive(false);
+				//info.StatusIcon.SetActive(false);
 			}
 		}
 		/// <summary>

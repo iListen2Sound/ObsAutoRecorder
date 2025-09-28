@@ -5,11 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\recorderasset" />
+    <None Remove="Assets\obsasset" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assets\recorderasset" />
+    <EmbeddedResource Include="Assets\obsasset" />
   </ItemGroup>
 
   <ItemGroup>
