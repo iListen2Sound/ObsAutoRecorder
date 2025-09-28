@@ -32,7 +32,7 @@ namespace ObsAutoRecorder
 		public const string Author = "iListen2Sound";
 		public const string Version = "1.0.0";
 	}
-	public class FriendInfo : MelonMod
+	public class TagHolder : MelonMod
 	{
 		//ideal location for autorecord status 0.2391 -0.0336 -0.0091
 		//friendblock path --------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Friend Screen/Player Tags/Player Tag 2.0/InteractionButton/Meshes/
@@ -47,13 +47,19 @@ namespace ObsAutoRecorder
 				return _tagObject.transform.GetChild(0).gameObject;
 			}
 		}
+		/// <summary>
+		/// Gets or sets a value indicating whether automatic recording is enabled.
+		/// </summary>
+		/// <remarks>When set to <see langword="true"/>, the UI updates to reflect the auto-recording status. Changing
+		/// this property may affect the appearance of the record icon.</remarks>
 		public bool AutoRecordable
 		{
 			get { return _autoRecordable; }
 			set
 			{
 				_autoRecordable = value;
-				
+				Color statusColor = _autoRecordable ? new Color(0.45f, 0.31f, 0.22f, 1f) : new Color(0.56f, 0.52f, 0.4f, 1f);
+				RecordIcon.transform.GetChild(0).GetComponent<RawImage>().color = statusColor;
 			}
 		}
 		public string PlayFabID
@@ -79,7 +85,11 @@ namespace ObsAutoRecorder
 		}*/
 		private GameObject _tagObject;
 
-		public string GetFriendString()
+		/// <summary>
+		/// Returns a string that represents the current object, including the PlayFab ID and public name.
+		/// </summary>
+		/// <returns>A string in the format "PlayFabID - PublicName" representing the current object.</returns>
+		public override string ToString()
 		{
 			return $"{PlayFabID} - {PublicName}";
 		}
@@ -109,10 +119,11 @@ namespace ObsAutoRecorder
 			RecordIcon.transform.localScale = new Vector3(0.0085f, 0.0085f, 0.0085f);
 			RecordIcon.transform.localRotation = Quaternion.Euler(90, 0, 0);
 			//new Color (R = .45, G = .31, B = .22)
-			RecordIcon.transform.GetChild(0).GetComponent<RawImage>().color = new Color(0.45f, 0.31f, 0.22f, 1f);
+			AutoRecordable = false;
+
 		}
 
-		public FriendInfo()
+		public TagHolder()
 		{
 			
 			
@@ -122,19 +133,27 @@ namespace ObsAutoRecorder
 	{
 		//Hold button location 
 		//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
+		private const string USER_DATA = "UserData/ObsAutoRecorder/";
+		private const string CONFIG_FILE = "config.cfg";
+		private const string SEPARATOR = "\n";
 		public static ObsAutoRecorder Instance { get; private set; }
 
 		string _sceneName;
-		private static bool debugMode = true;
+		private MelonPreferences_Category OBSAutoRecorderSettings;
+		private MelonPreferences_Entry<bool> isDebugMode;
+		private MelonPreferences_Entry<string> PlayersToRecord;
+		private List<string> AutoRecordList = new();
+
 		bool isFirstLoad = true;
 		private GameObject TagFrame;
-		private List<FriendInfo> _friendTags = new();
+		private List<TagHolder> _displayedFriendTags = new();
 		private GameObject HoldButton;
 		private List<GameObject> HoldButtons = new();
+		private GameObject _scrollBar;
 
 		private List<string> _previousList = new();
 		private GameObject _selectedTag = new();
-		private FriendInfo _selectedFriend;
+		private TagHolder _selectedFriend;
 
 		private static GameObject IndicatorsBase;
 		public static GameObject GetIndicator()
@@ -144,6 +163,24 @@ namespace ObsAutoRecorder
 		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
 		{
 			_sceneName = sceneName.ToLower();
+		}
+		public override void OnApplicationQuit()
+		{
+			OBSAutoRecorderSettings.SaveToFile();
+		}
+		public override void OnInitializeMelon()
+		{
+			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
+			OBSAutoRecorderSettings.SetFilePath(@"UserData/ObsAutoRecorder.cfg");
+			isDebugMode = OBSAutoRecorderSettings.CreateEntry("isDebugMode", false, "Enable debug logging");
+			PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord","","List of players to Record");
+			AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
+			OBSAutoRecorderSettings.SaveToFile();
+
+			foreach(string entry in AutoRecordList)
+			{
+				Log(entry, true);
+			}
 		}
 		public override void OnLateInitializeMelon()
 		{
@@ -160,7 +197,9 @@ namespace ObsAutoRecorder
 			Log("Starting poll for player tags...", true);
 			if (_sceneName == "gym")
 			{
-				//TODO: Fix Asset Bundles
+
+
+
 				if (isFirstLoad)
 				{
 					IndicatorsBase = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "Canvas"));
@@ -169,10 +208,19 @@ namespace ObsAutoRecorder
 					IndicatorsBase.SetActive(false);
 					IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
 				}
-				
+
+				_scrollBar = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+				for (int i = 0; i < 4; i++)
+				{
+					_scrollBar.transform.GetChild(i).GetChild(0).GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+					{
+						MelonCoroutines.Start(PollPageTurnCoRoutine());
+					});
+				}
+
 				_selectedTag = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
-				_selectedFriend = new FriendInfo() { TagObject = _selectedTag };
-				_friendTags = GetPlayerTags();
+				_selectedFriend = new TagHolder() { TagObject = _selectedTag };
+				_displayedFriendTags = GetPlayerTags();
 				MelonCoroutines.Start(PollPlayerTagsCoroutine());
 				_selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
 				{
@@ -184,16 +232,62 @@ namespace ObsAutoRecorder
 			
 		}
 
-
-		private List<FriendInfo> GetPlayerTags()
+		/// <summary>
+		/// Toggles the auto-record status for the selected tag. Adds or removes the friend from the auto-record list
+		/// based on their current status.
+		/// </summary>
+		/// <remarks>Only run on the selected tag in the settings screen</remarks>
+		/// <param name="selected">The friend whose auto-record status is to be toggled. Cannot be null. The friend's PlayFabID is used to identify
+		/// them in the auto-record list.</param>
+		private void ToggleAutoRecord(TagHolder selected)
 		{
-			List<FriendInfo> friendInfos = new();
+			if (IsInAutoRecordList(selected))
+			{
+				AutoRecordList.RemoveAll(x => x.Split('-')[0].Trim().ToLower() == selected.PlayFabID.Trim().ToLower());
+				selected.AutoRecordable = false;
+				Log($"Removed {selected.ToString()} from AutoRecord list", false);
+			}
+			else
+			{
+				AutoRecordList.Add($"{selected.PlayFabID} - {selected.PublicName}");
+				selected.AutoRecordable = true;
+				Log($"Added {selected.ToString()} to AutoRecord list", false);
+			}
+
+			PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
+			OBSAutoRecorderSettings.SaveToFile();
+
+			foreach (TagHolder friend in _displayedFriendTags)
+			{
+				friend.AutoRecordable = IsInAutoRecordList(friend);
+			}
+
+		}
+
+		private bool IsInAutoRecordList(TagHolder friend)
+		{
+			var targets = AutoRecordList.Where(x => x.Split('-')[0].Trim().ToLower() == friend.PlayFabID.Trim().ToLower()).ToList();
+			if (targets.Count > 1)
+			{
+				Log($"Warning: More than one entry found for {friend.PlayFabID} in AutoRecord list", false, 1);
+			}
+			return targets.Count > 0;
+		}
+
+		
+		private List<TagHolder> GetPlayerTags()
+		{
+			List<TagHolder> friendInfos = new();
 			TagFrame = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
 			for (int i = 0; i < TagFrame.transform.childCount; i++)
 			{
-				FriendInfo friendInfo = new FriendInfo();
+				TagHolder friendInfo = new TagHolder();
 				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
 				friendInfos.Add(friendInfo);
+				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+				{
+					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
+				});
 			}
 			return friendInfos;
 		}
@@ -201,18 +295,50 @@ namespace ObsAutoRecorder
 
 		IEnumerator PollPlayerTagsCoroutine()
 		{
+			float startTime = Time.realtimeSinceStartup;
 			Log("Starting to poll for player tags...", true);
+
+
 			while (!IsFriendInfoLoaded())
 			{
-				
+
 				yield return null;
 			}
-			Log("\n", true);
-			Log("\n" + string.Join("\n", _previousList), true);
-			foreach (FriendInfo info in _friendTags)
+
+			foreach (TagHolder info in _displayedFriendTags)
 			{
-				//info.StatusIcon.SetActive(false);
+				info.AutoRecordable = IsInAutoRecordList(info);
 			}
+			
+			_previousList.Clear();
+			_previousList = _displayedFriendTags.Select(x => x.PlayFabID).ToList();
+		}
+
+		IEnumerator PollPageTurnCoRoutine()
+		{
+			float start = Time.realtimeSinceStartup;
+			int stable = 0;
+
+			while(Time.realtimeSinceStartup - start < 3)
+			{
+				foreach(TagHolder info in _displayedFriendTags)
+				{
+					info.AutoRecordable = IsInAutoRecordList(info);
+				}
+				yield return null;
+			}
+		}
+		private bool SameTagsAsLast()
+		{
+			for(int i = 0; i < _previousList.Count; i++)
+			{
+				Log($"{i} Comparing{_previousList[i]} with {_displayedFriendTags[i].ToString()}", true);
+				if (_previousList[i] == _displayedFriendTags[i].PlayFabID)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 		/// <summary>
 		/// Scans the player tags collection and updates the displayed friend tags list.
@@ -222,14 +348,11 @@ namespace ObsAutoRecorder
 		bool IsFriendInfoLoaded()
 		{
 
-			return _friendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
+			return _displayedFriendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
+			
 		}
 
-		public void ToggleAutoRecord(FriendInfo selected)
-		{
-			selected.AutoRecordable = !selected.AutoRecordable;
-
-		}
+		
 		
 
 		private void addButtonsToFriendsScreen()
@@ -277,15 +400,27 @@ namespace ObsAutoRecorder
 		/// </summary>
 		/// <param name="message"></param>
 		/// <param name="debugOnly"></param>
-		public void Log(string message, bool debugOnly = false)
-		{
-			if (!debugOnly)
-			{
-				LoggerInstance.Msg(message);
+		/// <param name="logLevel">0 = normal, 1 = warning, 2 = error</param>
+		public void Log(string message, bool debugOnly = false, int logLevel = 0)
+		{ 
+			if(debugOnly && !isDebugMode.Value) 
 				return;
+
+			switch(logLevel)
+			{
+				case 0:
+					LoggerInstance.Msg(message);
+					break;
+				case 1:
+					LoggerInstance.Warning(message);
+					break;
+				case 2:
+					LoggerInstance.Error(message);
+					break;
+				default:
+					LoggerInstance.Msg(message);
+					break;
 			}
-			if (debugMode)
-				LoggerInstance.Msg(message);
 		}
 
 	}
