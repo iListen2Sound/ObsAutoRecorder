@@ -105,8 +105,8 @@ namespace ObsAutoRecorder
 			RecordIcon.transform.SetParent(RecordIconBlock.transform, false);
 			RecordIcon.SetActive(true);
 			RecordIcon.transform.localPosition = new Vector3(0, 0.5f, 0);
-			//0.0017 0.0017 0.0017
-			RecordIcon.transform.localScale = new Vector3(0.0017f, 0.0017f, 0.0017f);
+			//0.0085 0.0085 0.0085
+			RecordIcon.transform.localScale = new Vector3(0.0085f, 0.0085f, 0.0085f);
 			RecordIcon.transform.localRotation = Quaternion.Euler(90, 0, 0);
 			//new Color (R = .45, G = .31, B = .22)
 			RecordIcon.transform.GetChild(0).GetComponent<RawImage>().color = new Color(0.45f, 0.31f, 0.22f, 1f);
@@ -163,7 +163,7 @@ namespace ObsAutoRecorder
 				//TODO: Fix Asset Bundles
 				if (isFirstLoad)
 				{
-					IndicatorsBase = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "LogoCanvas"));
+					IndicatorsBase = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "Canvas"));
 					GameObject.DontDestroyOnLoad(IndicatorsBase);
 					IndicatorsBase.transform.GetChild(0).GetComponent<RawImage>().color = Color.black;
 					IndicatorsBase.SetActive(false);
@@ -181,7 +181,6 @@ namespace ObsAutoRecorder
 
 				isFirstLoad = false;
 			}
-
 			
 		}
 
