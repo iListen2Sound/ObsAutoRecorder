@@ -1,4 +1,5 @@
-﻿using Il2CppRUMBLE;
+﻿using Il2CppPhoton.Realtime;
+using Il2CppRUMBLE;
 using Il2CppRUMBLE.Interactions.InteractionBase;
 using Il2CppRUMBLE.Managers;
 using Il2CppRUMBLE.Social;
@@ -37,9 +38,14 @@ namespace ObsAutoRecorder
 		//ideal location for autorecord status 0.2391 -0.0336 -0.0091
 		//friendblock path --------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Friend Screen/Player Tags/Player Tag 2.0/InteractionButton/Meshes/
 		//status block location: playertag 0 0 0 
+		public bool WasPressed { get; set; } = false;
+
 		public GameObject RecordIconBlock { get; private set; }
 		public GameObject RecordIcon { get; private set; }
+
+
 		private bool _autoRecordable = false;
+
 		public GameObject InteractionButton
 		{
 			get
@@ -125,8 +131,8 @@ namespace ObsAutoRecorder
 
 		public TagHolder()
 		{
-			
-			
+
+
 		}
 	}
 	public class ObsAutoRecorder : MelonMod
@@ -145,6 +151,9 @@ namespace ObsAutoRecorder
 		private List<string> AutoRecordList = new();
 
 		bool isFirstLoad = true;
+		private bool _isPolling = false;
+		private object _pageTurnRoutine;
+
 		private GameObject TagFrame;
 		private List<TagHolder> _displayedFriendTags = new();
 		private GameObject HoldButton;
@@ -157,7 +166,7 @@ namespace ObsAutoRecorder
 
 		private static GameObject IndicatorsBase;
 		public static GameObject GetIndicator()
-		{ 			
+		{
 			return GameObject.Instantiate(IndicatorsBase);
 		}
 		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
@@ -173,11 +182,11 @@ namespace ObsAutoRecorder
 			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
 			OBSAutoRecorderSettings.SetFilePath(@"UserData/ObsAutoRecorder.cfg");
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("isDebugMode", false, "Enable debug logging");
-			PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord","","List of players to Record");
+			PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
 			AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
 			OBSAutoRecorderSettings.SaveToFile();
 
-			foreach(string entry in AutoRecordList)
+			foreach (string entry in AutoRecordList)
 			{
 				Log(entry, true);
 			}
@@ -194,8 +203,21 @@ namespace ObsAutoRecorder
 		{
 			Log(_sceneName, true);
 			//addButtonsToFriendsScreen();
-			Log("Starting poll for player tags...", true);
 			if (_sceneName == "gym")
+			{
+				_scrollBar = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+				_selectedTag = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
+				TagFrame = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+
+			}
+			if (_sceneName == "park")
+			{
+				_scrollBar = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+				_selectedTag = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
+				TagFrame = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+			}
+			Log("Starting poll for player tags...", true);
+			if (_sceneName == "gym" || _sceneName == "park")
 			{
 
 
@@ -209,27 +231,38 @@ namespace ObsAutoRecorder
 					IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
 				}
 
-				_scrollBar = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+
 				for (int i = 0; i < 4; i++)
 				{
 					_scrollBar.transform.GetChild(i).GetChild(0).GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
 					{
-						MelonCoroutines.Start(PollPageTurnCoRoutine());
+						if (_pageTurnRoutine != null)
+						{
+							//MelonCoroutines.Stop(_pageTurnRoutine);
+							//UpdateDisplayedTags();
+						}
+						_pageTurnRoutine = MelonCoroutines.Start(PollPageTurnCoRoutine());
+						
+
 					});
 				}
 
-				_selectedTag = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
+
 				_selectedFriend = new TagHolder() { TagObject = _selectedTag };
 				_displayedFriendTags = GetPlayerTags();
 				MelonCoroutines.Start(PollPlayerTagsCoroutine());
 				_selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
 				{
+					if (_selectedFriend.WasPressed)
+						return;
+
+					MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
 					ToggleAutoRecord(_selectedFriend);
 				});
 
 				isFirstLoad = false;
 			}
-			
+
 		}
 
 		/// <summary>
@@ -274,11 +307,11 @@ namespace ObsAutoRecorder
 			return targets.Count > 0;
 		}
 
-		
+
 		private List<TagHolder> GetPlayerTags()
 		{
 			List<TagHolder> friendInfos = new();
-			TagFrame = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+
 			for (int i = 0; i < TagFrame.transform.childCount; i++)
 			{
 				TagHolder friendInfo = new TagHolder();
@@ -292,48 +325,62 @@ namespace ObsAutoRecorder
 			return friendInfos;
 		}
 
+		IEnumerator DebounceCoRoutine(TagHolder holder)
+		{
+			holder.WasPressed = true;
+			yield return new WaitForSeconds(0.5f);
+			holder.WasPressed = false;
+		}
 
 		IEnumerator PollPlayerTagsCoroutine()
 		{
+			_isPolling = true;
 			float startTime = Time.realtimeSinceStartup;
 			Log("Starting to poll for player tags...", true);
 
 
 			while (!IsFriendInfoLoaded())
 			{
-
 				yield return null;
 			}
+			UpdateDisplayedTags();
 
+			_previousList.Clear();
+			_previousList = _displayedFriendTags.Select(x => x.PlayFabID).ToList();
+			_isPolling = false;
+		}
+		void UpdateDisplayedTags()
+		{
 			foreach (TagHolder info in _displayedFriendTags)
 			{
 				info.AutoRecordable = IsInAutoRecordList(info);
+				Log(info.PublicName, true);
 			}
-			
-			_previousList.Clear();
-			_previousList = _displayedFriendTags.Select(x => x.PlayFabID).ToList();
 		}
-
 		IEnumerator PollPageTurnCoRoutine()
 		{
 			float start = Time.realtimeSinceStartup;
-			int stable = 0;
 
-			while(Time.realtimeSinceStartup - start < 3)
+
+			while (/*SameTagsAsLast() &&*/ Time.realtimeSinceStartup - start < 2)
 			{
-				foreach(TagHolder info in _displayedFriendTags)
-				{
-					info.AutoRecordable = IsInAutoRecordList(info);
-				}
 				yield return null;
+				Log("\n", true);
+				UpdateDisplayedTags();
 			}
+			_previousList.Clear();
+			_previousList = _displayedFriendTags.Select(x => x.PlayFabID).ToList();
+			
+			
+
 		}
 		private bool SameTagsAsLast()
 		{
-			for(int i = 0; i < _previousList.Count; i++)
+			for (int i = 0; i < _previousList.Count; i++)
 			{
-				Log($"{i} Comparing{_previousList[i]} with {_displayedFriendTags[i].ToString()}", true);
-				if (_previousList[i] == _displayedFriendTags[i].PlayFabID)
+				bool match = _previousList[i] == _displayedFriendTags[i].PlayFabID;
+				Log($"{i} {match} {_previousList[i]} with {_displayedFriendTags[i].ToString()}", true);
+				if (match)
 				{
 					return true;
 				}
@@ -349,44 +396,7 @@ namespace ObsAutoRecorder
 		{
 
 			return _displayedFriendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
-			
-		}
 
-		
-		
-
-		private void addButtonsToFriendsScreen()
-		{
-			if (_sceneName == "gym")
-			{
-				try
-				{
-					
-					Log("retrieving hold button...", true);
-					if (isFirstLoad)
-					{
-						HoldButton = GameObject.Instantiate(Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.InteractionButton1.Button.GetGameObject());
-						HoldButton.transform.localPosition = new Vector3(0, 0.4f, 0);
-						HoldButton.transform.localScale = new Vector3(10, 10, 10);
-						HoldButton.transform.localRotation = Quaternion.Euler(0, 270, 0);
-						GameObject.DontDestroyOnLoad(HoldButton);
-						HoldButton.SetActive(false);
-						isFirstLoad = false;
-					}
-				}
-				catch (System.Exception ex)
-				{
-					Log($"Error during OnMapInitialized: {ex}", false);
-				}
-				Log("Adding hold buttons to list...", true);
-				HoldButtons.Clear();
-				for (int i = 0; i < TagFrame.transform.childCount; i++)
-				{
-					HoldButtons.Add(GameObject.Instantiate(HoldButton));
-					HoldButtons[i].transform.SetParent(TagFrame.transform.GetChild(i).GetChild(0).GetChild(0).GetChild(0).transform, false);
-					HoldButtons[i].SetActive(true);
-				}
-			}
 		}
 
 		public override void OnFixedUpdate()
@@ -402,15 +412,12 @@ namespace ObsAutoRecorder
 		/// <param name="debugOnly"></param>
 		/// <param name="logLevel">0 = normal, 1 = warning, 2 = error</param>
 		public void Log(string message, bool debugOnly = false, int logLevel = 0)
-		{ 
-			if(debugOnly && !isDebugMode.Value) 
+		{
+			if (debugOnly && !isDebugMode.Value)
 				return;
 
-			switch(logLevel)
+			switch (logLevel)
 			{
-				case 0:
-					LoggerInstance.Msg(message);
-					break;
 				case 1:
 					LoggerInstance.Warning(message);
 					break;
