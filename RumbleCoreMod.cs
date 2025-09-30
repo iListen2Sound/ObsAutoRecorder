@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Media;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
@@ -80,7 +81,7 @@ namespace ObsAutoRecorder
 		{
 			get
 			{
-				return _tagObject.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName;
+				return Sanitize(_tagObject.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName);
 			}
 		}
 		/*public GameObject StatusIcon
@@ -135,6 +136,13 @@ namespace ObsAutoRecorder
 
 
 		}
+
+		static string Sanitize(string Input)
+		{
+
+			string pattern = @"<[^>]*>";
+			return Regex.Replace(Input, pattern, string.Empty);
+		}
 	}
 	public class ObsAutoRecorder : MelonMod
 	{
@@ -149,6 +157,11 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Category OBSAutoRecorderSettings;
 		private MelonPreferences_Entry<bool> isDebugMode;
 		private MelonPreferences_Entry<string> PlayersToRecord;
+		private MelonPreferences_Entry<string> AutoRenameString;
+		private MelonPreferences_Entry<bool> DoAutoRename;
+		private MelonPreferences_Entry<string> DateFormat;
+		private MelonPreferences_Entry<string> TimeFormat;
+		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
 		private List<string> AutoRecordList = new();
 
 		bool isFirstLoad = true;
@@ -164,6 +177,9 @@ namespace ObsAutoRecorder
 		private GameObject PlayerUi;
 		private GameObject _recordingIndicatorBase;
 		private GameObject _recordingIndicator;
+
+		private Color pauseColor = new Color(1f, 1f, 0f, 0.75f);
+		private Color recordColor = new Color(1f, 1f, 1f, 0.75f);
 
 		private List<string> _previousList = new();
 		private GameObject _selectedTag = new();
@@ -194,7 +210,12 @@ namespace ObsAutoRecorder
 			OBSAutoRecorderSettings.SetFilePath(@"UserData/ObsAutoRecorder.cfg");
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("isDebugMode", false, "Enable debug logging");
 			PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
+			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("AutoRenameString", "{date} {time} vs {player}", "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
+			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("DoAutoRename", false, "Enable automatic renaming of recorded files");
+			DateFormat = OBSAutoRecorderSettings.CreateEntry("DateFormat", "yyyy-MM-dd", "Date format for renaming. Uses standard C# date formatting.");
+			TimeFormat = OBSAutoRecorderSettings.CreateEntry("TimeFormat", "HH-mm-ss", "Time format for renaming. Uses standard C# time formatting.");
 			AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
+			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("PauseHoldTimeout", 3, "Seconds to keep the recording paused until auto stop");
 			OBSAutoRecorderSettings.SaveToFile();
 
 			foreach (string entry in AutoRecordList)
@@ -289,13 +310,7 @@ namespace ObsAutoRecorder
 
 				isFirstLoad = false;
 			}
-			else if (_sceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
-			{
-				if (IsInAutoRecordList(PlayerManager.instance.AllPlayers[1].Data.GeneralData.PlayFabMasterId));
-				{
-					StartRecording(PlayerManager.instance.AllPlayers[1].Data.GeneralData.PlayFabMasterId);
-				}	
-			}
+			
 			_recordingIndicator = GameObject.Instantiate(IndicatorsBase);
 			GameObject.DontDestroyOnLoad(_recordingIndicator);
 			_recordingIndicator.SetName("RecordingIndicator");
@@ -311,15 +326,30 @@ namespace ObsAutoRecorder
 			_recordingIndicator.transform.GetChild(0).GetComponent<RawImage>().color = new Color(1f, 1f, 1f, 0.75f);
 
 
+			
+			if(_sceneName == "gym")
+			{
+				if(_isRecording)
+				{
+					OBS.PauseRecord();
+				}
+			}
+
 			//Solo recording start test
 			if (_sceneName == "park")
 			{
-				StartRecording();
+				StartRecording("solo test");
 			}
-			if(_sceneName == "gym")
+
+
+			else if (_sceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
 			{
-				OBS.PauseRecord();
+				if (IsInAutoRecordList(PlayerManager.instance.AllPlayers[1].Data.GeneralData.PlayFabMasterId)) ;
+				{
+					StartRecording($"{PlayerManager.instance.AllPlayers[1].Data.GeneralData.PlayFabMasterId} - {PlayerManager.instance.AllPlayers[1].Data.GeneralData.PublicUsername}");
+				}
 			}
+
 		}
 
 		/// <summary>
@@ -411,7 +441,7 @@ namespace ObsAutoRecorder
 			foreach (TagHolder info in _displayedFriendTags)
 			{
 				info.AutoRecordable = IsInAutoRecordList(info);
-				Log(info.PublicName, true);
+				//Log(info.PublicName, true);
 			}
 		}
 		IEnumerator PollPageTurnCoRoutine()
@@ -455,6 +485,8 @@ namespace ObsAutoRecorder
 		{
 			if (!_sceneIsLoaded)
 				return;
+
+			_recordingIndicator.transform.GetChild(0).GetComponent<RawImage>().color = _isPaused ? pauseColor : recordColor;
 			if (!isFirstLoad)
 			{
 				try
@@ -471,11 +503,17 @@ namespace ObsAutoRecorder
 
 		private bool IsInAutoRecordList(string playFabID)
 		{
-			var targets = AutoRecordList.Where(x => x.Split('-')[0].Trim().ToLower() == playFabID.Trim().ToLower()).ToList();
+			Log($"Checking {playFabID} if autorecordable");
+			var targets = AutoRecordList.Where(x => x.Split('-')[0].Trim().ToLower() == playFabID.Split('-')[0].Trim().ToLower()).ToList();
 			if (targets.Count > 1)
 			{
 				Log($"Warning: More than one entry found for {playFabID} in AutoRecord list", false, 1);
 			}
+
+			foreach(string entry in targets)
+			{
+				Log($"Found target: {entry}", true);
+			}	
 			return targets.Count > 0;
 		}
 		/// <summary>
@@ -508,11 +546,32 @@ namespace ObsAutoRecorder
 			
 			if (_isRecording)
 			{
-				Log("Recording already in progress", false, 1);
+				Log("Recording already in progress", false);
 				return;
 			}
+			Log($"Starting recording for: {playerID}", false);
 			_currentOrLastRecordedPlayer = playerID;
 			OBS.StartRecord();
+		}
+
+		private void StopRecording()
+		{
+			if (!_isRecording)
+			{
+				Log("No recording in progress", false);
+				return;
+			}
+			OBS.StopRecord();
+			
+		}
+		private void PauseRecording()
+		{
+			if (!_isRecording)
+			{
+				Log("No recording in progress", true);
+				return;
+			}
+			OBS.PauseRecord();
 		}
 
 		private void onRecordPause()
@@ -527,8 +586,42 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStop(string outputPath)
 		{
+
 			_isPaused = false;
+			if(DoAutoRename.Value && !string.IsNullOrEmpty(_currentOrLastRecordedPlayer))
+			{
+				string playerName = "Unknown";
+				if(!string.IsNullOrEmpty(_currentOrLastRecordedPlayer))
+				{
+					playerName = _currentOrLastRecordedPlayer.Split('-').Last().Trim();
+				}
+				else
+				{
+					playerName = "Unknown";
+				}
+				string date = System.DateTime.Now.ToString("yyyy-MM-dd");
+				string time = System.DateTime.Now.ToString("HH-mm-ss");
+				string newFileName = AutoRenameString.Value.Replace("{player}", $"{playerName}").Replace("{date}", date).Replace("{time}", time);
+				string newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + System.IO.Path.GetExtension(outputPath);
+				int copyIndex = 1;
+				while (System.IO.File.Exists(newPath))
+				{
+					newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(outputPath);
+					copyIndex++;
+				}
+				try
+				{
+					System.IO.File.Move(outputPath, newPath);
+					outputPath = newPath;
+					Log($"Recording renamed to: {newFileName}", false);
+				}
+				catch (System.Exception ex)
+				{
+					Log($"Error renaming file: {ex.Message}", false, 2);
+				}
+			}
 			Log($"Recording saved to: {outputPath}");
+			_currentOrLastRecordedPlayer = "";
 
 		}
 	}
