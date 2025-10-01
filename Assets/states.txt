@@ -1,0 +1,10 @@
+﻿Just need to actually write this down because I'm very distracted rn
+
+OBS Not connected 
+	Connect OBS
+		Perform recording state machine
+OBS Connected
+	Perform recording state machine
+
+Manual recording active
+	Match 
