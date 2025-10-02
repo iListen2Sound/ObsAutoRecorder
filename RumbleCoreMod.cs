@@ -710,6 +710,7 @@ namespace ObsAutoRecorder
 		private void onRecordResume()
 		{
 			IsPaused = false;
+			QueuedForStopping = false;
 			Log($"Recording Resumed for: {CurrentOrLastRecordedPlayer}");
 		}
 		private void onRecordStart(string outputPath)
