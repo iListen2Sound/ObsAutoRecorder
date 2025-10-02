@@ -49,7 +49,8 @@
 - [ ] Manually resume recording in OBS (external).
 - [ ] Verify:
   - [ ] Recording resumes.
-  - [ ] After timeout, recording **still stops** (per your policy).
+  - [ ] ~~After timeout, recording **still stops** (per your policy).~~
+  -   This is an error. After time out, recording shouldn't stop. But continue but another stop is queued after the next return to the gym
   - [ ] Logs indicate mod-initiated stop.
 
 ---
