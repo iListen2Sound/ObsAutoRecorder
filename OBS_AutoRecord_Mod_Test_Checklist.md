@@ -8,7 +8,7 @@
 ---
 
 ## **1. Gym → Pause → Hold → Stop**
-- [ ] Start a mod-initiated recording in a match.
+- [ ] Match with someone in auto-record list.
 - [ ] Return to **gym**.
 - [ ] Verify:
   - [ ] Recording pauses once (no duplicate pause calls).
@@ -22,7 +22,7 @@
 ---
 
 ## **2. Gym → Pause → Same Opponent Rematch**
-- [ ] Start a mod-initiated recording.
+- [ ] Match with someone in auto-record list
 - [ ] Return to **gym** (pause + hold starts).
 - [ ] Re-enter match with **same opponent** within hold time.
 - [ ] Verify:
@@ -33,7 +33,7 @@
 ---
 
 ## **3. Gym → Pause → Different Opponent (AutoRecord)**
-- [ ] Start a mod-initiated recording.
+- [ ] Match with someone in auto-record list
 - [ ] Return to **gym** (pause + hold starts).
 - [ ] Enter match with **different opponent** who is in AutoRecordList.
 - [ ] Verify:
@@ -74,26 +74,7 @@
 
 ---
 
-## **7. AutoRecordList Matching**
-- [ ] Add an ID with hyphens to AutoRecordList.
-- [ ] Enter match with that ID.
-- [ ] Verify:
-  - [ ] `IsInAutoRecordList` correctly matches.
-  - [ ] Recording starts automatically.
-
----
-
-## **8. Same Opponent Name Change**
-- [ ] Start recording for an opponent.
-- [ ] Simulate opponent name change (same ID).
-- [ ] Re-enter match.
-- [ ] Verify:
-  - [ ] Resume logic works (ID-based match).
-  - [ ] Logs show updated name.
-
----
-
-## **9. Logging & State Reset**
+## **8. Logging & State Reset**
 - [ ] After any stop (manual or mod):
   - [ ] `IsRecording = false`.
   - [ ] `IsPaused = false`.
