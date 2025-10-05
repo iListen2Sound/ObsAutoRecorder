@@ -8,36 +8,36 @@
 - [x] Enter **gym** → `PauseRecord()` + hold queued.
 - [x] After timeout → `StopRecord()`; flags reset.
 
-## 2) Same opponent during hold → resume
+## 2) OBS started in middle of match
+- [ ] Get in match with someone in list
+- [ ] Open OBS
+- [ ] Expect immediately start recording
+
+## 3) Same opponent during hold → resume
 - [ ] In **gym** with hold, re‑enter **map** vs **same ID** before timeout.
 - [ ] Expect `ResumeRecord()`; `QueuedForStopping=false`; no stop at old timeout.
 
-## 3) Different opponent **NOT** in list during hold → stay paused
+## 4) Different opponent **NOT** in list during hold → stay paused
 - [ ] In **gym** with hold, re‑enter **map** vs **different ID not in list**.
 - [ ] Expect **no** OBS calls; remain paused; stop after hold timeout.
 
-## 4) Different opponent **IN** list during hold → stop & start new
+## 5) Different opponent **IN** list during hold → stop & start new
 - [ ] In **gym** with hold, re‑enter **map** vs **different ID in list**.
 - [ ] Expect `StopRecord()` → `StartRecord()` (new opponent); hold canceled.
 
-## 5) External **resume** during hold → continue; **next gym** hold again
+## 6) External **resume** during hold → continue; **next gym** hold again
 - [ ] In **gym** with hold, user **resumes** in OBS.
 - [ ] Expect: hold canceled now; at **next gym**: `PauseRecord()` + new hold; stop at timeout.
 
-## 6) **External start** → adopt after external **pause+resume**
+## 7) **External start** → adopt after external **pause+resume**
 - [ ] User **starts** in OBS manually; mod **does nothing**.
 - [ ] User **pauses then resumes** in OBS → mod **adopts** (owned=true).
 - [ ] At **next gym**: `PauseRecord()` + hold; stop at timeout.
 
-## 7) Manual pause pre‑gym → **no hold** at that gym
+## 8) Manual pause pre‑gym → **no hold** at that gym
 - [ ] User **pauses** in OBS **before** gym.
 - [ ] Enter **gym** while paused → **no hold**.
 - [ ] If user **resumes before next gym**, then **that** gym should hold.
-
-## 8) OBS started in middle of match
-- [ ] Get in match with someone in list
-- [ ] Open OBS
-- [ ] Expect immediately start recording
 
 ## 9) Duplicate gym events → single hold
 - [ ] Cause `WhenInGym()` to run twice.
