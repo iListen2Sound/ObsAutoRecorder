@@ -151,20 +151,21 @@ namespace ObsAutoRecorder
 		//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
 		private const string USER_DATA = "UserData/ObsAutoRecorder/";
 		private const string CONFIG_FILE = "config.cfg";
+		private const string RECORD_LIST = "AutoRecordList.txt";
 		private const string SEPARATOR = "\n";
 		public static ObsAutoRecorder Instance { get; private set; }
 
 		string SceneName { get; set; }
 		private MelonPreferences_Category OBSAutoRecorderSettings;
 		private MelonPreferences_Entry<bool> isDebugMode;
-		private MelonPreferences_Entry<string> PlayersToRecord;
+		//private MelonPreferences_Entry<string> PlayersToRecord;
 		private MelonPreferences_Entry<string> AutoRenameString;
 		private MelonPreferences_Entry<bool> DoAutoRename;
 		private MelonPreferences_Entry<string> DateFormat;
 		private MelonPreferences_Entry<string> TimeFormat;
 		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
 		private MelonPreferences_Entry<bool> PreferMinimalIcon;
-		private List<string> AutoRecordList = new();
+		private List<string> AutoRecordList { get; set; } = new();
 
 		bool isFirstLoad = true;
 		private bool _isPolling = false;
@@ -234,11 +235,16 @@ namespace ObsAutoRecorder
 			}
 			OBSAutoRecorderSettings.SaveToFile();
 		}
-	
+
 		public override void OnInitializeMelon()
 		{
+			if (!Directory.Exists(USER_DATA))
+				Directory.CreateDirectory(USER_DATA);
+
+
+
 			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
-			OBSAutoRecorderSettings.SetFilePath(@"UserData/ObsAutoRecorder.cfg");
+			OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("isDebugMode", false, "Enable debug logging");
 			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("AutoRenameString", "{date} {time} vs {player}", "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
@@ -247,9 +253,13 @@ namespace ObsAutoRecorder
 			TimeFormat = OBSAutoRecorderSettings.CreateEntry("TimeFormat", "HH-mm-ss", "Time format for renaming. Uses standard C# time formatting.");
 			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("PauseHoldTimeout", 180, "Seconds to keep the recording paused until auto stop");
 			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("PreferMinimalIcon", false, "Prefer Minimal OBS Icon for Recording indicator");
-			PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
-			AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
+			//PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
+			//AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
 
+			if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
+				File.Create(Path.Combine(USER_DATA, RECORD_LIST));
+
+			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
 			OBSAutoRecorderSettings.SaveToFile();
 
@@ -258,6 +268,25 @@ namespace ObsAutoRecorder
 				Log(entry, true);
 			}
 		}
+	
+		private void UpdateAutoRecordFile()
+		{
+			string fullAutoRecordPath = (Path.Combine(USER_DATA, RECORD_LIST));
+			Log($"Writing people to file {RECORD_LIST}", true);
+			if (!File.Exists(fullAutoRecordPath))
+			{
+				Log($"Missing {RECORD_LIST} file. Creating File", false, 1);
+				File.Create(fullAutoRecordPath);
+			}
+
+			foreach (string person in AutoRecordList)
+			{
+				Log($"{person}", true);
+			}
+			File.WriteAllLines(fullAutoRecordPath, AutoRecordList);
+		}
+
+
 		public override void OnLateInitializeMelon()
 		{
 			Calls.onMapInitialized += OnMapInitialized;
@@ -432,7 +461,8 @@ namespace ObsAutoRecorder
 				Log($"Added {selected.ToString()} to AutoRecord list", false);
 			}
 
-			PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
+			//PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
+			UpdateAutoRecordFile();
 			OBSAutoRecorderSettings.SaveToFile();
 
 			foreach (TagHolder friend in _displayedFriendTags)
@@ -506,6 +536,7 @@ namespace ObsAutoRecorder
 			}
 			_pollPageCor = null;
 		}
+
 		private bool SameTagsAsLast()
 		{
 			for (int i = 0; i < _previousList.Count; i++)
@@ -651,7 +682,6 @@ namespace ObsAutoRecorder
 				{
 					if (!QueuedForStopping && !IsPaused)
 					{
-
 						PauseRecording();
 						QueuedForStopping = true;
 						if (_stopQueueCor != null)
@@ -757,6 +787,7 @@ namespace ObsAutoRecorder
 			OBS.StopRecord();
 
 		}
+
 		private void PauseRecording()
 		{
 
@@ -777,7 +808,6 @@ namespace ObsAutoRecorder
 			ModInitiatedPause = false;
 			QueuedForStopping = false;
 		}
-
 
 		private void onRecordPause()
 		{
@@ -841,7 +871,7 @@ namespace ObsAutoRecorder
 				}
 				try
 				{
-					
+
 					System.IO.File.Move(outputPath, newPath);
 					outputPath = newPath;
 					Log($"Recording renamed to: {newFileName}", false);
