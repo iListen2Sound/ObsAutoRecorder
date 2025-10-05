@@ -12,7 +12,7 @@
 ---
 
 ## 1) Auto‑start → gym pause/hold → stop 
-- [] Enter **map** vs in‑list opponent → recording starts, owned by mod.
+- [ ] Enter **map** vs in‑list opponent → recording starts, owned by mod.
 - [ ] Enter **gym** → `PauseRecord()` + hold queued.
 - [ ] After timeout → `StopRecord()`; flags reset.
 
