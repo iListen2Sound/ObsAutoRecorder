@@ -8,7 +8,7 @@ using Il2CppTMPro;
 using JetBrains.Annotations;
 using MelonLoader;
 using OBS_Control_API;
-
+using System.IO;
 using RumbleModdingAPI;
 using System.Collections;
 using System.Collections.Generic;
@@ -226,8 +226,15 @@ namespace ObsAutoRecorder
 		}
 		public override void OnApplicationQuit()
 		{
+			if (ModInitiatedRecording)
+			{
+				Log("Game Closing. Forcing recording stop");
+				StopRecording();
+				OBS.StopRecord();
+			}
 			OBSAutoRecorderSettings.SaveToFile();
 		}
+	
 		public override void OnInitializeMelon()
 		{
 			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
@@ -388,7 +395,7 @@ namespace ObsAutoRecorder
 			//Solo recording start test
 			if (SceneName == "park")
 			{
-				//StartRecording("solo test");
+				//StartRecording(" Pre <#> <AEDF12> Invalid char test");
 			}
 
 			//Test code. Remove later
@@ -655,7 +662,9 @@ namespace ObsAutoRecorder
 						Log("Starting Stop Hold Coroutine");
 						_stopQueueCor = MelonCoroutines.Start(RecordingHoldCoroutine(RecordingPauseHoldTimeout.Value));
 					}
+					else { Log($"Hold not started. QueuedForStopping = {QueuedForStopping}, IsPaused: {IsPaused}"); }
 				}
+				else { Log($"Recording not initiated by mod. No action", true); }
 			}
 		}
 		private void WhenInArena()
@@ -792,8 +801,17 @@ namespace ObsAutoRecorder
 			StartRequestedByMod = false;
 			Log($"Recording started for: {outputPath}");
 		}
+
+		public string GetSafeFilename(string filename)
+		{
+
+			return string.Join("", filename.Split(Path.GetInvalidFileNameChars()));
+
+		}
 		private void onRecordStop(string outputPath)
 		{
+			Log($"onRecordStop ({outputPath})");
+
 			ModInitiatedStop = StopRequestedByMod;
 			StopRequestedByMod = false;
 			if (!ModInitiatedStop)
@@ -813,7 +831,7 @@ namespace ObsAutoRecorder
 				}
 				string date = System.DateTime.Now.ToString(DateFormat.Value);
 				string time = System.DateTime.Now.ToString(TimeFormat.Value);
-				string newFileName = AutoRenameString.Value.Replace("{player}", $"{playerName}").Replace("{date}", date).Replace("{time}", time);
+				string newFileName = AutoRenameString.Value.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
 				string newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + System.IO.Path.GetExtension(outputPath);
 				int copyIndex = 1;
 				while (System.IO.File.Exists(newPath))
@@ -823,13 +841,14 @@ namespace ObsAutoRecorder
 				}
 				try
 				{
+					
 					System.IO.File.Move(outputPath, newPath);
 					outputPath = newPath;
 					Log($"Recording renamed to: {newFileName}", false);
 				}
 				catch (System.Exception ex)
 				{
-					Log($"Error renaming file: {ex.Message}", false, 2);
+					Log($"Error renaming file: {ex.Message}. File Path: {newPath}", false, 2);
 				}
 			}
 			Log($"Recording saved to: {outputPath}");
