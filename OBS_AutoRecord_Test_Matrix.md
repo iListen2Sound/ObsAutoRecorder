@@ -34,7 +34,12 @@
 - [ ] Enter **gym** while paused → **no hold**.
 - [ ] If user **resumes before next gym**, then **that** gym should hold.
 
-## 8) Duplicate gym events → single hold
+## 8) OBS started in middle of match
+- [ ] Get in match with someone in list
+- [ ] Open OBS
+- [ ] Expect immediately start recording
+
+## 9) Duplicate gym events → single hold
 - [ ] Cause `WhenInGym()` to run twice.
 - [ ] Expect exactly **one** `PauseRecord()` and **one** active hold.
 
@@ -45,6 +50,8 @@
 ## 10) External stop during hold
 - [ ] In **gym** with hold, user **stops** in OBS.
 - [ ] Expect flags reset; no double stop.
+
+
 
 ---
 
