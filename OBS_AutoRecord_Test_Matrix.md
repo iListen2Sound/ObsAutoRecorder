@@ -1,20 +1,12 @@
 # OBS Auto‑Record – Test Checklist (Printable)
 
 > **Tip:** Temporarily set `PauseHoldTimeout` to **10–15s** for quick iteration, then restore.
-
-## Setup
-- [ ] Debug logging enabled (`isDebugMode = true`).
-- [ ] Hold timeout set to 10–15s during testing.
-- [ ] Adoption on resume in `onRecordResume()`:
-  - [ ] `if (!ModInitiatedPause) ModInitiatedRecording = true;`
-- [ ] `WhenInGym()` starts hold **only** when OBS is active, session is **mod‑owned**, and **not paused**.
-
 ---
 
 ## 1) Auto‑start → gym pause/hold → stop 
-- [ ] Enter **map** vs in‑list opponent → recording starts, owned by mod.
-- [ ] Enter **gym** → `PauseRecord()` + hold queued.
-- [ ] After timeout → `StopRecord()`; flags reset.
+- [x] Enter **map** vs in‑list opponent → recording starts, owned by mod.
+- [x] Enter **gym** → `PauseRecord()` + hold queued.
+- [x] After timeout → `StopRecord()`; flags reset.
 
 ## 2) Same opponent during hold → resume
 - [ ] In **gym** with hold, re‑enter **map** vs **same ID** before timeout.
@@ -46,9 +38,9 @@
 - [ ] Cause `WhenInGym()` to run twice.
 - [ ] Expect exactly **one** `PauseRecord()` and **one** active hold.
 
-## 9) Short‑hold stress
-- [ ] Set hold to **2–5s**.
-- [ ] Exercise #2–#4 quickly; verify no stale holds after resume/stop.
+## ~~9) Short‑hold stress~~
+- [ ] ~~Set hold to **2–5s**.~~
+- [ ] ~~Exercise #2–#4 quickly; verify no stale holds after resume/stop.~~
 
 ## 10) External stop during hold
 - [ ] In **gym** with hold, user **stops** in OBS.
@@ -57,7 +49,7 @@
 ---
 
 ## Quick Smoke
-- [ ] #1 Auto start → gym hold → stop
+- [x] #1 Auto start → gym hold → stop
 - [ ] #2 Same opponent → resume
 - [ ] #3 Different not‑in‑list → stay paused → stop
 - [ ] #4 Different in‑list → stop & start new
