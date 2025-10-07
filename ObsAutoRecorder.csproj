@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\obsasset" />
+    <EmbeddedResource Include="Assets\obsasset - Working pre minimal mesh" />
   </ItemGroup>
 
   <ItemGroup>
