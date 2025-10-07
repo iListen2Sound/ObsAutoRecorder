@@ -182,11 +182,12 @@ namespace ObsAutoRecorder
 		private GameObject PauseIcon { get; set; }
 		private GameObject RecordIcon { get; set; }
 		private GameObject OBSIcon { get; set; }
+		private GameObject MinimalLogo { get; set; }
 
 		private GameObject _scrollBar;
 		private GameObject PlayerUi;
 		private GameObject _recordingIndicatorBase;
-		private GameObject _recordingIndicator;
+		//private GameObject _recordingIndicator;
 
 
 
@@ -313,9 +314,9 @@ namespace ObsAutoRecorder
 		{
 			_sceneIsLoaded = false;
 		}
-		public override void OnFixedUpdate()
+		public override void OnUpdate()
 		{
-			if (!_sceneIsLoaded || !OBS.IsConnected())
+			if (!_sceneIsLoaded)
 				return;
 
 
@@ -324,15 +325,16 @@ namespace ObsAutoRecorder
 			{
 				try
 				{
-					_recordingIndicator.transform.GetChild(0).GetComponent<RawImage>().color = IsPaused ? pauseColor : recordColor;
-					//IsRecording = OBS.IsRecordingActive();
-					_recordingIndicator.SetActive(OBS.IsRecordingActive() || IsPaused);
+					MinimalLogo.SetActive(OBS.IsRecordingActive() || IsPaused);
+					MinimalLogo.GetComponent<MeshRenderer>().material.color = IsPaused ? pauseColor : recordColor;
 				}
 				catch (System.Exception ex)
 				{
-					Log($"OBS Control API error: {ex.Message}", false, 2);
+					Log($"ObsAutoRecorder: {ex.Message}", false, 2);
 
 				}
+				
+
 			}
 			else
 			{
@@ -348,6 +350,8 @@ namespace ObsAutoRecorder
 				{
 					Log($"OBS Control API error: {ex.Message}", false, 2);
 				}
+
+
 			}
 		}
 		/// <summary>
@@ -397,7 +401,31 @@ namespace ObsAutoRecorder
 
 
 				}
+				PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(6).GetChild(0).gameObject;
 
+				OBSIcon = GameObject.Instantiate(LogoPack.transform.GetChild(0).gameObject);
+				PauseIcon = OBSIcon.transform.GetChild(0).gameObject;
+				PauseIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
+				PauseIcon.transform.localRotation = Quaternion.Euler(270, 0, 0);
+				RecordIcon = OBSIcon.transform.GetChild(1).gameObject;
+				RecordIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
+				OBSIcon.transform.SetParent(PlayerUi.transform,false);
+				//-0.24 0.035 0.945
+				OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
+
+				//70.0001 155 180
+				OBSIcon.transform.localRotation = Quaternion.Euler(70, 155, 180);
+				OBSIcon.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
+				OBSIcon.SetActive(false);
+
+				MinimalLogo = GameObject.Instantiate(LogoPack.transform.GetChild(2).GetChild(0).gameObject);
+				MinimalLogo.transform.SetParent(PlayerUi.transform,false);
+				MinimalLogo.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
+				//20 335 0
+				MinimalLogo.transform.localRotation = Quaternion.Euler(70, 155, 180);
+				//0.03 0.03 0.001
+				MinimalLogo.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
+				MinimalLogo.SetActive(false);
 
 				for (int i = 0; i < 4; i++)
 				{
@@ -442,32 +470,7 @@ namespace ObsAutoRecorder
 				isFirstLoad = false;
 			}
 
-			_recordingIndicator = GameObject.Instantiate(IndicatorsBase);
-			//GameObject.DontDestroyOnLoad(_recordingIndicator);
-			_recordingIndicator.SetName("RecordingIndicator");
-
-			PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(6).GetChild(0).gameObject;
-			_recordingIndicator.transform.SetParent(PlayerUi.transform, false);
-			_recordingIndicator.transform.localScale = new Vector3(0.0003f, 0.0003f, 0.0003f);
-			_recordingIndicator.transform.localPosition = new Vector3(-0.22f, 0.05f, 0.95f);
-
-			_recordingIndicator.transform.localRotation = Quaternion.Euler(20, 335, 0);
-			_recordingIndicator.transform.GetChild(0).GetComponent<RawImage>().color = new Color(1f, 1f, 1f, 0.75f);
-
-			OBSIcon = GameObject.Instantiate(LogoPack.transform.GetChild(0).gameObject);
-			PauseIcon = OBSIcon.transform.GetChild(0).gameObject;
-			PauseIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-			PauseIcon.transform.localRotation = Quaternion.Euler(270, 0, 0);
-			RecordIcon = OBSIcon.transform.GetChild(1).gameObject;
-			RecordIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-			OBSIcon.transform.SetParent(PlayerUi.transform);
-			//-0.24 0.035 0.945
-			OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
-
-			//70.0001 155 180
-			OBSIcon.transform.localRotation = Quaternion.Euler(70, 155, 180);
-			OBSIcon.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
-			OBSIcon.SetActive(false);
+			
 
 
 
@@ -541,7 +544,7 @@ namespace ObsAutoRecorder
 
 		}
 
-		IEnumerator DebounceCoRoutine(TagHolder holder)
+		private IEnumerator DebounceCoRoutine(TagHolder holder)
 		{
 			holder.WasPressed = true;
 			yield return new WaitForSeconds(0.5f);
@@ -549,7 +552,7 @@ namespace ObsAutoRecorder
 			_debounceCor = null;
 		}
 
-		IEnumerator PollPlayerTagsCoroutine()
+		private IEnumerator PollPlayerTagsCoroutine()
 		{
 			_isPolling = true;
 			float startTime = Time.realtimeSinceStartup;
@@ -574,7 +577,7 @@ namespace ObsAutoRecorder
 				//Log(info.PublicName, true);
 			}
 		}
-		IEnumerator PollPageTurnCoRoutine()
+		private IEnumerator PollPageTurnCoRoutine()
 		{
 			float start = Time.realtimeSinceStartup;
 
@@ -616,11 +619,6 @@ namespace ObsAutoRecorder
 
 		private bool IsInAutoRecordList(TagHolder friend)
 		{
-			/*var targets = AutoRecordList.Where(x => x.Split('-')[0].Trim().ToLower() == friend.PlayFabID.Trim().ToLower()).ToList();
-			if (targets.Count > 1)
-			{
-				Log($"Warning: More than one entry found for {friend.PlayFabID} in AutoRecord list", false, 1);
-			}*/
 			return IsInAutoRecordList(friend.ToString());
 		}
 
@@ -1019,7 +1017,6 @@ namespace ObsAutoRecorder
 				}
 			}
 			Log($"Replay buffer saved to: {outputPath}");
-
 		}
 
 	}
