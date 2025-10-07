@@ -166,6 +166,7 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<string> DateFormat;
 		private MelonPreferences_Entry<string> TimeFormat;
 		private MelonPreferences_Entry<string> ReplayPrefix;
+		private MelonPreferences_Entry<bool> AddChapterMarkers;
 		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
 		private MelonPreferences_Entry<bool> PreferMinimalIcon;
 		private MelonPreferences_Entry<int> RecordByBPThreshold;
@@ -261,6 +262,7 @@ namespace ObsAutoRecorder
 			DateFormat = OBSAutoRecorderSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = OBSAutoRecorderSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
 			ReplayPrefix = OBSAutoRecorderSettings.CreateEntry("Replay Prefix", "R- ", null, "String to prefix replay buffers with.");
+			AddChapterMarkers = OBSAutoRecorderSettings.CreateEntry("Chapter Markers", false, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
 			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording paused until auto stop");
 			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator");
 			//PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
@@ -986,20 +988,31 @@ namespace ObsAutoRecorder
 		private void onReplayBufferSaved(string outputPath)
 		{
 			Log($"Replay buffer saved to: {outputPath}");
+			
+			string playerName = "";
+			if (!string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
+			{
+				playerName = TagHolder.Sanitize(CurrentOrLastRecordedPlayer.Split(" - ")[1].Trim());
+			}
+			if (SceneName == "gym")
+				playerName = "";
+			string date = System.DateTime.Now.ToString(DateFormat.Value);
+			string time = System.DateTime.Now.ToString(TimeFormat.Value);
+			string newFileName = ReplayPrefix.Value + AutoRenameString.Value.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
+			if (AddChapterMarkers.Value)
+			{
+				Log("Attempting to add chapter marker", true);
+				var param = new { chapterName = newFileName };
+				OBS.SendRequest("CreateRecordChapter", param);
+				Log("Added chapter marker", true);
+			}
+			
 			if (DoAutoRename.Value)
 			{
-				string playerName = "";
-				if (!string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
-				{
-					playerName = TagHolder.Sanitize(CurrentOrLastRecordedPlayer.Split(" - ")[1].Trim());
-				}
-				if (SceneName == "gym")
-					playerName = "";
+				
 
 				Log($"Player name for file rename: {playerName}");
-				string date = System.DateTime.Now.ToString(DateFormat.Value);
-				string time = System.DateTime.Now.ToString(TimeFormat.Value);
-				string newFileName = ReplayPrefix + AutoRenameString.Value.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
+				
 				string newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + System.IO.Path.GetExtension(outputPath);
 				int copyIndex = 1;
 				while (System.IO.File.Exists(newPath))
