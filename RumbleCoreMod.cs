@@ -165,6 +165,7 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<bool> DoAutoRename;
 		private MelonPreferences_Entry<string> DateFormat;
 		private MelonPreferences_Entry<string> TimeFormat;
+		private MelonPreferences_Entry<string> ReplayPrefix;
 		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
 		private MelonPreferences_Entry<bool> PreferMinimalIcon;
 		private MelonPreferences_Entry<int> RecordByBPThreshold;
@@ -259,6 +260,7 @@ namespace ObsAutoRecorder
 			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
 			DateFormat = OBSAutoRecorderSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = OBSAutoRecorderSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
+			ReplayPrefix = OBSAutoRecorderSettings.CreateEntry("Replay Prefix", "R- ", null, "String to prefix replay buffers with.");
 			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording paused until auto stop");
 			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator");
 			//PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
@@ -911,7 +913,7 @@ namespace ObsAutoRecorder
 		private void onRecordStop(string outputPath)
 		{
 			Log($"onRecordStop ({outputPath})", true);
-
+			Log($"Recording saved to: {outputPath}");
 			ModInitiatedStop = StopRequestedByMod;
 			StopRequestedByMod = false;
 			if (!ModInitiatedStop)
@@ -949,7 +951,7 @@ namespace ObsAutoRecorder
 					Log($"Error renaming file: {ex.Message}. File Path: {newPath}", false, 2);
 				}
 			}
-			Log($"Recording saved to: {outputPath}");
+			
 
 			//Reset recording states
 
@@ -983,6 +985,7 @@ namespace ObsAutoRecorder
 
 		private void onReplayBufferSaved(string outputPath)
 		{
+			Log($"Replay buffer saved to: {outputPath}");
 			if (DoAutoRename.Value)
 			{
 				string playerName = "";
@@ -996,7 +999,7 @@ namespace ObsAutoRecorder
 				Log($"Player name for file rename: {playerName}");
 				string date = System.DateTime.Now.ToString(DateFormat.Value);
 				string time = System.DateTime.Now.ToString(TimeFormat.Value);
-				string newFileName = AutoRenameString.Value.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
+				string newFileName = ReplayPrefix + AutoRenameString.Value.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
 				string newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + System.IO.Path.GetExtension(outputPath);
 				int copyIndex = 1;
 				while (System.IO.File.Exists(newPath))
@@ -1009,14 +1012,14 @@ namespace ObsAutoRecorder
 
 					System.IO.File.Move(outputPath, newPath);
 					outputPath = newPath;
-					Log($"Recording renamed to: {newFileName}", false);
+					Log($"Replay renamed to: {newFileName}", false);
 				}
 				catch (System.Exception ex)
 				{
 					Log($"Error renaming file: {ex.Message}. File Path: {newPath}", false, 2);
 				}
 			}
-			Log($"Replay buffer saved to: {outputPath}");
+			
 		}
 
 	}
