@@ -118,7 +118,7 @@ namespace ObsAutoRecorder
 		private void CreateAutoRecordBlock()
 		{
 			RecordIconBlock = GameObject.Instantiate(TagObject.transform.GetChild(0).GetChild(0).GetChild(0).gameObject);
-			
+
 			RecordIconBlock.transform.SetParent(TagObject.transform.GetChild(0).GetChild(0), false);
 			RecordIconBlock.transform.localPosition = new Vector3(0.2391f, -0.0336f, -0.0091f);
 
@@ -167,6 +167,7 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<string> TimeFormat;
 		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
 		private MelonPreferences_Entry<bool> PreferMinimalIcon;
+		private MelonPreferences_Entry<int> RecordByBPThreshold;
 		private List<string> AutoRecordList { get; set; } = new();
 
 		bool isFirstLoad = true;
@@ -206,7 +207,7 @@ namespace ObsAutoRecorder
 		private bool ModInitiatedStop { get; set; } = false;
 		private bool IsWaitingForStop { get; set; } = false;
 
-		
+
 		private bool StartRequestedByMod = false;
 		private bool StopRequestedByMod = false;
 		private bool PauseRequestedByMod = false;
@@ -242,7 +243,7 @@ namespace ObsAutoRecorder
 
 		public override void OnInitializeMelon()
 		{
-			
+
 			if (!Directory.Exists(USER_DATA))
 				Directory.CreateDirectory(USER_DATA);
 
@@ -251,13 +252,14 @@ namespace ObsAutoRecorder
 			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
 			OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
-			isDebugMode = OBSAutoRecorderSettings.CreateEntry("isDebugMode", false, "Enable debug logging");
-			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("AutoRenameString", "{date} {time} vs {player}", "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
-			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("DoAutoRename", false, "Enable automatic renaming of recorded files");
-			DateFormat = OBSAutoRecorderSettings.CreateEntry("DateFormat", "yyyy-MM-dd", "Date format for renaming. Uses standard C# date formatting.");
-			TimeFormat = OBSAutoRecorderSettings.CreateEntry("TimeFormat", "HH-mm-ss", "Time format for renaming. Uses standard C# time formatting.");
-			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("PauseHoldTimeout", 180, "Seconds to keep the recording paused until auto stop");
-			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("PreferMinimalIcon", false, "Prefer Minimal OBS Icon for Recording indicator");
+			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug logging");
+			RecordByBPThreshold = OBSAutoRecorderSettings.CreateEntry("BP Threshold", 0, "BP", "Record players with BP greater than value. 0 = disabled");
+			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("Enable Auto Rename", false, null, "Enable automatic renaming of recorded files");
+			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
+			DateFormat = OBSAutoRecorderSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
+			TimeFormat = OBSAutoRecorderSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
+			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording paused until auto stop");
+			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator");
 			//PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
 			//AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
 
@@ -273,9 +275,9 @@ namespace ObsAutoRecorder
 				Log(entry, true);
 			}
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
-			
+
 		}
-	
+
 		private void UpdateAutoRecordFile()
 		{
 			string fullAutoRecordPath = (Path.Combine(USER_DATA, RECORD_LIST));
@@ -303,6 +305,7 @@ namespace ObsAutoRecorder
 			OBS.onRecordingStarted += onRecordStart;
 			OBS.onRecordingResumed += onRecordResume;
 			OBS.onConnect += onConnect;
+			OBS.onReplayBufferSaved += onReplayBufferSaved;
 
 			Instance = this;
 		}
@@ -392,9 +395,9 @@ namespace ObsAutoRecorder
 					IndicatorsBase.SetActive(false);
 
 
-					
+
 				}
-				
+
 
 				for (int i = 0; i < 4; i++)
 				{
@@ -495,7 +498,7 @@ namespace ObsAutoRecorder
 		/// them in the auto-record list.</param>
 		private void ToggleAutoRecord(TagHolder selected)
 		{
-			
+
 			if (IsInAutoRecordList(selected))
 			{
 				AutoRecordList.RemoveAll(x => x.Split(" - ")[0].Trim().ToLower() == selected.PlayFabID.Trim().ToLower());
@@ -610,7 +613,7 @@ namespace ObsAutoRecorder
 
 		}
 
-		
+
 		private bool IsInAutoRecordList(TagHolder friend)
 		{
 			/*var targets = AutoRecordList.Where(x => x.Split('-')[0].Trim().ToLower() == friend.PlayFabID.Trim().ToLower()).ToList();
@@ -623,7 +626,7 @@ namespace ObsAutoRecorder
 
 		private bool IsInAutoRecordList(string playFabID)
 		{
-			
+
 			var targets = AutoRecordList.Where(x => x.Split(" - ")[0].Trim().ToLower() == playFabID.Split(" - ")[0].Trim().ToLower()).ToList();
 
 			if (targets.Count > 1)
@@ -716,12 +719,13 @@ namespace ObsAutoRecorder
 			var opp = PlayerManager.instance.AllPlayers[1];
 			var oppId = opp?.Data?.GeneralData?.PlayFabMasterId;
 			var oppName = opp?.Data?.GeneralData?.PublicUsername ?? "Unknown";
+			int oppBp = opp.Data.GeneralData.BattlePoints;
 
 			string opponentInfo = $"{oppId} - {oppName}";
 			if (IsPaused)
 			{
 
-				if (ModInitiatedPause && (CurrentOrLastRecordedPlayer == opponentInfo))
+				if (ModInitiatedPause && (CurrentOrLastRecordedPlayer.Split(" - ")[0] == oppId))
 				{
 					ResumeRecording();
 				}
@@ -730,24 +734,26 @@ namespace ObsAutoRecorder
 					if (ModInitiatedPause)
 					{
 
-						if (IsInAutoRecordList(opponentInfo))
+						if (IsAutoRecordable(oppId, oppBp))
 						{
 							StopRecording();
-							Log($"Starting recording through onMapInitialized", true);
-							if(_recordingWaitCor != null)
+							Log($"Replacing opponent recording", true);
+							Log($"_recordingWaitCor is null: {_recordingWaitCor is null}");
+							if (!(_recordingWaitCor is null))
 							{
+
 								MelonCoroutines.Stop(StartRecordingAfterStopCoroutine());
 								_recordingWaitCor = null;
 							}
-							else
-								_recordingWaitCor = MelonCoroutines.Start(StartRecordingAfterStopCoroutine());
+
+							_recordingWaitCor = MelonCoroutines.Start(StartRecordingAfterStopCoroutine());
 						}
 					}
 				}
 			}
 			else
 			{
-				if (IsInAutoRecordList(opponentInfo))
+				if (IsAutoRecordable(oppId, oppBp))
 				{
 					Log($"Recording started through onMapInitialized", true);
 					StartRecording(opponentInfo);
@@ -755,14 +761,26 @@ namespace ObsAutoRecorder
 			}
 		}
 
+		private bool IsAutoRecordable(string opponentInfo, int opponentBP)
+		{
+			if (IsInAutoRecordList(opponentInfo)) { return true; }
+
+			if (RecordByBPThreshold.Value == 0) { return false; }
+
+			if (opponentBP >= RecordByBPThreshold.Value) { return true; }
+
+			return false;
+		}
+
 		private IEnumerator StartRecordingAfterStopCoroutine()
 		{
 			float startTime = Time.realtimeSinceStartup;
 			float currentTime = Time.realtimeSinceStartup - startTime;
-			while (OBS.IsRecordingActive() && currentTime < 5f)
+			while ((OBS.IsRecordingActive() || IsPaused) && currentTime < 5f)
 			{
 				yield return null;
 				currentTime = Time.realtimeSinceStartup - startTime;
+				Log($"Waiting for last recording end", true);
 			}
 
 			if (currentTime >= 5f && OBS.IsRecordingActive())
@@ -771,9 +789,10 @@ namespace ObsAutoRecorder
 			}
 			else
 			{
+				Log($"Last recording stopped. Starting new recording for {CurrentOrLastRecordedPlayer}");
 				StartRecording(CurrentOrLastRecordedPlayer);
 			}
-				_recordingWaitCor = null;
+			_recordingWaitCor = null;
 		}
 
 		/// <summary>
@@ -804,7 +823,7 @@ namespace ObsAutoRecorder
 			if (OBS.IsRecordingActive() || IsPaused)
 			{
 				string pauseStatus = IsPaused ? "Paused " : "";
-				Log($"{pauseStatus} Recording already in progress", false);
+				Log($"Recording already in progress or paused", false);
 
 				return;
 			}
@@ -943,13 +962,15 @@ namespace ObsAutoRecorder
 			QueuedForStopping = false;
 			ModInitiatedStop = false;
 			CurrentOrLastRecordedPlayer = "";
-			if(_stopQueueCor != null)
+			if (_stopQueueCor != null)
 			{
 				MelonCoroutines.Stop(_stopQueueCor);
 				_stopQueueCor = null;
 			}
 
 		}
+
+
 
 		private void onConnect()
 		{
@@ -961,6 +982,45 @@ namespace ObsAutoRecorder
 			SetRecordingState();
 
 		}
-		
+
+		private void onReplayBufferSaved(string outputPath)
+		{
+			if (DoAutoRename.Value)
+			{
+				string playerName = "";
+				if (!string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
+				{
+					playerName = TagHolder.Sanitize(CurrentOrLastRecordedPlayer.Split(" - ")[1].Trim());
+				}
+				if (SceneName == "gym")
+					playerName = "";
+
+				Log($"Player name for file rename: {playerName}");
+				string date = System.DateTime.Now.ToString(DateFormat.Value);
+				string time = System.DateTime.Now.ToString(TimeFormat.Value);
+				string newFileName = AutoRenameString.Value.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
+				string newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + System.IO.Path.GetExtension(outputPath);
+				int copyIndex = 1;
+				while (System.IO.File.Exists(newPath))
+				{
+					newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(outputPath);
+					copyIndex++;
+				}
+				try
+				{
+
+					System.IO.File.Move(outputPath, newPath);
+					outputPath = newPath;
+					Log($"Recording renamed to: {newFileName}", false);
+				}
+				catch (System.Exception ex)
+				{
+					Log($"Error renaming file: {ex.Message}. File Path: {newPath}", false, 2);
+				}
+			}
+			Log($"Replay buffer saved to: {outputPath}");
+
+		}
+
 	}
 }
