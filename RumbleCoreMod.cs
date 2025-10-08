@@ -21,6 +21,7 @@ using UnityEngine.UI;
 using UnityEngine.UIElements;
 using UnityEngine.Video;
 using Il2CppSteamworks;
+using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
 
 
@@ -337,7 +338,7 @@ namespace ObsAutoRecorder
 					Log($"ObsAutoRecorder: {ex.Message}", false, 2);
 
 				}
-				
+
 
 			}
 			else
@@ -413,7 +414,7 @@ namespace ObsAutoRecorder
 				PauseIcon.transform.localRotation = Quaternion.Euler(270, 0, 0);
 				RecordIcon = OBSIcon.transform.GetChild(1).gameObject;
 				RecordIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-				OBSIcon.transform.SetParent(PlayerUi.transform,false);
+				OBSIcon.transform.SetParent(PlayerUi.transform, false);
 				//-0.24 0.035 0.945
 				OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
 
@@ -423,7 +424,7 @@ namespace ObsAutoRecorder
 				OBSIcon.SetActive(false);
 
 				MinimalLogo = GameObject.Instantiate(LogoPack.transform.GetChild(2).GetChild(0).gameObject);
-				MinimalLogo.transform.SetParent(PlayerUi.transform,false);
+				MinimalLogo.transform.SetParent(PlayerUi.transform, false);
 				MinimalLogo.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
 				//20 335 0
 				MinimalLogo.transform.localRotation = Quaternion.Euler(70, 155, 180);
@@ -474,7 +475,7 @@ namespace ObsAutoRecorder
 				isFirstLoad = false;
 			}
 
-			
+
 
 
 
@@ -920,45 +921,20 @@ namespace ObsAutoRecorder
 			StopRequestedByMod = false;
 			if (!ModInitiatedStop)
 				Log("Recording stopped Externally", false, 1);
-
-			//File renaming
-			if (DoAutoRename.Value && !string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
+			if (DoAutoRename.Value)
 			{
-				string playerName = "Unknown";
-				if (!string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
-				{
-					playerName = TagHolder.Sanitize(CurrentOrLastRecordedPlayer.Split(" - ")[1].Trim());
-				}
+				Log($"Recording renamed to {RenameOutput(outputPath, AutoRenameString.Value)}");
 
-				Log($"Player name for file rename: {playerName}");
-				string date = System.DateTime.Now.ToString(DateFormat.Value);
-				string time = System.DateTime.Now.ToString(TimeFormat.Value);
-				string newFileName = AutoRenameString.Value.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
-				string newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + System.IO.Path.GetExtension(outputPath);
-				int copyIndex = 1;
-				while (System.IO.File.Exists(newPath))
-				{
-					newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(outputPath);
-					copyIndex++;
-				}
-				try
-				{
-
-					System.IO.File.Move(outputPath, newPath);
-					outputPath = newPath;
-					Log($"Recording renamed to: {newFileName}", false);
-				}
-				catch (System.Exception ex)
-				{
-					Log($"Error renaming file: {ex.Message}. File Path: {newPath}", false, 2);
-				}
 			}
-			
+			else
+			{
+				Log("AutoRename disabled. Saving file as-is");
+			}
 
-			//Reset recording states
+				//Reset recording states
 
-			//IsRecording = false;
-			IsPaused = false;
+				//IsRecording = false;
+				IsPaused = false;
 			ModInitiatedRecording = false;
 			ModInitiatedPause = false;
 			QueuedForStopping = false;
@@ -988,51 +964,59 @@ namespace ObsAutoRecorder
 		private void onReplayBufferSaved(string outputPath)
 		{
 			Log($"Replay buffer saved to: {outputPath}");
-			
-			string playerName = "";
-			if (!string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
-			{
-				playerName = TagHolder.Sanitize(CurrentOrLastRecordedPlayer.Split(" - ")[1].Trim());
-			}
-			if (SceneName == "gym")
-				playerName = "";
-			string date = System.DateTime.Now.ToString(DateFormat.Value);
-			string time = System.DateTime.Now.ToString(TimeFormat.Value);
-			string newFileName = ReplayPrefix.Value + AutoRenameString.Value.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
+			string newFileName = outputPath;
+			newFileName = RenameOutput(outputPath, "R- " + AutoRenameString.Value);
+			newFileName = System.IO.Path.GetFileName(newFileName);
 			if (AddChapterMarkers.Value)
 			{
 				Log("Attempting to add chapter marker", true);
 				var param = new { chapterName = newFileName };
-				OBS.SendRequest("CreateRecordChapter", param);
-				Log("Added chapter marker", true);
+				Task.Run(() => { OBS.SendRequest("CreateRecordChapter", param); Log("Chapter Marker Request Sent"); });
+
+				Log("Adding Chapter Marker", true);
 			}
+
 			
-			if (DoAutoRename.Value)
+
+		}
+
+		private string RenameOutput(string oldOutputPath, string newName)
+		{
+			//File renaming
+			string newPath = "";
+
+			string playerName = "Unknown";
+			if (!string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
 			{
-				
+				playerName = TagHolder.Sanitize(CurrentOrLastRecordedPlayer.Split(" - ")[1].Trim());
+			}
 
-				Log($"Player name for file rename: {playerName}");
-				
-				string newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + System.IO.Path.GetExtension(outputPath);
-				int copyIndex = 1;
-				while (System.IO.File.Exists(newPath))
-				{
-					newPath = System.IO.Path.GetDirectoryName(outputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(outputPath);
-					copyIndex++;
-				}
-				try
-				{
+			Log($"Player name for file rename: {playerName}");
+			string date = System.DateTime.Now.ToString(DateFormat.Value);
+			string time = System.DateTime.Now.ToString(TimeFormat.Value);
+			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
+			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
+			int copyIndex = 1;
+			while (System.IO.File.Exists(newPath))
+			{
+				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
+				copyIndex++;
+			}
+			try
+			{
 
-					System.IO.File.Move(outputPath, newPath);
-					outputPath = newPath;
-					Log($"Replay renamed to: {newFileName}", false);
-				}
-				catch (System.Exception ex)
-				{
-					Log($"Error renaming file: {ex.Message}. File Path: {newPath}", false, 2);
-				}
+				System.IO.File.Move(oldOutputPath, newPath);
+				oldOutputPath = newPath;
+				//Log($"Recording renamed to: {newFileName}", false);
 			}
 			
+			catch (System.Exception ex)
+			{
+				Log($"Error renaming file: {ex.Message}. File Path: {newPath}", false, 2);
+				newPath = "Error";
+			}
+
+			return newPath;
 		}
 
 	}
