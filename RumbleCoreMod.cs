@@ -1002,19 +1002,43 @@ namespace ObsAutoRecorder
 				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
 				copyIndex++;
 			}
-			try
+			Task.Run(() =>
 			{
+				bool success = false;
+				float startTime = Time.realtimeSinceStartup;
+				float currentTime = Time.realtimeSinceStartup;
+				int secondsToRetry = 5;
+				while (!success && !(currentTime - startTime > secondsToRetry))
+				{
+					currentTime = Time.realtimeSinceStartup;
+					try
+					{
 
-				System.IO.File.Move(oldOutputPath, newPath);
-				oldOutputPath = newPath;
-				//Log($"Recording renamed to: {newFileName}", false);
-			}
+						System.IO.File.Move(oldOutputPath, newPath);
+						oldOutputPath = newPath;
+						success = true;
+						Log($"Recording renamed to: {newFileName}", false);
+					}
+					
+					catch (IOException ex)
+					{
+						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", false, 2);
+						
+						
+					}
+					catch(System.Exception ex)
+					{
+						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", false, 2);
+						
+
+					}
+				}
+				if(!success)
+				{
+					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
+				}
+			});
 			
-			catch (System.Exception ex)
-			{
-				Log($"Error renaming file: {ex.Message}. File Path: {newPath}", false, 2);
-				newPath = "Error";
-			}
 
 			return newPath;
 		}
