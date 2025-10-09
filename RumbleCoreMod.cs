@@ -258,37 +258,19 @@ namespace ObsAutoRecorder
 				_selectedTag = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
 				TagFrame = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
 			}
+
+			if(SceneName != "loader")
+			{
+				BuildPlayerIndicators();
+			}
 			Log("Starting poll for player tags...", true);
 			if (SceneName == "gym" || SceneName == "park")
 			{
 				if (isFirstLoad)
 					FirstLoad();
 				
-				PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(6).GetChild(0).gameObject;
 
-				OBSIcon = GameObject.Instantiate(LogoPack.transform.GetChild(0).gameObject);
-				PauseIcon = OBSIcon.transform.GetChild(0).gameObject;
-				PauseIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-				PauseIcon.transform.localRotation = Quaternion.Euler(270, 0, 0);
-				RecordIcon = OBSIcon.transform.GetChild(1).gameObject;
-				RecordIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-				OBSIcon.transform.SetParent(PlayerUi.transform, false);
-				//-0.24 0.035 0.945
-				OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
-
-				//70.0001 155 180
-				OBSIcon.transform.localRotation = Quaternion.Euler(70, 155, 180);
-				OBSIcon.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
-				OBSIcon.SetActive(false);
-
-				MinimalLogo = GameObject.Instantiate(LogoPack.transform.GetChild(2).GetChild(0).gameObject);
-				MinimalLogo.transform.SetParent(PlayerUi.transform, false);
-				MinimalLogo.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
-				//20 335 0
-				MinimalLogo.transform.localRotation = Quaternion.Euler(70, 155, 180);
-				//0.03 0.03 0.001
-				MinimalLogo.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
-				MinimalLogo.SetActive(false);
+				
 
 				for (int i = 0; i < 4; i++)
 				{
