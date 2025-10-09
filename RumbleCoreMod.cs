@@ -61,6 +61,7 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
 		private MelonPreferences_Entry<bool> PreferMinimalIcon;
 		private MelonPreferences_Entry<int> RecordByBPThreshold;
+		private MelonPreferences_Entry<bool> PauseAfterMatch;
 		private List<string> AutoRecordList { get; set; } = new();
 
 
@@ -118,6 +119,7 @@ namespace ObsAutoRecorder
 			ReplayPrefix = OBSAutoRecorderSettings.CreateEntry("Replay Prefix", "R- ", null, "String to prefix replay buffers with.");
 			AddChapterMarkers = OBSAutoRecorderSettings.CreateEntry("Chapter Markers", false, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
 			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording paused until auto stop");
+			PauseAfterMatch = OBSAutoRecorderSettings.CreateEntry("Pause recording after match", false, null, "Pause recording when not fighting recordable player. Replay buffer will not work when paused");
 			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator");
 			//PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
 			//AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
