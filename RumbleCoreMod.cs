@@ -68,20 +68,6 @@ namespace ObsAutoRecorder
 		private static GameObject IndicatorsBase;
 		RequestResponse.GetRecordStatus getRecordStatus = new();
 
-		//OBS Recording states
-		private string CurrentOrLastRecordedPlayer { get; set; } = "";
-		private bool IsRecording { get; set; } = false;
-		private bool IsPaused { get; set; } = false;
-		private bool ModInitiatedRecording { get; set; } = false;
-		private bool ModInitiatedPause { get; set; } = false;
-		private bool QueuedForStopping { get; set; } = false;
-		private bool ModInitiatedStop { get; set; } = false;
-		private bool IsWaitingForStop { get; set; } = false;
-
-
-		private bool StartRequestedByMod = false;
-		private bool StopRequestedByMod = false;
-		private bool PauseRequestedByMod = false;
 
 
 		private Color pauseColor = new Color(1f, 1f, 0f, 0.75f);

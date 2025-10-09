@@ -30,6 +30,21 @@ namespace ObsAutoRecorder
 	public partial class ObsAutoRecorder : MelonMod
 	{
 
+        //OBS Recording states
+		private string CurrentOrLastRecordedPlayer { get; set; } = "";
+		private bool IsRecording { get; set; } = false;
+		private bool IsPaused { get; set; } = false;
+		private bool ModInitiatedRecording { get; set; } = false;
+		private bool ModInitiatedPause { get; set; } = false;
+		private bool QueuedForStopping { get; set; } = false;
+		private bool ModInitiatedStop { get; set; } = false;
+		private bool IsWaitingForStop { get; set; } = false;
+
+
+		private bool StartRequestedByMod = false;
+		private bool StopRequestedByMod = false;
+		private bool PauseRequestedByMod = false;
+
         private void SetRecordingState()
 		{
 			if (!OBS.IsConnected())
