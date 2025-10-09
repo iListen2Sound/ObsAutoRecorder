@@ -148,7 +148,7 @@ namespace ObsAutoRecorder
 			return Regex.Replace(Input, pattern, string.Empty);
 		}
 	}
-	public class ObsAutoRecorder : MelonMod
+	public partial class ObsAutoRecorder : MelonMod
 	{
 		//Hold button location 
 		//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
@@ -312,6 +312,7 @@ namespace ObsAutoRecorder
 			OBS.onRecordingResumed += onRecordResume;
 			OBS.onConnect += onConnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
+			OBS.onRecordFileChanged += onRecordFileChanged;
 
 			Instance = this;
 		}
@@ -978,6 +979,11 @@ namespace ObsAutoRecorder
 
 			
 
+		}
+
+		private void onRecordFileChanged(string output)
+		{
+			Log($"On record file changed called {output}", true);
 		}
 
 		private string RenameOutput(string oldOutputPath, string newName)
