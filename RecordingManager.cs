@@ -77,7 +77,7 @@ namespace ObsAutoRecorder
 					{
 						PauseRecording();
 					}
-					
+
 					QueuedForStopping = true;
 					if (_stopQueueCor != null)
 					{
@@ -131,6 +131,7 @@ namespace ObsAutoRecorder
 						}
 
 						_recordingWaitCor = MelonCoroutines.Start(StartRecordingAfterStopCoroutine());*/
+
 					}
 				}
 			}

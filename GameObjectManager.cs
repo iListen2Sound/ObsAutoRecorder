@@ -106,24 +106,42 @@ namespace ObsAutoRecorder
         private void BuildTagHolders()
         {
             _selectedFriend = new TagHolder() { TagObject = _selectedTag };
-				_displayedFriendTags = GetPlayerTags();
-				if (_pollTagsCor != null)
-				{
-					MelonCoroutines.Stop(_pollTagsCor);
-					_pollTagsCor = null;
-				}
-				_pollTagsCor = MelonCoroutines.Start(PollPlayerTagsCoroutine());
+            _displayedFriendTags = GetPlayerTags();
+            if (_pollTagsCor != null)
+            {
+                MelonCoroutines.Stop(_pollTagsCor);
+                _pollTagsCor = null;
+            }
+            _pollTagsCor = MelonCoroutines.Start(PollPlayerTagsCoroutine());
 
 
-				_selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
-				{
-					if (_selectedFriend.WasPressed)
-						return;
+            _selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+            {
+                if (_selectedFriend.WasPressed)
+                    return;
 
-					MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
-					ToggleAutoRecord(_selectedFriend);
-				});
+                MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
+                ToggleAutoRecord(_selectedFriend);
+            });
         }
+
+        private List<TagHolder> GetPlayerTags()
+		{
+			List<TagHolder> friendInfos = new();
+
+			for (int i = 0; i < TagFrame.transform.childCount; i++)
+			{
+				TagHolder friendInfo = new TagHolder();
+				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
+				friendInfos.Add(friendInfo);
+				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+				{
+					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
+				});
+			}
+			return friendInfos;
+
+		}
 
         
     }

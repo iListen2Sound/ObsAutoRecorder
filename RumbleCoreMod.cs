@@ -105,27 +105,31 @@ namespace ObsAutoRecorder
 			if (!Directory.Exists(USER_DATA))
 				Directory.CreateDirectory(USER_DATA);
 
-
+			if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
+				File.Create(Path.Combine(USER_DATA, RECORD_LIST));
 
 			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
 			OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
-			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug logging");
+			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", true, null, "Enable debug with more verbose logging");
+			
 			RecordByBPThreshold = OBSAutoRecorderSettings.CreateEntry("BP Threshold", 0, "BP", "Record players with BP greater than value. 0 = disabled");
-			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("Enable Auto Rename", false, null, "Enable automatic renaming of recorded files");
+			
+			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("Enable Auto Rename", true, null, "Enable automatic renaming of recorded files");
 			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
 			DateFormat = OBSAutoRecorderSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = OBSAutoRecorderSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
 			ReplayPrefix = OBSAutoRecorderSettings.CreateEntry("Replay Prefix", "R- ", null, "String to prefix replay buffers with.");
 			AddChapterMarkers = OBSAutoRecorderSettings.CreateEntry("Chapter Markers", false, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
+			
 			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording paused until auto stop");
 			PauseAfterMatch = OBSAutoRecorderSettings.CreateEntry("Pause recording after match", false, null, "Pause recording when not fighting recordable player. Replay buffer will not work when paused");
+			
 			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator");
 			//PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
 			//AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
 
-			if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
-				File.Create(Path.Combine(USER_DATA, RECORD_LIST));
+			
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
@@ -243,7 +247,6 @@ namespace ObsAutoRecorder
 				BuildPlayerIndicators();
 			}
 
-			Log("Starting poll for player tags...", true);
 			if (SceneName == "gym" || SceneName == "park")
 			{
 				if (isFirstLoad)
@@ -334,23 +337,7 @@ namespace ObsAutoRecorder
 
 		}
 
-		private List<TagHolder> GetPlayerTags()
-		{
-			List<TagHolder> friendInfos = new();
 
-			for (int i = 0; i < TagFrame.transform.childCount; i++)
-			{
-				TagHolder friendInfo = new TagHolder();
-				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
-				friendInfos.Add(friendInfo);
-				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
-				{
-					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
-				});
-			}
-			return friendInfos;
-
-		}
 
 		private IEnumerator DebounceCoRoutine(TagHolder holder)
 		{
