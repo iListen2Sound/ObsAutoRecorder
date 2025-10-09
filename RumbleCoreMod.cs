@@ -38,7 +38,7 @@ namespace ObsAutoRecorder
 		public const string Author = "iListen2Sound";
 		public const string Version = "1.0.0";
 	}
-	public class ObsAutoRecorder : MelonMod
+	public partial class ObsAutoRecorder : MelonMod
 	{
 		//Hold button location 
 		//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
@@ -67,20 +67,6 @@ namespace ObsAutoRecorder
 		private bool _isPolling = false;
 		bool _sceneIsLoaded = false;
 
-		private GameObject TagFrame;
-		private List<TagHolder> _displayedFriendTags = new();
-		private GameObject HoldButton;
-		private List<GameObject> HoldButtons = new();
-		private GameObject LogoPack { get; set; }
-		private GameObject PauseIcon { get; set; }
-		private GameObject RecordIcon { get; set; }
-		private GameObject OBSIcon { get; set; }
-		private GameObject MinimalLogo { get; set; }
-
-		private GameObject _scrollBar;
-		private GameObject PlayerUi;
-		private GameObject _recordingIndicatorBase;
-		//private GameObject _recordingIndicator;
 
 
 
