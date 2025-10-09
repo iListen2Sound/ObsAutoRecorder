@@ -63,16 +63,7 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<int> RecordByBPThreshold;
 		private List<string> AutoRecordList { get; set; } = new();
 
-		bool isFirstLoad = true;
-		private bool _isPolling = false;
-		bool _sceneIsLoaded = false;
 
-
-
-
-		private List<string> _previousList = new();
-		private GameObject _selectedTag = new();
-		private TagHolder _selectedFriend;
 
 		private static GameObject IndicatorsBase;
 		RequestResponse.GetRecordStatus getRecordStatus = new();
@@ -263,12 +254,14 @@ namespace ObsAutoRecorder
 			{
 				BuildPlayerIndicators();
 			}
+
 			Log("Starting poll for player tags...", true);
 			if (SceneName == "gym" || SceneName == "park")
 			{
 				if (isFirstLoad)
+				{
 					FirstLoad();
-				
+				}
 
 				
 
@@ -292,25 +285,7 @@ namespace ObsAutoRecorder
 					});
 				}
 
-
-				_selectedFriend = new TagHolder() { TagObject = _selectedTag };
-				_displayedFriendTags = GetPlayerTags();
-				if (_pollTagsCor != null)
-				{
-					MelonCoroutines.Stop(_pollTagsCor);
-					_pollTagsCor = null;
-				}
-				_pollTagsCor = MelonCoroutines.Start(PollPlayerTagsCoroutine());
-
-
-				_selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
-				{
-					if (_selectedFriend.WasPressed)
-						return;
-
-					MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
-					ToggleAutoRecord(_selectedFriend);
-				});
+				BuildTagHolders();
 
 				isFirstLoad = false;
 			}
@@ -771,10 +746,10 @@ namespace ObsAutoRecorder
 				Log("AutoRename disabled. Saving file as-is");
 			}
 
-				//Reset recording states
+			//Reset recording states
 
-				//IsRecording = false;
-				IsPaused = false;
+			//IsRecording = false;
+			IsPaused = false;
 			ModInitiatedRecording = false;
 			ModInitiatedPause = false;
 			QueuedForStopping = false;

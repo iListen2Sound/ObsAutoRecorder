@@ -44,6 +44,17 @@ namespace ObsAutoRecorder
 		private GameObject _recordingIndicatorBase;
 		//private GameObject _recordingIndicator;
 
+        bool isFirstLoad = true;
+		private bool _isPolling = false;
+		bool _sceneIsLoaded = false;
+
+
+
+
+		private List<string> _previousList = new();
+		private GameObject _selectedTag = new();
+		private TagHolder _selectedFriend;
+
         private void FirstLoad()
         {
             LogoPack = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "logopack"));
@@ -91,10 +102,29 @@ namespace ObsAutoRecorder
             MinimalLogo.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
             MinimalLogo.SetActive(false);
         }
-        
-        private void LoadSceneGameObjects()
+
+        private void BuildTagHolders()
         {
-            
+            _selectedFriend = new TagHolder() { TagObject = _selectedTag };
+				_displayedFriendTags = GetPlayerTags();
+				if (_pollTagsCor != null)
+				{
+					MelonCoroutines.Stop(_pollTagsCor);
+					_pollTagsCor = null;
+				}
+				_pollTagsCor = MelonCoroutines.Start(PollPlayerTagsCoroutine());
+
+
+				_selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+				{
+					if (_selectedFriend.WasPressed)
+						return;
+
+					MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
+					ToggleAutoRecord(_selectedFriend);
+				});
         }
+
+        
     }
 }
