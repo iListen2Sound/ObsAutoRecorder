@@ -44,6 +44,24 @@ namespace ObsAutoRecorder
 		private GameObject _recordingIndicatorBase;
 		//private GameObject _recordingIndicator;
 
+        private void FirstLoad()
+        {
+            LogoPack = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "logopack"));
+            GameObject.DontDestroyOnLoad(LogoPack);
+            LogoPack.SetActive(false);
+
+
+            IndicatorsBase = LogoPack.transform.GetChild(1).gameObject;
+            IndicatorsBase.SetName("OBS Logo");
+            GameObject.DontDestroyOnLoad(IndicatorsBase);
+            //_recordingIndicatorBase = GameObject.Instantiate(IndicatorsBase);
+            //_recordingIndicatorBase.SetActive(false);
+            IndicatorsBase.transform.GetChild(0).GetComponent<RawImage>().color = Color.black;
+
+            IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+
+            IndicatorsBase.SetActive(false);
+        }
         private void LoadSceneGameObjects()
         {
             
