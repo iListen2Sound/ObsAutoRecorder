@@ -112,24 +112,24 @@ namespace ObsAutoRecorder
 			OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", true, null, "Enable debug with more verbose logging");
-			
+
 			RecordByBPThreshold = OBSAutoRecorderSettings.CreateEntry("BP Threshold", 0, "BP", "Record players with BP greater than value. 0 = disabled");
-			
+
 			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("Enable Auto Rename", true, null, "Enable automatic renaming of recorded files");
 			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
 			DateFormat = OBSAutoRecorderSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = OBSAutoRecorderSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
 			ReplayPrefix = OBSAutoRecorderSettings.CreateEntry("Replay Prefix", "R- ", null, "String to prefix replay buffers with.");
 			AddChapterMarkers = OBSAutoRecorderSettings.CreateEntry("Chapter Markers", false, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
-			
+
 			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording paused until auto stop");
 			PauseAfterMatch = OBSAutoRecorderSettings.CreateEntry("Pause recording after match", false, null, "Pause recording when not fighting recordable player. Replay buffer will not work when paused");
-			
+
 			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator");
 			//PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
 			//AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
 
-			
+
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
@@ -169,6 +169,7 @@ namespace ObsAutoRecorder
 			OBS.onRecordingStopped += onRecordStop;
 			OBS.onRecordingStarted += onRecordStart;
 			OBS.onRecordingResumed += onRecordResume;
+
 			OBS.onConnect += onConnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
 
@@ -224,7 +225,7 @@ namespace ObsAutoRecorder
 		private void OnMapInitialized()
 		{
 
-			Log(SceneName, false);
+
 
 
 			//addButtonsToFriendsScreen();
@@ -242,19 +243,21 @@ namespace ObsAutoRecorder
 				TagFrame = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
 			}
 
-			if(SceneName != "loader")
+			if (SceneName != "loader")
 			{
+				Log($"{isFirstLoad}", true, 1);
+				if (isFirstLoad)
+				{
+					FirstLoad();
+				}
 				BuildPlayerIndicators();
 			}
 
 			if (SceneName == "gym" || SceneName == "park")
 			{
-				if (isFirstLoad)
-				{
-					FirstLoad();
-				}
 
-				
+
+
 
 				for (int i = 0; i < 4; i++)
 				{
@@ -551,26 +554,26 @@ namespace ObsAutoRecorder
 						success = true;
 						Log($"Recording renamed to: {newFileName}", false);
 					}
-					
+
 					catch (IOException ex)
 					{
-						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", false, 2);
-						
-						
+						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
+
+
 					}
-					catch(System.Exception ex)
+					catch (System.Exception ex)
 					{
-						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", false, 2);
-						
+						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
+
 
 					}
 				}
-				if(!success)
+				if (!success)
 				{
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
 			});
-			
+
 
 			return newPath;
 		}

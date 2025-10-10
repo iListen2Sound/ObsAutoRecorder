@@ -26,13 +26,13 @@ using static OBS_Control_API.RequestResponse;
 
 namespace ObsAutoRecorder
 {
-	
+
 	public partial class ObsAutoRecorder : MelonMod
 	{
 
-        //OBS Recording states
+		//OBS Recording states
 		private string CurrentOrLastRecordedPlayer { get; set; } = "";
-		private string NewWaitingPlayer {get; set;} = "";
+		private string NewWaitingPlayer { get; set; } = "";
 		private bool IsRecording { get; set; } = false;
 		private bool IsPaused { get; set; } = false;
 		private bool ModInitiatedRecording { get; set; } = false;
@@ -40,14 +40,14 @@ namespace ObsAutoRecorder
 		private bool QueuedForStopping { get; set; } = false;
 		private bool ModInitiatedStop { get; set; } = false;
 		private bool IsWaitingForStop { get; set; } = false;
-		
+
 
 
 		private bool StartRequestedByMod = false;
 		private bool StopRequestedByMod = false;
 		private bool PauseRequestedByMod = false;
 
-        private void SetRecordingState()
+		private void SetRecordingState()
 		{
 			if (!OBS.IsConnected())
 			{
@@ -68,11 +68,11 @@ namespace ObsAutoRecorder
 		}
 		private void WhenInGym()
 		{
-			if (OBS.IsRecordingActive() &&ModInitiatedRecording)
+			if ((OBS.IsRecordingActive() || IsPaused) && ModInitiatedRecording)
 			{
 				if (!QueuedForStopping)
 				{
- 
+
 					if (PauseAfterMatch.Value)
 					{
 						PauseRecording();
@@ -101,47 +101,30 @@ namespace ObsAutoRecorder
 			int oppBp = opp.Data.GeneralData.BattlePoints;
 
 			string opponentInfo = $"{oppId} - {oppName}";
-			
 
-			if (ModInitiatedRecording && (CurrentOrLastRecordedPlayer.Split(" - ")[0] == oppId))
+			if (IsAutoRecordable(oppId, oppBp))
 			{
-				if(IsPaused)
+				QueuedForStopping = false;
+				if (!(_recordingWaitCor is null))
 				{
-					ResumeRecording();
+					MelonCoroutines.Stop(_recordingWaitCor);
+					_recordingWaitCor = null;
 				}
-			}
-			else
-			{
-				if (ModInitiatedRecording)
+
+				if (CurrentOrLastRecordedPlayer.Split(" - ")[0] == oppId && ModInitiatedRecording)
 				{
-
-					if (IsAutoRecordable(oppId, oppBp))
+					Log($"Found previous opponent {oppName}. ");
+					if (IsPaused)
 					{
-						NewWaitingPlayer = CurrentOrLastRecordedPlayer;
-						StopRecording();
-						Log($"Replacing opponent recording", true);
-						Log($"_recordingWaitCor is null: {_recordingWaitCor is null}");
-
-						
-						/*if (!(_recordingWaitCor is null))
-						{
-
-							MelonCoroutines.Stop(StartRecordingAfterStopCoroutine());
-							_recordingWaitCor = null;
-						}
-
-						_recordingWaitCor = MelonCoroutines.Start(StartRecordingAfterStopCoroutine());*/
-
+						Log($"Resuming recording");
+						ResumeRecording();
 					}
 				}
-			}
-			
-			else
-			{
-				if (IsAutoRecordable(oppId, oppBp))
+				else
 				{
-					Log($"Recording started through onMapInitialized", true);
-					StartRecording(opponentInfo);
+					Log($"Found new opponent: {opponentInfo}. Replacing current recording", true);
+					NewWaitingPlayer = opponentInfo;
+					StopRecording();
 				}
 			}
 		}
@@ -157,7 +140,7 @@ namespace ObsAutoRecorder
 			return false;
 		}
 
-        private void StartRecording(string playerID = "")
+		private void StartRecording(string playerID = "")
 		{
 
 			if (OBS.IsRecordingActive() || IsPaused)
@@ -170,6 +153,7 @@ namespace ObsAutoRecorder
 			StartRequestedByMod = true;
 			Log($"Starting recording for: {playerID}", false);
 			CurrentOrLastRecordedPlayer = playerID;
+			QueuedForStopping = false;
 			OBS.StartRecord();
 		}
 
@@ -283,9 +267,9 @@ namespace ObsAutoRecorder
 				_stopQueueCor = null;
 			}
 
-			if(NewWaitingPlayer != "")
+			if (NewWaitingPlayer != "")
 			{
-				StartRecording(NewWaitingPlayer());
+				StartRecording(NewWaitingPlayer);
 				Log($"Recording Started by onRecordingStop for {NewWaitingPlayer}", true);
 				NewWaitingPlayer = "";
 			}
@@ -320,5 +304,5 @@ namespace ObsAutoRecorder
 				Log("Adding Chapter Marker", true);
 			}
 		}
-    }
+	}
 }

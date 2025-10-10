@@ -25,19 +25,8 @@ using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
 
 
-[assembly: MelonInfo(typeof(ObsAutoRecorder.ObsAutoRecorder), ObsAutoRecorder.BuildInfo.Name, ObsAutoRecorder.BuildInfo.Version, ObsAutoRecorder.BuildInfo.Author)]
-[assembly: MelonGame("Buckethead Entertainment", "RUMBLE")]
-[assembly: MelonAuthorColor(255, 87, 166, 80)]
-[assembly: MelonColor(255, 87, 166, 80)]
-
 namespace ObsAutoRecorder
 {
-	public static class BuildInfo
-	{
-		public const string Name = "ObsAutoRecorder";
-		public const string Author = "iListen2Sound";
-		public const string Version = "1.0.0";
-	}
 	public class TagHolder : MelonMod
 	{
 		//ideal location for autorecord status 0.2391 -0.0336 -0.0091

@@ -25,10 +25,10 @@ using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
 namespace ObsAutoRecorder
 {
-	
+
 	public partial class ObsAutoRecorder : MelonMod
 	{
-        
+
 		private GameObject TagFrame;
 		private List<TagHolder> _displayedFriendTags = new();
 		private GameObject HoldButton;
@@ -44,7 +44,7 @@ namespace ObsAutoRecorder
 		private GameObject _recordingIndicatorBase;
 		//private GameObject _recordingIndicator;
 
-        bool isFirstLoad = true;
+		bool isFirstLoad = true;
 		private bool _isPolling = false;
 		bool _sceneIsLoaded = false;
 
@@ -55,77 +55,80 @@ namespace ObsAutoRecorder
 		private GameObject _selectedTag = new();
 		private TagHolder _selectedFriend;
 
-        private void FirstLoad()
-        {
-            LogoPack = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "logopack"));
-            GameObject.DontDestroyOnLoad(LogoPack);
-            LogoPack.SetActive(false);
+		private void FirstLoad()
+		{
+			LogoPack = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "logopack"));
+			Log("LogoPack loaded", true);
+			GameObject.DontDestroyOnLoad(LogoPack);
+			LogoPack.SetActive(false);
 
 
-            IndicatorsBase = LogoPack.transform.GetChild(1).gameObject;
-            IndicatorsBase.SetName("OBS Logo");
-            GameObject.DontDestroyOnLoad(IndicatorsBase);
-            //_recordingIndicatorBase = GameObject.Instantiate(IndicatorsBase);
-            //_recordingIndicatorBase.SetActive(false);
-            IndicatorsBase.transform.GetChild(0).GetComponent<RawImage>().color = Color.black;
+			IndicatorsBase = LogoPack.transform.GetChild(1).gameObject;
+			IndicatorsBase.SetName("OBS Logo");
+			GameObject.DontDestroyOnLoad(IndicatorsBase);
+			//_recordingIndicatorBase = GameObject.Instantiate(IndicatorsBase);
+			//_recordingIndicatorBase.SetActive(false);
+			IndicatorsBase.transform.GetChild(0).GetComponent<RawImage>().color = Color.black;
 
-            IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+			IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
 
-            IndicatorsBase.SetActive(false);
-        }
+			IndicatorsBase.SetActive(false);
+		}
 
-        private void BuildPlayerIndicators()
-        {
-            PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(6).GetChild(0).gameObject;
+		private void BuildPlayerIndicators()
+		{
+			PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(6).GetChild(0).gameObject;
+			Log("PlayerUI loaded", true);
+			OBSIcon = GameObject.Instantiate(LogoPack.transform.GetChild(0).gameObject);
+			Log("OBSIcon loaded", true);
+			PauseIcon = OBSIcon.transform.GetChild(0).gameObject;
+			Log("PauseIcon loaded", true);
+			PauseIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
+			PauseIcon.transform.localRotation = Quaternion.Euler(270, 0, 0);
+			RecordIcon = OBSIcon.transform.GetChild(1).gameObject;
+			RecordIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
+			OBSIcon.transform.SetParent(PlayerUi.transform, false);
+			//-0.24 0.035 0.945
+			OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
 
-            OBSIcon = GameObject.Instantiate(LogoPack.transform.GetChild(0).gameObject);
-            PauseIcon = OBSIcon.transform.GetChild(0).gameObject;
-            PauseIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-            PauseIcon.transform.localRotation = Quaternion.Euler(270, 0, 0);
-            RecordIcon = OBSIcon.transform.GetChild(1).gameObject;
-            RecordIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-            OBSIcon.transform.SetParent(PlayerUi.transform, false);
-            //-0.24 0.035 0.945
-            OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
+			//70.0001 155 180
+			OBSIcon.transform.localRotation = Quaternion.Euler(70, 155, 180);
+			OBSIcon.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
+			OBSIcon.SetActive(false);
 
-            //70.0001 155 180
-            OBSIcon.transform.localRotation = Quaternion.Euler(70, 155, 180);
-            OBSIcon.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
-            OBSIcon.SetActive(false);
+			MinimalLogo = GameObject.Instantiate(LogoPack.transform.GetChild(2).GetChild(0).gameObject);
+			MinimalLogo.transform.SetParent(PlayerUi.transform, false);
+			MinimalLogo.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
+			//20 335 0
+			MinimalLogo.transform.localRotation = Quaternion.Euler(70, 155, 180);
+			//0.03 0.03 0.001
+			MinimalLogo.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
+			MinimalLogo.SetActive(false);
+		}
 
-            MinimalLogo = GameObject.Instantiate(LogoPack.transform.GetChild(2).GetChild(0).gameObject);
-            MinimalLogo.transform.SetParent(PlayerUi.transform, false);
-            MinimalLogo.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
-            //20 335 0
-            MinimalLogo.transform.localRotation = Quaternion.Euler(70, 155, 180);
-            //0.03 0.03 0.001
-            MinimalLogo.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
-            MinimalLogo.SetActive(false);
-        }
-
-        private void BuildTagHolders()
-        {
-            _selectedFriend = new TagHolder() { TagObject = _selectedTag };
-            _displayedFriendTags = GetPlayerTags();
-            if (_pollTagsCor != null)
-            {
-                MelonCoroutines.Stop(_pollTagsCor);
-                _pollTagsCor = null;
-            }
-            _pollTagsCor = MelonCoroutines.Start(PollPlayerTagsCoroutine());
+		private void BuildTagHolders()
+		{
+			_selectedFriend = new TagHolder() { TagObject = _selectedTag };
+			_displayedFriendTags = GetPlayerTags();
+			if (_pollTagsCor != null)
+			{
+				MelonCoroutines.Stop(_pollTagsCor);
+				_pollTagsCor = null;
+			}
+			_pollTagsCor = MelonCoroutines.Start(PollPlayerTagsCoroutine());
 
 
-            _selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
-            {
-                if (_selectedFriend.WasPressed)
-                    return;
+			_selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+			{
+				if (_selectedFriend.WasPressed)
+					return;
 
-                MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
-                ToggleAutoRecord(_selectedFriend);
-            });
-        }
+				MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
+				ToggleAutoRecord(_selectedFriend);
+			});
+		}
 
-        private List<TagHolder> GetPlayerTags()
+		private List<TagHolder> GetPlayerTags()
 		{
 			List<TagHolder> friendInfos = new();
 
@@ -143,6 +146,6 @@ namespace ObsAutoRecorder
 
 		}
 
-        
-    }
+
+	}
 }
