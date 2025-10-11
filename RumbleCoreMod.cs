@@ -38,116 +38,6 @@ namespace ObsAutoRecorder
 		public const string Author = "iListen2Sound";
 		public const string Version = "1.0.0";
 	}
-	public class TagHolder : MelonMod
-	{
-		//ideal location for autorecord status 0.2391 -0.0336 -0.0091
-		//friendblock path --------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Friend Screen/Player Tags/Player Tag 2.0/InteractionButton/Meshes/
-		//status block location: playertag 0 0 0 
-		public bool WasPressed { get; set; } = false;
-
-		public GameObject RecordIconBlock { get; private set; }
-		public GameObject RecordIcon { get; private set; }
-
-
-		private bool _autoRecordable = false;
-
-		public GameObject InteractionButton
-		{
-			get
-			{
-				return _tagObject.transform.GetChild(0).gameObject;
-			}
-		}
-		/// <summary>
-		/// Gets or sets a value indicating whether automatic recording is enabled.
-		/// </summary>
-		/// <remarks>When set to <see langword="true"/>, the UI updates to reflect the auto-recording status. Changing
-		/// this property may affect the appearance of the record icon.</remarks>
-		public bool AutoRecordable
-		{
-			get { return _autoRecordable; }
-			set
-			{
-				_autoRecordable = value;
-				Color statusColor = _autoRecordable ? new Color(0.45f, 0.31f, 0.22f, 1f) : new Color(0.56f, 0.52f, 0.4f, 1f);
-				RecordIcon.transform.GetChild(0).GetComponent<RawImage>().color = statusColor;
-			}
-		}
-		public string PlayFabID
-		{
-			get
-			{
-				return _tagObject.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
-			}
-		}
-		public string PublicName
-		{
-			get
-			{
-				return Sanitize(_tagObject.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName);
-			}
-		}
-		/*public GameObject StatusIcon
-		{
-			get
-			{
-				return _tagObject.transform.GetChild(0).GetChild(1).GetChild(3).GetChild(0).gameObject;
-			}
-		}*/
-		private GameObject _tagObject;
-
-		/// <summary>
-		/// Returns a string that represents the current object, including the PlayFab ID and public name.
-		/// </summary>
-		/// <returns>A string in the format "PlayFabID - PublicName" representing the current object.</returns>
-		public override string ToString()
-		{
-			return $"{PlayFabID} - {PublicName}";
-		}
-
-		public GameObject TagObject
-		{
-			get { return _tagObject; }
-			set
-			{
-				_tagObject = value;
-				ObsAutoRecorder.Instance.Log($"TagObject set for {PublicName}", true);
-				CreateAutoRecordBlock();
-			}
-		}
-
-		private void CreateAutoRecordBlock()
-		{
-			RecordIconBlock = GameObject.Instantiate(TagObject.transform.GetChild(0).GetChild(0).GetChild(0).gameObject);
-
-			RecordIconBlock.transform.SetParent(TagObject.transform.GetChild(0).GetChild(0), false);
-			RecordIconBlock.transform.localPosition = new Vector3(0.2391f, -0.0336f, -0.0091f);
-
-			RecordIcon = ObsAutoRecorder.GetIndicator();
-			RecordIcon.transform.SetParent(RecordIconBlock.transform, false);
-			RecordIcon.SetActive(true);
-			RecordIcon.transform.localPosition = new Vector3(0, 0.5f, 0);
-			//0.0085 0.0085 0.0085
-			RecordIcon.transform.localScale = new Vector3(0.0085f, 0.0085f, 0.0085f);
-			RecordIcon.transform.localRotation = Quaternion.Euler(90, 0, 0);
-			//new Color (R = .45, G = .31, B = .22)
-			AutoRecordable = false;
-
-		}
-
-		public TagHolder()
-		{
-
-
-		}
-
-		public static string Sanitize(string Input)
-		{
-
-			string pattern = @"<[^>]*>";
-			return Regex.Replace(Input, pattern, string.Empty);
-		}
-	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
 		//Hold button location 
@@ -171,50 +61,14 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
 		private MelonPreferences_Entry<bool> PreferMinimalIcon;
 		private MelonPreferences_Entry<int> RecordByBPThreshold;
+		private MelonPreferences_Entry<bool> PauseAfterMatch;
 		private List<string> AutoRecordList { get; set; } = new();
 
-		bool isFirstLoad = true;
-		private bool _isPolling = false;
-		bool _sceneIsLoaded = false;
 
-		private GameObject TagFrame;
-		private List<TagHolder> _displayedFriendTags = new();
-		private GameObject HoldButton;
-		private List<GameObject> HoldButtons = new();
-		private GameObject LogoPack { get; set; }
-		private GameObject PauseIcon { get; set; }
-		private GameObject RecordIcon { get; set; }
-		private GameObject OBSIcon { get; set; }
-		private GameObject MinimalLogo { get; set; }
-
-		private GameObject _scrollBar;
-		private GameObject PlayerUi;
-		private GameObject _recordingIndicatorBase;
-		//private GameObject _recordingIndicator;
-
-
-
-		private List<string> _previousList = new();
-		private GameObject _selectedTag = new();
-		private TagHolder _selectedFriend;
 
 		private static GameObject IndicatorsBase;
 		RequestResponse.GetRecordStatus getRecordStatus = new();
 
-		//OBS Recording states
-		private string CurrentOrLastRecordedPlayer { get; set; } = "";
-		private bool IsRecording { get; set; } = false;
-		private bool IsPaused { get; set; } = false;
-		private bool ModInitiatedRecording { get; set; } = false;
-		private bool ModInitiatedPause { get; set; } = false;
-		private bool QueuedForStopping { get; set; } = false;
-		private bool ModInitiatedStop { get; set; } = false;
-		private bool IsWaitingForStop { get; set; } = false;
-
-
-		private bool StartRequestedByMod = false;
-		private bool StopRequestedByMod = false;
-		private bool PauseRequestedByMod = false;
 
 
 		private Color pauseColor = new Color(1f, 1f, 0f, 0.75f);
@@ -251,26 +105,31 @@ namespace ObsAutoRecorder
 			if (!Directory.Exists(USER_DATA))
 				Directory.CreateDirectory(USER_DATA);
 
-
+			if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
+				File.Create(Path.Combine(USER_DATA, RECORD_LIST));
 
 			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
 			OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
-			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug logging");
-			RecordByBPThreshold = OBSAutoRecorderSettings.CreateEntry("BP Threshold", 0, "BP", "Record players with BP greater than value. 0 = disabled");
-			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("Enable Auto Rename", false, null, "Enable automatic renaming of recorded files");
+			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", true, null, "Enable debug with more verbose logging");
+
+			RecordByBPThreshold = OBSAutoRecorderSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
+
+			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("Enable Auto Rename", true, null, "Enable automatic renaming of recorded files");
 			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
 			DateFormat = OBSAutoRecorderSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = OBSAutoRecorderSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
 			ReplayPrefix = OBSAutoRecorderSettings.CreateEntry("Replay Prefix", "R- ", null, "String to prefix replay buffers with.");
 			AddChapterMarkers = OBSAutoRecorderSettings.CreateEntry("Chapter Markers", false, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
+
 			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording paused until auto stop");
+			PauseAfterMatch = OBSAutoRecorderSettings.CreateEntry("Pause recording after match", false, null, "Pause recording when not fighting recordable player. Replay buffer will not work when paused");
+
 			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator");
 			//PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
 			//AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
 
-			if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
-				File.Create(Path.Combine(USER_DATA, RECORD_LIST));
+
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
@@ -310,6 +169,7 @@ namespace ObsAutoRecorder
 			OBS.onRecordingStopped += onRecordStop;
 			OBS.onRecordingStarted += onRecordStart;
 			OBS.onRecordingResumed += onRecordResume;
+
 			OBS.onConnect += onConnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
 			OBS.onRecordFileChanged += onRecordFileChanged;
@@ -366,7 +226,7 @@ namespace ObsAutoRecorder
 		private void OnMapInitialized()
 		{
 
-			Log(SceneName, false);
+
 
 
 			//addButtonsToFriendsScreen();
@@ -383,55 +243,22 @@ namespace ObsAutoRecorder
 				_selectedTag = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
 				TagFrame = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
 			}
-			Log("Starting poll for player tags...", true);
-			if (SceneName == "gym" || SceneName == "park")
+
+			if (SceneName != "loader")
 			{
+				
 				if (isFirstLoad)
 				{
-					LogoPack = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "logopack"));
-					GameObject.DontDestroyOnLoad(LogoPack);
-					LogoPack.SetActive(false);
-
-
-					IndicatorsBase = LogoPack.transform.GetChild(1).gameObject;
-					IndicatorsBase.SetName("OBS Logo");
-					GameObject.DontDestroyOnLoad(IndicatorsBase);
-					//_recordingIndicatorBase = GameObject.Instantiate(IndicatorsBase);
-					//_recordingIndicatorBase.SetActive(false);
-					IndicatorsBase.transform.GetChild(0).GetComponent<RawImage>().color = Color.black;
-
-					IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-
-					IndicatorsBase.SetActive(false);
-
-
-
+					FirstLoad();
 				}
-				PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(6).GetChild(0).gameObject;
+				BuildPlayerIndicators();
+			}
 
-				OBSIcon = GameObject.Instantiate(LogoPack.transform.GetChild(0).gameObject);
-				PauseIcon = OBSIcon.transform.GetChild(0).gameObject;
-				PauseIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-				PauseIcon.transform.localRotation = Quaternion.Euler(270, 0, 0);
-				RecordIcon = OBSIcon.transform.GetChild(1).gameObject;
-				RecordIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-				OBSIcon.transform.SetParent(PlayerUi.transform, false);
-				//-0.24 0.035 0.945
-				OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
+			if (SceneName == "gym" || SceneName == "park")
+			{
 
-				//70.0001 155 180
-				OBSIcon.transform.localRotation = Quaternion.Euler(70, 155, 180);
-				OBSIcon.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
-				OBSIcon.SetActive(false);
 
-				MinimalLogo = GameObject.Instantiate(LogoPack.transform.GetChild(2).GetChild(0).gameObject);
-				MinimalLogo.transform.SetParent(PlayerUi.transform, false);
-				MinimalLogo.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
-				//20 335 0
-				MinimalLogo.transform.localRotation = Quaternion.Euler(70, 155, 180);
-				//0.03 0.03 0.001
-				MinimalLogo.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
-				MinimalLogo.SetActive(false);
+
 
 				for (int i = 0; i < 4; i++)
 				{
@@ -453,25 +280,7 @@ namespace ObsAutoRecorder
 					});
 				}
 
-
-				_selectedFriend = new TagHolder() { TagObject = _selectedTag };
-				_displayedFriendTags = GetPlayerTags();
-				if (_pollTagsCor != null)
-				{
-					MelonCoroutines.Stop(_pollTagsCor);
-					_pollTagsCor = null;
-				}
-				_pollTagsCor = MelonCoroutines.Start(PollPlayerTagsCoroutine());
-
-
-				_selectedFriend.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
-				{
-					if (_selectedFriend.WasPressed)
-						return;
-
-					MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
-					ToggleAutoRecord(_selectedFriend);
-				});
+				BuildTagHolders();
 
 				isFirstLoad = false;
 			}
@@ -532,23 +341,7 @@ namespace ObsAutoRecorder
 
 		}
 
-		private List<TagHolder> GetPlayerTags()
-		{
-			List<TagHolder> friendInfos = new();
 
-			for (int i = 0; i < TagFrame.transform.childCount; i++)
-			{
-				TagHolder friendInfo = new TagHolder();
-				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
-				friendInfos.Add(friendInfo);
-				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
-				{
-					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
-				});
-			}
-			return friendInfos;
-
-		}
 
 		private IEnumerator DebounceCoRoutine(TagHolder holder)
 		{
@@ -645,7 +438,7 @@ namespace ObsAutoRecorder
 			Log($"{targets.Count()}", true);
 
 			bool result = targets.Count > 0;
-			Log($"Checking {playFabID} if autorecordable: {result}", true);
+			Log($"Checking {playFabID} if in auto record list: {result}", true);
 			return result;
 		}
 		/// <summary>
@@ -662,10 +455,10 @@ namespace ObsAutoRecorder
 			switch (logLevel)
 			{
 				case 1:
-					LoggerInstance.Warning(message);
+					LoggerInstance.Warning("Warn: " + message);
 					break;
 				case 2:
-					LoggerInstance.Error(message);
+					LoggerInstance.Error("Error: " + message);
 					break;
 				default:
 					LoggerInstance.Msg(message);
@@ -674,107 +467,7 @@ namespace ObsAutoRecorder
 		}
 
 
-		private void SetRecordingState()
-		{
-			if (!OBS.IsConnected())
-			{
-				Log("No active websocket connection to OBS detected", false, 1);
-				return;
-			}
 
-			if (SceneName == "gym")
-			{
-				WhenInGym();
-			}
-
-
-			if (SceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
-			{
-				WhenInArena();
-			}
-		}
-		private void WhenInGym()
-		{
-			if (OBS.IsRecordingActive())
-			{
-				if (ModInitiatedRecording)
-				{
-					if (!QueuedForStopping && !IsPaused)
-					{
-						PauseRecording();
-						QueuedForStopping = true;
-						if (_stopQueueCor != null)
-						{
-							MelonCoroutines.Stop(_stopQueueCor);
-							_stopQueueCor = null;
-						}
-						Log("Starting Stop Hold Coroutine");
-						_stopQueueCor = MelonCoroutines.Start(RecordingHoldCoroutine(RecordingPauseHoldTimeout.Value));
-					}
-					else { Log($"Hold not started. QueuedForStopping = {QueuedForStopping}, IsPaused: {IsPaused}"); }
-				}
-				else { Log($"Recording not initiated by mod. No action", true); }
-			}
-		}
-
-
-		private void WhenInArena()
-		{
-			var opp = PlayerManager.instance.AllPlayers[1];
-			var oppId = opp?.Data?.GeneralData?.PlayFabMasterId;
-			var oppName = opp?.Data?.GeneralData?.PublicUsername ?? "Unknown";
-			int oppBp = opp.Data.GeneralData.BattlePoints;
-
-			string opponentInfo = $"{oppId} - {oppName}";
-			if (IsPaused)
-			{
-
-				if (ModInitiatedPause && (CurrentOrLastRecordedPlayer.Split(" - ")[0] == oppId))
-				{
-					ResumeRecording();
-				}
-				else
-				{
-					if (ModInitiatedPause)
-					{
-
-						if (IsAutoRecordable(oppId, oppBp))
-						{
-							StopRecording();
-							Log($"Replacing opponent recording", true);
-							Log($"_recordingWaitCor is null: {_recordingWaitCor is null}");
-							if (!(_recordingWaitCor is null))
-							{
-
-								MelonCoroutines.Stop(StartRecordingAfterStopCoroutine());
-								_recordingWaitCor = null;
-							}
-
-							_recordingWaitCor = MelonCoroutines.Start(StartRecordingAfterStopCoroutine());
-						}
-					}
-				}
-			}
-			else
-			{
-				if (IsAutoRecordable(oppId, oppBp))
-				{
-					Log($"Recording started through onMapInitialized", true);
-					StartRecording(opponentInfo);
-				}
-			}
-		}
-
-		private bool IsAutoRecordable(string opponentInfo, int opponentBP)
-		{
-			if (IsInAutoRecordList(opponentInfo)) { return true; }
-
-			if (RecordByBPThreshold.Value == 0) { return false; }
-
-			if (opponentBP >= RecordByBPThreshold.Value) { return true; }
-
-			return false;
-		}
 
 		private IEnumerator StartRecordingAfterStopCoroutine()
 		{
@@ -821,170 +514,7 @@ namespace ObsAutoRecorder
 		/// </summary>
 		/// <param name="playerID">ID - PublicName of other player loaded in the park</param>
 		/// <remarks>Sets ModInitiatedRecording to true</remarks>
-		private void StartRecording(string playerID = "")
-		{
 
-			if (OBS.IsRecordingActive() || IsPaused)
-			{
-				string pauseStatus = IsPaused ? "Paused " : "";
-				Log($"Recording already in progress or paused", false);
-
-				return;
-			}
-			StartRequestedByMod = true;
-			Log($"Starting recording for: {playerID}", false);
-			CurrentOrLastRecordedPlayer = playerID;
-			OBS.StartRecord();
-		}
-
-		private void StopRecording()
-		{
-			if (!(OBS.IsRecordingActive() || IsPaused))
-			{
-				Log("No recording in progress", true);
-				return;
-			}
-			StopRequestedByMod = true;
-			QueuedForStopping = false;
-
-			OBS.StopRecord();
-
-		}
-
-		private void PauseRecording()
-		{
-
-			if (!(OBS.IsRecordingActive() || IsPaused))
-			{
-				Log("No recording in progress", true);
-				return;
-			}
-			if (IsPaused)
-				return;
-			PauseRequestedByMod = true;
-			OBS.PauseRecord();
-		}
-
-		private void ResumeRecording()
-		{
-			OBS.ResumeRecord();
-			ModInitiatedPause = false;
-			QueuedForStopping = false;
-		}
-
-		private void onRecordPause()
-		{
-			IsPaused = true;
-			ModInitiatedPause = PauseRequestedByMod;
-			PauseRequestedByMod = false;
-			Log($"Recording paused for player: {CurrentOrLastRecordedPlayer}");
-		}
-		private void onRecordResume()
-		{
-			if (_stopQueueCor != null)
-			{
-				MelonCoroutines.Stop(_stopQueueCor);
-				_stopQueueCor = null;
-			}
-
-			Log("Starting Stop Hold Coroutine");
-			ModInitiatedRecording = true;
-			IsPaused = false;
-			QueuedForStopping = false;
-			Log($"Recording Resumed for player: {CurrentOrLastRecordedPlayer}");
-		}
-		private void onRecordStart(string outputPath)
-		{
-			if (_stopQueueCor != null)
-			{
-				MelonCoroutines.Stop(_stopQueueCor);
-				_stopQueueCor = null;
-			}
-
-			IsPaused = false;
-			//IsRecording = true;
-			ModInitiatedRecording = StartRequestedByMod;
-			StartRequestedByMod = false;
-			Log($"Recording started for: {outputPath}");
-		}
-
-		public string GetSafeFilename(string filename)
-		{
-
-			return string.Join("", filename.Split(Path.GetInvalidFileNameChars()));
-
-		}
-		private void onRecordStop(string outputPath)
-		{
-			Log($"onRecordStop ({outputPath})", true);
-			Log($"Recording saved to: {outputPath}");
-			ModInitiatedStop = StopRequestedByMod;
-			StopRequestedByMod = false;
-			if (!ModInitiatedStop)
-				Log("Recording stopped Externally", false, 1);
-			if (DoAutoRename.Value)
-			{
-				Log($"Recording renamed to {RenameOutput(outputPath, AutoRenameString.Value)}");
-
-			}
-			else
-			{
-				Log("AutoRename disabled. Saving file as-is");
-			}
-
-				//Reset recording states
-
-				//IsRecording = false;
-				IsPaused = false;
-			ModInitiatedRecording = false;
-			ModInitiatedPause = false;
-			QueuedForStopping = false;
-			ModInitiatedStop = false;
-			CurrentOrLastRecordedPlayer = "";
-			if (_stopQueueCor != null)
-			{
-				MelonCoroutines.Stop(_stopQueueCor);
-				_stopQueueCor = null;
-			}
-
-		}
-
-
-
-		private void onConnect()
-		{
-			//Use in case pause status is out of sync as in the case of starting the game with a paused OBS recording already running
-			GetRecordStatus recordStatus = OBS.GetRecordStatus();
-			Log($"GetRecordStatus: outputActive: {recordStatus.outputActive}, outputPaused: {recordStatus.outputPaused}");
-			IsPaused = recordStatus.outputPaused;
-
-			SetRecordingState();
-
-		}
-
-		private void onReplayBufferSaved(string outputPath)
-		{
-			Log($"Replay buffer saved to: {outputPath}");
-			string newFileName = outputPath;
-			newFileName = RenameOutput(outputPath, "R- " + AutoRenameString.Value);
-			newFileName = System.IO.Path.GetFileName(newFileName);
-			if (AddChapterMarkers.Value)
-			{
-				Log("Attempting to add chapter marker", true);
-				var param = new { chapterName = newFileName };
-				Task.Run(() => { OBS.SendRequest("CreateRecordChapter", param); Log("Chapter Marker Request Sent"); });
-
-				Log("Adding Chapter Marker", true);
-			}
-
-			
-
-		}
-
-		private void onRecordFileChanged(string output)
-		{
-			Log($"On record file changed called {output}", true);
-		}
 
 		private string RenameOutput(string oldOutputPath, string newName)
 		{
@@ -1025,26 +555,26 @@ namespace ObsAutoRecorder
 						success = true;
 						Log($"Recording renamed to: {newFileName}", false);
 					}
-					
+
 					catch (IOException ex)
 					{
-						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", false, 2);
-						
-						
+						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
+
+
 					}
-					catch(System.Exception ex)
+					catch (System.Exception ex)
 					{
-						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", false, 2);
-						
+						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
+
 
 					}
 				}
-				if(!success)
+				if (!success)
 				{
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
 			});
-			
+
 
 			return newPath;
 		}
