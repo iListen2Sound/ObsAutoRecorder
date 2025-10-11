@@ -22,6 +22,7 @@ using UnityEngine.UIElements;
 using UnityEngine.Video;
 using Il2CppSteamworks;
 using System.Threading.Tasks;
+using System.Threading;
 using static OBS_Control_API.RequestResponse;
 
 namespace ObsAutoRecorder
@@ -39,7 +40,7 @@ namespace ObsAutoRecorder
 		private bool ModInitiatedPause { get; set; } = false;
 		private bool QueuedForStopping { get; set; } = false;
 		private bool ModInitiatedStop { get; set; } = false;
-		private bool IsWaitingForStop { get; set; } = false;
+		private bool IsWaitingForLastRecordStop { get; set; } = false;
 
 
 
@@ -104,7 +105,7 @@ namespace ObsAutoRecorder
 
 			if (IsAutoRecordable(oppId, oppBp))
 			{
-				QueuedForStopping = false;
+				
 				if (!(_recordingWaitCor is null))
 				{
 					MelonCoroutines.Stop(_recordingWaitCor);
@@ -118,22 +119,38 @@ namespace ObsAutoRecorder
 					{
 						Log($"Resuming recording");
 						ResumeRecording();
+						QueuedForStopping = false;
 					}
 				}
 				else
 				{
 					Log($"Found new opponent: {opponentInfo}. Replacing current recording", true);
 					NewWaitingPlayer = opponentInfo;
-					StopRecording();
+					if (OBS.IsRecordingActive() || IsPaused)
+					{
+						IsWaitingForLastRecordStop = true;
+						StopRecording();
+						if (_stopQueueCor != null)
+						{
+							MelonCoroutines.Stop(_stopQueueCor);
+							_stopQueueCor = null;
+						}
+					}
+						
+					StartRecording(NewWaitingPlayer);
+					Log($"Recording Started by  When in Arena logic {NewWaitingPlayer}", true);
+
+					NewWaitingPlayer = "";
 				}
 			}
 		}
 
 		private bool IsAutoRecordable(string opponentInfo, int opponentBP)
 		{
+			Log($"IsAutoRecordable? Opponent BP: {opponentBP} BP threshold: {RecordByBPThreshold.Value}");
 			if (IsInAutoRecordList(opponentInfo)) { return true; }
 
-			if (RecordByBPThreshold.Value == 0) { return false; }
+			if (RecordByBPThreshold.Value == -1) { return false; }
 
 			if (opponentBP >= RecordByBPThreshold.Value) { return true; }
 
@@ -146,15 +163,45 @@ namespace ObsAutoRecorder
 			if (OBS.IsRecordingActive() || IsPaused)
 			{
 				string pauseStatus = IsPaused ? "Paused " : "";
-				Log($"Recording already in progress or paused", false);
+				Log($"Recording already in progress or paused", false, 1);
 
-				return;
+				
 			}
 			StartRequestedByMod = true;
 			Log($"Starting recording for: {playerID}", false);
-			CurrentOrLastRecordedPlayer = playerID;
+			
 			QueuedForStopping = false;
-			OBS.StartRecord();
+			Task.Run(() =>
+			{
+				float startTime = Time.realtimeSinceStartup;
+				int secondsToRetry = 5;
+				bool success = false;
+				while (!success && !(Time.realtimeSinceStartup - startTime > secondsToRetry))
+				{
+					success = OBS.StartRecord();
+					Thread.Sleep(250);
+					if (success != OBS.IsRecordingActive())
+					{
+						Log("Mismatch between start recording status and IsRecordingActive. Retrying", true, 1);
+						success = false;
+					}
+					else
+					{
+						Log("Match between start recording status and IsRecordingActive. Should be a success", true, 1);
+					}
+					
+				}
+				if(success)
+				{
+					Log("Recording started successfully", false);
+					
+				}
+				else
+				{
+					Log("Recording failed to start", false, 1);
+				}
+				CurrentOrLastRecordedPlayer = playerID;
+			});
 		}
 
 		private void StopRecording()
@@ -164,8 +211,6 @@ namespace ObsAutoRecorder
 				Log("No recording in progress", true);
 				return;
 			}
-			StopRequestedByMod = true;
-			QueuedForStopping = false;
 
 			OBS.StopRecord();
 
@@ -190,6 +235,7 @@ namespace ObsAutoRecorder
 			OBS.ResumeRecord();
 			ModInitiatedPause = false;
 			QueuedForStopping = false;
+			
 		}
 
 		private void onRecordPause()
@@ -223,6 +269,10 @@ namespace ObsAutoRecorder
 
 			IsPaused = false;
 			//IsRecording = true;
+			if(!StartRequestedByMod)
+			{
+				Log("Recording started externally", false, 1);
+			}
 			ModInitiatedRecording = StartRequestedByMod;
 			StartRequestedByMod = false;
 			Log($"Recording started for: {outputPath}");
@@ -261,22 +311,8 @@ namespace ObsAutoRecorder
 			QueuedForStopping = false;
 			ModInitiatedStop = false;
 			CurrentOrLastRecordedPlayer = "";
-			if (_stopQueueCor != null)
-			{
-				MelonCoroutines.Stop(_stopQueueCor);
-				_stopQueueCor = null;
-			}
-
-			if (NewWaitingPlayer != "")
-			{
-				StartRecording(NewWaitingPlayer);
-				Log($"Recording Started by onRecordingStop for {NewWaitingPlayer}", true);
-				NewWaitingPlayer = "";
-			}
-
+			
 		}
-
-
 
 		private void onConnect()
 		{

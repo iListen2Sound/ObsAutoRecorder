@@ -113,7 +113,7 @@ namespace ObsAutoRecorder
 
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", true, null, "Enable debug with more verbose logging");
 
-			RecordByBPThreshold = OBSAutoRecorderSettings.CreateEntry("BP Threshold", 0, "BP", "Record players with BP greater than value. 0 = disabled");
+			RecordByBPThreshold = OBSAutoRecorderSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
 
 			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("Enable Auto Rename", true, null, "Enable automatic renaming of recorded files");
 			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
@@ -245,7 +245,7 @@ namespace ObsAutoRecorder
 
 			if (SceneName != "loader")
 			{
-				Log($"{isFirstLoad}", true, 1);
+				
 				if (isFirstLoad)
 				{
 					FirstLoad();
@@ -437,7 +437,7 @@ namespace ObsAutoRecorder
 			Log($"{targets.Count()}", true);
 
 			bool result = targets.Count > 0;
-			Log($"Checking {playFabID} if autorecordable: {result}", true);
+			Log($"Checking {playFabID} if in auto record list: {result}", true);
 			return result;
 		}
 		/// <summary>
@@ -454,10 +454,10 @@ namespace ObsAutoRecorder
 			switch (logLevel)
 			{
 				case 1:
-					LoggerInstance.Warning(message);
+					LoggerInstance.Warning("Warn: " + message);
 					break;
 				case 2:
-					LoggerInstance.Error(message);
+					LoggerInstance.Error("Error: " + message);
 					break;
 				default:
 					LoggerInstance.Msg(message);
