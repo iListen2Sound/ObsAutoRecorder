@@ -172,7 +172,6 @@ namespace ObsAutoRecorder
 
 			OBS.onConnect += onConnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
-			OBS.onRecordFileChanged += onRecordFileChanged;
 
 			Instance = this;
 		}
