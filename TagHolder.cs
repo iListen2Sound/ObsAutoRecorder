@@ -104,6 +104,10 @@ namespace ObsAutoRecorder
 				CreateAutoRecordBlock();
 			}
 		}
+		public PlayfabInfo PlayFabinfo()
+		{
+			return new PlayfabInfo(TagObject);
+		}
 
 		private void CreateAutoRecordBlock()
 		{

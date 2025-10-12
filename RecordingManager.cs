@@ -34,6 +34,8 @@ namespace ObsAutoRecorder
 		//OBS Recording states
 		private string CurrentOrLastRecordedPlayer { get; set; } = "";
 		private string NewWaitingPlayer { get; set; } = "";
+		private PlayfabInfo CurrentRecordedPlayer {get; set;}
+		private PlayfabInfo NextPlayerToRecord {get; set;}
 		private bool IsRecording { get; set; } = false;
 		private bool IsPaused { get; set; } = false;
 		private bool ModInitiatedRecording { get; set; } = false;
@@ -41,6 +43,8 @@ namespace ObsAutoRecorder
 		private bool QueuedForStopping { get; set; } = false;
 		private bool ModInitiatedStop { get; set; } = false;
 		private bool IsWaitingForLastRecordStop { get; set; } = false;
+
+		private string LastSceneName {get; set;}
 
 
 
@@ -56,16 +60,18 @@ namespace ObsAutoRecorder
 				return;
 			}
 
-			if (SceneName == "gym")
+			if (SceneName == "gym" && !(LastSceneName == "gym" || LastSceneName == "park"))
 			{
 				WhenInGym();
+				
 			}
 
 
-			if (SceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
+			if (SceneName.Contains("map") && LastSceneName = "gym" && PlayerManager.instance.AllPlayers.Count > 1)
 			{
 				WhenInArena();
-			}
+			} 
+			LastSceneName = SceneName;
 		}
 		private void WhenInGym()
 		{
@@ -176,6 +182,8 @@ namespace ObsAutoRecorder
 				float startTime = Time.realtimeSinceStartup;
 				int secondsToRetry = 5;
 				bool success = false;
+
+				
 				while (!success && !(Time.realtimeSinceStartup - startTime > secondsToRetry))
 				{
 					success = OBS.StartRecord();
