@@ -51,6 +51,7 @@ namespace ObsAutoRecorder
 		private bool StartRequestedByMod = false;
 		private bool StopRequestedByMod = false;
 		private bool PauseRequestedByMod = false;
+		private bool IsSafeToRequestStart = true;
 
 		private void SetRecordingState()
 		{
@@ -102,14 +103,12 @@ namespace ObsAutoRecorder
 
 		private void WhenInArena()
 		{
-			var opp = PlayerManager.instance.AllPlayers[1];
-			var oppId = opp?.Data?.GeneralData?.PlayFabMasterId;
-			var oppName = opp?.Data?.GeneralData?.PublicUsername ?? "Unknown";
-			int oppBp = opp.Data.GeneralData.BattlePoints;
+			PlayfabInfo opponent = new PlayfabInfo(PlayerManager.instance.AllPlayers[1]);
+			
 
-			string opponentInfo = $"{oppId} - {oppName}";
+			
 
-			if (IsAutoRecordable(oppId, oppBp))
+			if (IsAutoRecordable(opponent))
 			{
 				
 				if (!(_recordingWaitCor is null))
@@ -118,9 +117,9 @@ namespace ObsAutoRecorder
 					_recordingWaitCor = null;
 				}
 
-				if (CurrentOrLastRecordedPlayer.Split(" - ")[0] == oppId && ModInitiatedRecording)
+				if (CurrentRecordedPlayer.ID == opponent.ID)
 				{
-					Log($"Found previous opponent {oppName}. ");
+					Log($"Found previous opponent {opponent.Name}. ");
 					if (IsPaused)
 					{
 						Log($"Resuming recording");
@@ -130,8 +129,8 @@ namespace ObsAutoRecorder
 				}
 				else
 				{
-					Log($"Found new opponent: {opponentInfo}. Replacing current recording", true);
-					NewWaitingPlayer = opponentInfo;
+					Log($"Found new opponent: {opponent.ToString()}. Replacing current recording", true);
+					NextPlayerToRecord = opponent;
 					if (OBS.IsRecordingActive() || IsPaused)
 					{
 						IsWaitingForLastRecordStop = true;
@@ -143,38 +142,35 @@ namespace ObsAutoRecorder
 						}
 					}
 						
-					StartRecording(NewWaitingPlayer);
-					Log($"Recording Started by  When in Arena logic {NewWaitingPlayer}", true);
+					StartRecording(NextPlayerToRecord);
+					Log($"Recording Started by  When in Arena logic {NextPlayerToRecord.ID} - {NextPlayerToRecord.Name}", true);
 
-					NewWaitingPlayer = "";
 				}
 			}
 		}
 
-		private bool IsAutoRecordable(string opponentInfo, int opponentBP)
+		private bool IsAutoRecordable(PlayfabInfo player)
 		{
-			Log($"IsAutoRecordable? Opponent BP: {opponentBP} BP threshold: {RecordByBPThreshold.Value}");
-			if (IsInAutoRecordList(opponentInfo)) { return true; }
+			Log($"IsAutoRecordable? Opponent BP: {player.BP} BP threshold: {RecordByBPThreshold.Value}");
+			if (IsInAutoRecordList(player.ID)) { return true; }
 
 			if (RecordByBPThreshold.Value == -1) { return false; }
 
-			if (opponentBP >= RecordByBPThreshold.Value) { return true; }
+			if (player.BP >= RecordByBPThreshold.Value) { return true; }
 
 			return false;
 		}
 
-		private void StartRecording(string playerID = "")
+		private void StartRecording(PlayfabInfo player)
 		{
 
 			if (OBS.IsRecordingActive() || IsPaused)
 			{
 				string pauseStatus = IsPaused ? "Paused " : "";
 				Log($"Recording already in progress or paused", false, 1);
-
-				
 			}
 			StartRequestedByMod = true;
-			Log($"Starting recording for: {playerID}", false);
+			Log($"Starting recording for: {player.ID} - {player.Name}", false);
 			
 			QueuedForStopping = false;
 			Task.Run(() =>
@@ -183,9 +179,14 @@ namespace ObsAutoRecorder
 				int secondsToRetry = 5;
 				bool success = false;
 
-				
-				while (!success && !(Time.realtimeSinceStartup - startTime > secondsToRetry))
+
+				while (!success && !(Time.realtimeSinceStartup - startTime > secondsToRetry) && !IsSafeToRequestStart)
 				{
+					
+					if(!IsSafeToRequestStart)
+					{
+						Log("Awaiting previous recording clear", true, 1);
+					}
 					success = OBS.StartRecord();
 					Thread.Sleep(250);
 					if (success != OBS.IsRecordingActive())
@@ -203,17 +204,22 @@ namespace ObsAutoRecorder
 				{
 					Log("Recording started successfully", false);
 					
+					CurrentRecordedPlayer = NextPlayerToRecord;
+					NextPlayerToRecord = null;
+					
+					
 				}
 				else
 				{
 					Log("Recording failed to start", false, 1);
 				}
-				CurrentOrLastRecordedPlayer = playerID;
+				
 			});
 		}
 
 		private void StopRecording()
 		{
+			IsSafeToRequestStart = false;
 			if (!(OBS.IsRecordingActive() || IsPaused))
 			{
 				Log("No recording in progress", true);
@@ -284,6 +290,9 @@ namespace ObsAutoRecorder
 			ModInitiatedRecording = StartRequestedByMod;
 			StartRequestedByMod = false;
 			Log($"Recording started for: {outputPath}");
+
+			NextPlayerToRecord.RecordingOutputPath = outputPath;
+			
 		}
 
 		public string GetSafeFilename(string filename)

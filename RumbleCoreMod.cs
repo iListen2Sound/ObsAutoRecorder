@@ -573,6 +573,7 @@ namespace ObsAutoRecorder
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
 			});
+			IsSafeToRequestStart = true;
 
 
 			return newPath;
