@@ -29,9 +29,22 @@ namespace ObsAutoRecorder
 {
     public class PlayfabInfo
     {
-        public string Name {get; set;}
-        public string ID {get; seta;}
+        private string _name;
+        public string Name 
+        {
+            get
+            {
+                return TagHolder.Sanitize(_name);
+            } 
+            set
+            {
+                _name = value;
+            }
+        }
+        public string ID {get; set;}
         public int BP {get; set;}
+        public string RecordingOutputPath {get; set;}
+        public bool IsRecording {get; set; } = IsWaitingForLastRecordStop
 
         public PlayfabInfo(string name, string id, int bp) : this(namme, id)
         {
@@ -45,11 +58,30 @@ namespace ObsAutoRecorder
         public PlayfabInfo(GameObject playerTag)
         {
             string name = return TagHolder.Sanitize(playerTag.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName);
-            string id = TagHolder.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
+            string id = playerTag.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
         }
-        public PlayFabinfo(var playerController)
+        public PlayfabInfo(var playerController)
         {
-        
+            ID = playerController?.Data?.GeneralData?.PlayFabMasterId;
+            Name = playerController?.Data?.GeneralData?.PublicUserName;
+            BP = playerController?.Data.GeneralData.BattlePoints;
+        }
+
+        public PlayfabInfo(string fullPlayerString)
+        {
+            string[] idParts = fullPlayerString.Split(" - ");
+            if(idParts.Length != 2)
+            {
+                throw new Exception("fullPlayerString does not match expected format \"{Playfab ID} - {Player Name}\"");
+            }
+            ID = idParts[0];
+            Name = idParts[1];
+            
+        }
+        public string ToString();
+        {
+            string fullString = $"{ID} - {Name}";
+            return fullString;
         }
     }
 }
