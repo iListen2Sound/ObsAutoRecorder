@@ -4,6 +4,7 @@ using Il2CppRUMBLE.Interactions.InteractionBase;
 using Il2CppRUMBLE.Managers;
 using Il2CppRUMBLE.Social;
 using Il2CppRUMBLE.UI;
+using Il2CppRUMBLE;
 using Il2CppTMPro;
 using JetBrains.Annotations;
 using MelonLoader;
@@ -24,6 +25,7 @@ using Il2CppSteamworks;
 using System.Threading.Tasks;
 using System.Threading;
 using static OBS_Control_API.RequestResponse;
+using System;
 
 namespace ObsAutoRecorder
 {
@@ -44,9 +46,9 @@ namespace ObsAutoRecorder
         public string ID {get; set;}
         public int BP {get; set;}
         public string RecordingOutputPath {get; set;}
-        public bool IsRecording {get; set; } = IsWaitingForLastRecordStop
+        public bool IsRecording { get; set; } = false;
 
-        public PlayfabInfo(string name, string id, int bp) : this(namme, id)
+        public PlayfabInfo(string name, string id, int bp) : this(name, id)
         {
             BP = bp;
         }
@@ -57,14 +59,14 @@ namespace ObsAutoRecorder
         }
         public PlayfabInfo(GameObject playerTag)
         {
-            string name = return TagHolder.Sanitize(playerTag.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName);
+            string name = TagHolder.Sanitize(playerTag.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.publicName);
             string id = playerTag.GetComponent<Il2CppRUMBLE.Social.Phone.PlayerTag>()._UserData_k__BackingField.playFabMasterId;
         }
-        public PlayfabInfo(var playerController)
+        public PlayfabInfo(Il2CppRUMBLE.Players.Player playerController)
         {
             ID = playerController?.Data?.GeneralData?.PlayFabMasterId;
-            Name = playerController?.Data?.GeneralData?.PublicUserName;
-            BP = playerController?.Data.GeneralData.BattlePoints;
+            Name = playerController?.Data?.GeneralData?.PublicUsername;
+            BP = (int)(playerController?.Data.GeneralData.BattlePoints);
         }
 
         public PlayfabInfo(string fullPlayerString)
@@ -78,10 +80,10 @@ namespace ObsAutoRecorder
             Name = idParts[1];
             
         }
-        public string ToString();
+        public string ToString()
         {
-            string fullString = $"{ID} - {Name}";
-            return fullString;
+            return $"{ID} - {Name}";
+          
         }
     }
 }

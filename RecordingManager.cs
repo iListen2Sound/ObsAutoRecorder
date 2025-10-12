@@ -61,14 +61,14 @@ namespace ObsAutoRecorder
 				return;
 			}
 
-			if (SceneName == "gym" && !(LastSceneName == "gym" || LastSceneName == "park"))
+			if ((SceneName == "gym") && !(LastSceneName == "gym" || LastSceneName == "park"))
 			{
 				WhenInGym();
 				
 			}
 
 
-			if (SceneName.Contains("map") && LastSceneName = "gym" && PlayerManager.instance.AllPlayers.Count > 1)
+			if (SceneName.Contains("map") && (LastSceneName == "gym") && PlayerManager.instance.AllPlayers.Count > 1)
 			{
 				WhenInArena();
 			} 
