@@ -32,11 +32,8 @@ namespace ObsAutoRecorder
 	{
 
 		//OBS Recording states
-		private string CurrentOrLastRecordedPlayer { get; set; } = "";
-		private string NewWaitingPlayer { get; set; } = "";
 		private PlayfabInfo CurrentRecordedPlayer {get; set;}
 		private PlayfabInfo NextPlayerToRecord {get; set;}
-		private bool IsRecording { get; set; } = false;
 		private bool IsPaused { get; set; } = false;
 		private bool ModInitiatedRecording { get; set; } = false;
 		private bool ModInitiatedPause { get; set; } = false;
@@ -257,7 +254,7 @@ namespace ObsAutoRecorder
 			IsPaused = true;
 			ModInitiatedPause = PauseRequestedByMod;
 			PauseRequestedByMod = false;
-			Log($"Recording paused for player: {CurrentOrLastRecordedPlayer}");
+			Log($"Recording paused for player: {CurrentRecordedPlayer.ToString()}");
 		}
 		private void onRecordResume()
 		{
@@ -271,7 +268,7 @@ namespace ObsAutoRecorder
 			ModInitiatedRecording = true;
 			IsPaused = false;
 			QueuedForStopping = false;
-			Log($"Recording Resumed for player: {CurrentOrLastRecordedPlayer}");
+			Log($"Recording Resumed for player: {CurrentRecordedPlayer.ToString()}");
 		}
 		private void onRecordStart(string outputPath)
 		{
@@ -327,7 +324,7 @@ namespace ObsAutoRecorder
 			ModInitiatedPause = false;
 			QueuedForStopping = false;
 			ModInitiatedStop = false;
-			CurrentOrLastRecordedPlayer = "";
+			CurrentRecordedPlayer = null;
 			
 		}
 

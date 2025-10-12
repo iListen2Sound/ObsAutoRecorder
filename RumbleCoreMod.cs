@@ -485,7 +485,7 @@ namespace ObsAutoRecorder
 			}
 			else
 			{
-				Log($"Last recording stopped. Starting new recording for {CurrentOrLastRecordedPlayer}");
+				Log($"Last recording stopped. Starting new recording for {CurrentRecordedPlayer.ToString()}");
 				StartRecording(NextPlayerToRecord);
 			}
 			_recordingWaitCor = null;
@@ -521,9 +521,9 @@ namespace ObsAutoRecorder
 			string newPath = "";
 
 			string playerName = "Unknown";
-			if (!string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
+			if (CurrentRecordedPlayer is null)
 			{
-				playerName = TagHolder.Sanitize(CurrentOrLastRecordedPlayer.Split(" - ")[1].Trim());
+				playerName = TagHolder.Sanitize(CurrentRecordedPlayer.Name);
 			}
 
 			Log($"Player name for file rename: {playerName}");
