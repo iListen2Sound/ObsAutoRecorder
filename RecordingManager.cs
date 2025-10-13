@@ -354,5 +354,69 @@ namespace ObsAutoRecorder
 				Log("Adding Chapter Marker", true);
 			}
 		}
+
+		private string RenameOutput(string oldOutputPath, string newName)
+		{
+			//File renaming
+			string newPath = "";
+
+			string playerName = "Unknown";
+			if (CurrentRecordedPlayer is null)
+			{
+				playerName = TagHolder.Sanitize(CurrentRecordedPlayer.Name);
+			}
+
+			Log($"Player name for file rename: {playerName}");
+			string date = System.DateTime.Now.ToString(DateFormat.Value);
+			string time = System.DateTime.Now.ToString(TimeFormat.Value);
+			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
+			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
+			int copyIndex = 1;
+			while (System.IO.File.Exists(newPath))
+			{
+				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
+				copyIndex++;
+			}
+			Task.Run(() =>
+			{
+				bool success = false;
+				float startTime = Time.realtimeSinceStartup;
+				float currentTime = Time.realtimeSinceStartup;
+				int secondsToRetry = 5;
+				while (!success && !(currentTime - startTime > secondsToRetry))
+				{
+					currentTime = Time.realtimeSinceStartup;
+					try
+					{
+
+						System.IO.File.Move(oldOutputPath, newPath);
+						oldOutputPath = newPath;
+						success = true;
+						Log($"Recording renamed to: {newFileName}", false);
+					}
+
+					catch (IOException ex)
+					{
+						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
+
+
+					}
+					catch (System.Exception ex)
+					{
+						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
+
+
+					}
+				}
+				if (!success)
+				{
+					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
+				}
+			});
+			IsSafeToRequestStart = true;
+
+
+			return newPath;
+		}
 	}
 }
