@@ -20,6 +20,7 @@ namespace ObsAutoRecorder
         public string ID {get; set;}
         public int BP {get; set;}
         public string RecordingOutputPath {get; set;}
+        public DateTime RecordingStart {get; set;}
         public bool IsRecording { get; set; } = false;
 
         public PlayfabInfo(string name, string id, int bp) : this(name, id)
