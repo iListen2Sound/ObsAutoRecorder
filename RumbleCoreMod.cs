@@ -485,8 +485,8 @@ namespace ObsAutoRecorder
 			}
 			else
 			{
-				Log($"Last recording stopped. Starting new recording for {CurrentOrLastRecordedPlayer}");
-				StartRecording(CurrentOrLastRecordedPlayer);
+				Log($"Last recording stopped. Starting new recording for {CurrentRecordedPlayer.ToString()}");
+				//StartRecording(NextPlayerToRecord);
 			}
 			_recordingWaitCor = null;
 		}
@@ -508,75 +508,7 @@ namespace ObsAutoRecorder
 			}
 			_stopQueueCor = null;
 		}
-		/// <summary>
-		/// Start recording session
-		/// </summary>
-		/// <param name="playerID">ID - PublicName of other player loaded in the park</param>
-		/// <remarks>Sets ModInitiatedRecording to true</remarks>
-
-
-		private string RenameOutput(string oldOutputPath, string newName)
-		{
-			//File renaming
-			string newPath = "";
-
-			string playerName = "Unknown";
-			if (!string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
-			{
-				playerName = TagHolder.Sanitize(CurrentOrLastRecordedPlayer.Split(" - ")[1].Trim());
-			}
-
-			Log($"Player name for file rename: {playerName}");
-			string date = System.DateTime.Now.ToString(DateFormat.Value);
-			string time = System.DateTime.Now.ToString(TimeFormat.Value);
-			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
-			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
-			int copyIndex = 1;
-			while (System.IO.File.Exists(newPath))
-			{
-				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
-				copyIndex++;
-			}
-			Task.Run(() =>
-			{
-				bool success = false;
-				float startTime = Time.realtimeSinceStartup;
-				float currentTime = Time.realtimeSinceStartup;
-				int secondsToRetry = 5;
-				while (!success && !(currentTime - startTime > secondsToRetry))
-				{
-					currentTime = Time.realtimeSinceStartup;
-					try
-					{
-
-						System.IO.File.Move(oldOutputPath, newPath);
-						oldOutputPath = newPath;
-						success = true;
-						Log($"Recording renamed to: {newFileName}", false);
-					}
-
-					catch (IOException ex)
-					{
-						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
-
-
-					}
-					catch (System.Exception ex)
-					{
-						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
-
-
-					}
-				}
-				if (!success)
-				{
-					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
-				}
-			});
-
-
-			return newPath;
-		}
+		
 
 	}
 }
