@@ -38,7 +38,7 @@ namespace ObsAutoRecorder
 		private PlayfabInfo CurrentOpponent {get; set;}
 
 		private bool IsPaused { get; set; } = false;
-		private bool ModInitiatedRecording { get; set; } = false;
+		private bool ExternalRecording { get; set; } = false;
 		private bool ModInitiatedPause { get; set; } = false;
 		private bool QueuedForStopping { get; set; } = false;
 		private bool ModInitiatedStop { get; set; } = false;
@@ -59,7 +59,7 @@ namespace ObsAutoRecorder
 		private void ResetVariables()
 		{
 			IsPaused = false;
-			ModInitiatedRecording = false;
+			ExternalRecording = false;
 			ModInitiatedPause = false;
 			QueuedForStopping = false;
 			ModInitiatedStop = false;
@@ -102,27 +102,27 @@ namespace ObsAutoRecorder
 				return;
 			}
 
-			if ((SceneName == "gym") && !(LastSceneName == "gym" || LastSceneName == "park"))
+			if ((SceneName == "gym") && LastSceneName.Contains("map"))
 			{
-				WhenInGym();
-
+				FightSessionEnd();
 			}
 
 
 			if (SceneName.Contains("map") && (LastSceneName == "gym") && PlayerManager.instance.AllPlayers.Count > 1)
 			{
-				WhenInArena();
+				FightSessionStart();
 			}
 			LastSceneName = SceneName;
 		}
-		private void WhenInGym()
+		private void FightSessionEnd()
 		{
 			
 		}
 
 
-		private void WhenInArena()
+		private void FightSessionStart()
 		{
+
 		}
 
 		
@@ -157,9 +157,11 @@ namespace ObsAutoRecorder
 				{
 					player.RecordingStart = System.DateTime.Now;
 					player.IsRecording = true;
-					ModInitiatedRecording = true;
+					ExternalRecording = false;
 					CurrentRecordedPlayer = NextPlayerToRecord;
 					NextPlayerToRecord = null;
+
+					StartRequestedByMod = false;
 
 					//Stop recording hold coroutine
 					if (_stopQueueCor != null)
@@ -177,9 +179,10 @@ namespace ObsAutoRecorder
 			});
 		}
 
-		private void StopRecording()
+		private void RequestRecordingStop()
 		{
-
+			IsSafeToRequestStart = false;
+			OBS.StopRecord();
 		}
 
 		private void PauseRecording()
@@ -205,11 +208,11 @@ namespace ObsAutoRecorder
 				Log("onRecordStart: Recording started externally", false, 1);
 			}
 			
+			Log($"onRecordStart: Recording started for: {outputPath}");
 
-			Log($"Recording started for: {outputPath}");
-
+			//Assume externally initiated recording if no start request from within mod
+			ExternalRecording = !StartRequestedByMod;
 			NextPlayerToRecord.RecordingOutputPath = outputPath;
-
 		}
 
 		public string GetSafeFilename(string filename)
@@ -220,8 +223,20 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStop(string outputPath)
 		{
-			
-
+			if(outputPath != CurrentRecordedPlayer.RecordingOutputPath)
+			{
+				//warn if outputpath does not match expected output path assigned to player. Use player-assigned outputpath
+				Log($"onRecordStop: mismatch between event output path {outputPath} and CurrentRecordedPlayer.RecordingOutputPath: {CurrentRecordedPlayer.RecordingOutputPath}", false, 1);
+				
+			}
+			if(DoAutoRename.Value)
+			{
+				RenameOutput(CurrentRecordedPlayer.RecordingOutputPath, AutoRenameString.Value, CurrentRecordedPlayer, false);
+			}
+			else
+			{
+				CheckUntilFileIsWritable();
+			}
 		}
 
 		private void onConnect()
@@ -316,6 +331,11 @@ namespace ObsAutoRecorder
 
 
 			return newPath;
+		}
+
+		private void CheckUntilFileIsWritable()
+		{
+			IsSafeToRequestStart = true;
 		}
 	}
 }
