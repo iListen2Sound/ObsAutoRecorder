@@ -35,6 +35,8 @@ namespace ObsAutoRecorder
 		//OBS Recording states
 		private PlayfabInfo CurrentRecordedPlayer { get; set; }
 		private PlayfabInfo NextPlayerToRecord { get; set; }
+		private PlayfabInfo CurrentOpponent {get; set;}
+
 		private bool IsPaused { get; set; } = false;
 		private bool ModInitiatedRecording { get; set; } = false;
 		private bool ModInitiatedPause { get; set; } = false;
@@ -70,8 +72,30 @@ namespace ObsAutoRecorder
 			IsSafeToRequestStart = false;
 			StopRequestInProgress = false;
 		}
+		private bool IsAutoRecordable(PlayfabInfo player)
+		{
+			Log($"IsAutoRecordable? Opponent BP: {player.BP} BP threshold: {RecordByBPThreshold.Value}");
+			if (IsInAutoRecordList(player.ID)) { return true; }
+
+			if (RecordByBPThreshold.Value == -1) { return false; }
+
+			if (player.BP >= RecordByBPThreshold.Value) { return true; }
+
+			return false;
+		}
+
 		private void SetRecordingState()
 		{
+			if(SceneName.Contains("map"))
+				CurrentOpponent = new PlayfabInfo(PlayerManager.instance.AllPlayers[1]);
+			
+			if (SceneName = "gym")
+				CurrentOpponent = new PlayfabInfo ("Howard", "0000000000000000", int.MaxValue);
+			
+			if (SceneName = "park")
+				CurrentOpponent = new PlayfabInfo($"{PlayerManager.instance.AllPlayers.Count()} park players", "-1");
+			
+
 			if (!OBS.IsConnected())
 			{
 				Log("No active websocket connection to OBS detected", false, 1);
@@ -101,17 +125,7 @@ namespace ObsAutoRecorder
 		{
 		}
 
-		private bool IsAutoRecordable(PlayfabInfo player)
-		{
-			Log($"IsAutoRecordable? Opponent BP: {player.BP} BP threshold: {RecordByBPThreshold.Value}");
-			if (IsInAutoRecordList(player.ID)) { return true; }
-
-			if (RecordByBPThreshold.Value == -1) { return false; }
-
-			if (player.BP >= RecordByBPThreshold.Value) { return true; }
-
-			return false;
-		}
+		
 
 		private void RequestStartRecording(PlayfabInfo player)
 		{
@@ -146,10 +160,19 @@ namespace ObsAutoRecorder
 					ModInitiatedRecording = true;
 					CurrentRecordedPlayer = NextPlayerToRecord;
 					NextPlayerToRecord = null;
+
+					//Stop recording hold coroutine
+					if (_stopQueueCor != null)
+					{
+						MelonCoroutines.Stop(_stopQueueCor);
+						_stopQueueCor = null;
+					}
+
 				}
 				else
 				{
 					Log($"RequestRecordStart: Failed to start recording for player {player.ToString()}. Timeout.", false, 2);
+					ResetVariables();
 				}
 			});
 		}
@@ -176,15 +199,6 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStart(string outputPath)
 		{
-			//Stop recording hold coroutine
-			if (_stopQueueCor != null)
-			{
-				MelonCoroutines.Stop(_stopQueueCor);
-				_stopQueueCor = null;
-			}
-
-
-
 			IsPaused = false;
 			if (!StartRequestedByMod)
 			{
@@ -225,7 +239,12 @@ namespace ObsAutoRecorder
 		{
 			Log($"Replay buffer saved to: {outputPath}");
 			string newFileName = outputPath;
-			//newFileName = RenameOutput(outputPath, "R- " + AutoRenameString.Value);
+			
+			if(!SceneName.Contains("map"))
+			{
+				
+			}
+			newFileName = RenameOutput(outputPath, "R- " + AutoRenameString.Value, CurrentRecordedPlayer, true);
 			newFileName = System.IO.Path.GetFileName(newFileName);
 			if (AddChapterMarkers.Value)
 			{
@@ -237,21 +256,17 @@ namespace ObsAutoRecorder
 			}
 		}
 
-		private string RenameOutput(string oldOutputPath, string newName,  PlayfabInfo player, bool useCurrentDate)
+		private string RenameOutput(string oldOutputPath, string newName,  PlayfabInfo player, bool useCurrentDate = false)
 		{
 			//File renaming
 			string newPath = "";
 
-			string playerName = "Unknown";
-			if (CurrentRecordedPlayer is null)
-			{
-				playerName = TagHolder.Sanitize(CurrentRecordedPlayer.Name);
-			}
+			string date = useCurrentDate ? System.DateTime.Now.ToString(DateFormat.Value) : player.RecordingStart.ToString(DateFormat.Value);
+			string time = useCurrentDate ? System.DateTime.Now.ToString(TimeFormat.Value) : player.RecordingStart.ToString(TimeFormat.Value);
 
-			Log($"Player name for file rename: {playerName}");
-			string date = System.DateTime.Now.ToString(DateFormat.Value);
-			string time = System.DateTime.Now.ToString(TimeFormat.Value);
-			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
+			Log($"Player name for file rename: {player.Name}");
+			
+			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(player.Name)}").Replace("{date}", date).Replace("{time}", time);
 			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
 			int copyIndex = 1;
 
