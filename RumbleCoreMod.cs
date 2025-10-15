@@ -486,7 +486,7 @@ namespace ObsAutoRecorder
 			}
 			else
 			{
-				Log($"Last recording stopped. Starting new recording for {CurrentRecordedPlayer.ToString()}");
+				Log($"Last recording stopped. Starting new recording for {LastRecordedPlayer.ToString()}");
 				//StartRecording(NextPlayerToRecord);
 			}
 			//_recordingWaitCor = null;
