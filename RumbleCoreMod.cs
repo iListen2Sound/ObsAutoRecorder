@@ -78,7 +78,7 @@ namespace ObsAutoRecorder
 		private object _pollTagsCor = null;
 		private object _pollPageCor = null;
 		private object _stopQueueCor = null;
-		private object _recordingWaitCor = null;
+		//private object _recordingWaitCor = null;
 		public static GameObject GetIndicator()
 		{
 			return GameObject.Instantiate(IndicatorsBase);
@@ -90,10 +90,10 @@ namespace ObsAutoRecorder
 		}
 		public override void OnApplicationQuit()
 		{
-			if (ModInitiatedRecording)
+			if (!ExternalRecording)
 			{
 				Log("Game Closing. Forcing recording stop");
-				StopRecording();
+				RequestRecordingStop();
 				OBS.StopRecord();
 			}
 			OBSAutoRecorderSettings.SaveToFile();
@@ -282,6 +282,7 @@ namespace ObsAutoRecorder
 				BuildTagHolders();
 
 				isFirstLoad = false;
+				
 			}
 
 
@@ -302,6 +303,7 @@ namespace ObsAutoRecorder
 
 			SetRecordingState();
 			_sceneIsLoaded = true;
+			LastSceneName = SceneName;
 		}
 
 
@@ -411,6 +413,7 @@ namespace ObsAutoRecorder
 		{
 
 			return _displayedFriendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
+			
 
 		}
 
@@ -427,17 +430,15 @@ namespace ObsAutoRecorder
 
 			if (targets.Count > 1)
 			{
-				Log($"Warning: More than one entry found for {playFabID.Split(" - ")[0]} in AutoRecord list", false, 1);
+				Log($"Warning: More than one entry found for {playFabID.Split(" - ")[0]} in AutoRecord list. {targets.Count}", false, 1);
 			}
 
 			foreach (string entry in targets)
 			{
 				Log($"Found target: {entry}", true);
 			}
-			Log($"{targets.Count()}", true);
-
+			
 			bool result = targets.Count > 0;
-			Log($"Checking {playFabID} if in auto record list: {result}", true);
 			return result;
 		}
 		/// <summary>
@@ -488,26 +489,10 @@ namespace ObsAutoRecorder
 				Log($"Last recording stopped. Starting new recording for {CurrentRecordedPlayer.ToString()}");
 				//StartRecording(NextPlayerToRecord);
 			}
-			_recordingWaitCor = null;
+			//_recordingWaitCor = null;
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="duration"></param>
-		/// <returns></returns>
-		/// <remarks>TODO: Ensure that user-started recordings are not stopped</remarks>
-		private IEnumerator RecordingHoldCoroutine(float duration)
-		{
-			Log($"Coroutine started: Stop Queue States: QueuedForStopping: {QueuedForStopping}, ModInitiatedRecording {ModInitiatedRecording}", true);
-			yield return new WaitForSeconds(duration);
-			Log($"Stop Queue States: QueuedForStopping: {QueuedForStopping}, ModInitiatedRecording {ModInitiatedRecording}", true);
-			if (QueuedForStopping && ModInitiatedRecording)
-			{
-				StopRecording();
-			}
-			_stopQueueCor = null;
-		}
+		
 		
 
 	}
