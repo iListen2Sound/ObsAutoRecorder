@@ -40,13 +40,14 @@ namespace ObsAutoRecorder
 
 		private bool IsPaused { get; set; } = false;
 		private bool ExternalRecording { get; set; } = false;
-		
+
 		//private bool QueuedForStopping { get; set; } = false;
 		private bool ModInitiatedStop { get; set; } = false;
 		private bool IsWaitingForLastRecordStop { get; set; } = false;
 
-		private string LastSceneName { get; set; }
+		private string LastSceneName { get; set; } = "loader";
 
+		string LatestOutputPath = "";
 
 
 		private bool StartRequestedByMod = false;
@@ -55,7 +56,7 @@ namespace ObsAutoRecorder
 		private bool IsSafeToRequestStart = true;
 
 
-		
+
 		private bool StopRequestInProgress { get; set; } = false;
 
 		//variables for kidnapping external recording
@@ -64,6 +65,7 @@ namespace ObsAutoRecorder
 		private bool ModInitiatedPause { get; set; } = false;
 		private void ResetVariables()
 		{
+			LatestOutputPath = "";
 			IsPaused = false;
 			ExternalRecording = false;
 			ModInitiatedPause = false;
@@ -72,9 +74,10 @@ namespace ObsAutoRecorder
 			CurrentRecordedPlayer = null;
 			NextPlayerToRecord = null;
 
-			StartRequestedByMod = false;
+			//Do not reset request variables
+			/*StartRequestedByMod = false;
 			StopRequestedByMod = false;
-			PauseRequestedByMod = false;
+			PauseRequestedByMod = false;*/
 
 
 
@@ -121,42 +124,48 @@ namespace ObsAutoRecorder
 			{
 				FightSessionStart();
 			}
-			LastSceneName = SceneName;
+			
 		}
 		private void FightSessionEnd()
 		{
-			if(ExternalRecording)
-				{ return; }
+			if (ExternalRecording)
+			{ return; }
 
 
 			if (PauseAfterMatch.Value)
 				PauseRecording();
-			if (!(_recordingWaitCor is null))
+			if (!(_stopQueueCor is null))
 			{
 				Log($"FightSessionEnd: Existing recording hold coroutine found. Cancelling.", false, 1);
-				MelonCoroutines.Stop(_recordingWaitCor);
-				_recordingWaitCor = null;
+				MelonCoroutines.Stop(_stopQueueCor);
+				_stopQueueCor = null;
 			}
-			_recordingWaitCor = MelonCoroutines.Start(RecordingHoldCoroutine(RecordingPauseHoldTimeout.Value));
+			_stopQueueCor = MelonCoroutines.Start(RecordingHoldCoroutine(RecordingPauseHoldTimeout.Value));
 		}
 
 
 		private void FightSessionStart()
 		{
+			Log($"FightSessionStart: CurrentRecordedPlayer: {CurrentRecordedPlayer.ToString()} ActivePlayerInArena: {ActivePlayerInArena.ToString()}");
 			//Skip if active recording is started externally
-			if ((OBS.IsRecordingActive() || IsPaused) && ExternalRecording) { return; }
+			if ((OBS.IsRecordingActive() || IsPaused) && ExternalRecording) 
+			{
+				Log("FightSessionStart: External Recording. Exiting");
+				return; 
+			}
 
 			//Skip is active player is not recordable
 			if (!IsAutoRecordable(ActivePlayerInArena)) { Log($"Player {ActivePlayerInArena.ToString()} does not meet auto record criteria.", false, 0); return; }
 
 
 			//At this point, recording hold coroutine should be stopped if currently active regardless of results
-			if (!(_recordingWaitCor is null))
+			if (!(_stopQueueCor is null))
 			{
 				Log($"Fight Session Start: Cancelling recording hold coroutine");
-				MelonCoroutines.Stop(_recordingWaitCor);
-				_recordingWaitCor = null;
+				MelonCoroutines.Stop(_stopQueueCor);
+				_stopQueueCor = null;
 			}
+
 
 			//Null currentRecorded player means no recording active. Start new one.
 			if (CurrentRecordedPlayer is null)
@@ -164,7 +173,7 @@ namespace ObsAutoRecorder
 				RequestStartRecording(ActivePlayerInArena);
 				return;
 			}
-
+				
 			//If opponent found is the same as the opponent having a recording hold, continue recording
 			if (ActivePlayerInArena.ID == CurrentRecordedPlayer.ID)
 			{
@@ -193,16 +202,7 @@ namespace ObsAutoRecorder
 			Log($"Recording currently active (real obs status:  {OBS.IsRecordingActive()}, Pause status: {IsPaused}) for player {CurrentRecordedPlayer.Name}", false);
 			RequestRecordingStop();
 			RequestStartRecording(ActivePlayerInArena);
-
-
-			
-
-
-
-
 		}
-
-
 
 		private void RequestStartRecording(PlayfabInfo player)
 		{
@@ -219,21 +219,30 @@ namespace ObsAutoRecorder
 				float startTime = Time.realtimeSinceStartup;
 				int secondsToRetry = 5;
 				bool succeeded = false;
+				while(StopRequestInProgress && !((Time.realtimeSinceStartup - startTime) > secondsToRetry))
+				{
+					Thread.Sleep(100);
+					Log($"RequestStartRecording: Stop request in progress. Waiting", true);
+				}
+				startTime = Time.realtimeSinceStartup;
 
-				while (!succeeded && (Time.realtimeSinceStartup - startTime < secondsToRetry))
+				while (!succeeded && !((Time.realtimeSinceStartup - startTime) > secondsToRetry))
 				{
 					succeeded = OBS.StartRecord();
 					Thread.Sleep(100);
 					RequestResponse.GetRecordStatus req = OBS.GetRecordStatus();
 					//check possible status mismatches as it is apparently possible with obs
 					Log($"RequestRecordStart: OBS.StartRecord result: {succeeded}. Actual record status: {req.outputActive}. Duration: {req.outputDuration}. IsRecordingActive: {OBS.IsRecordingActive()} ", true, succeeded == req.outputActive ? 1 : 2);
-					succeeded = req.outputActive;
+					if(!req.outputActive)
+						succeeded = false;
 				}
+
 
 				if (succeeded)
 				{
 					Log($"RequestStartRecording: Success!", true, 0);
 					player.RecordingStart = System.DateTime.Now;
+					player.RecordingOutputPath = LatestOutputPath;
 					player.IsRecording = true;
 					ExternalRecording = false;
 					CurrentRecordedPlayer = NextPlayerToRecord;
@@ -288,11 +297,11 @@ namespace ObsAutoRecorder
 			ModInitiatedPause = ModRequestedPause;
 			ModRequestedPause = false;
 
-			
+
 		}
 		private void onRecordResume()
 		{
-			if(ExternalRecording)
+			if (ExternalRecording)
 			{
 				//If paused externally then resumed within 0.5 seconds, claim recording as mod-owned and no longer external
 				ExternalRecording = !((Time.realtimeSinceStartup - TimeOfLastExternalPause) < 0.5f);
@@ -301,17 +310,21 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStart(string outputPath)
 		{
+			LatestOutputPath = outputPath;
 			IsPaused = false;
 			if (!StartRequestedByMod)
 			{
 				Log("onRecordStart: Recording started externally", false, 1);
+
 			}
 
 			Log($"onRecordStart: Recording started for: {outputPath}");
 
 			//Assume externally initiated recording if no start request from within mod
 			ExternalRecording = !StartRequestedByMod;
-			NextPlayerToRecord.RecordingOutputPath = outputPath;
+
+			if (ExternalRecording)
+				NextPlayerToRecord.RecordingOutputPath = outputPath;
 		}
 
 		public string GetSafeFilename(string filename)
@@ -322,6 +335,10 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStop(string outputPath)
 		{
+			if (ExternalRecording)
+				return;
+
+
 			if (outputPath != CurrentRecordedPlayer.RecordingOutputPath)
 			{
 				//warn if outputpath does not match expected output path assigned to player. Use player-assigned outputpath
@@ -335,9 +352,10 @@ namespace ObsAutoRecorder
 			else
 			{
 				Task.Run(CheckUntilFileIsWritable);
-				
+
 			}
 			ResetVariables();
+
 		}
 
 		private void onConnect()
@@ -436,10 +454,11 @@ namespace ObsAutoRecorder
 				{
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
+				StopRequestInProgress = false;
+
 			});
 
-			StopRequestInProgress = false;
-
+			
 
 			return newPath;
 		}

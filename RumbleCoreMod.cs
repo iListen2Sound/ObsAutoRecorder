@@ -78,7 +78,7 @@ namespace ObsAutoRecorder
 		private object _pollTagsCor = null;
 		private object _pollPageCor = null;
 		private object _stopQueueCor = null;
-		private object _recordingWaitCor = null;
+		//private object _recordingWaitCor = null;
 		public static GameObject GetIndicator()
 		{
 			return GameObject.Instantiate(IndicatorsBase);
@@ -282,6 +282,7 @@ namespace ObsAutoRecorder
 				BuildTagHolders();
 
 				isFirstLoad = false;
+				
 			}
 
 
@@ -302,6 +303,7 @@ namespace ObsAutoRecorder
 
 			SetRecordingState();
 			_sceneIsLoaded = true;
+			LastSceneName = SceneName;
 		}
 
 
@@ -487,7 +489,7 @@ namespace ObsAutoRecorder
 				Log($"Last recording stopped. Starting new recording for {CurrentRecordedPlayer.ToString()}");
 				//StartRecording(NextPlayerToRecord);
 			}
-			_recordingWaitCor = null;
+			//_recordingWaitCor = null;
 		}
 
 		
