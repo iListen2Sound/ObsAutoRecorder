@@ -65,9 +65,10 @@ namespace ObsAutoRecorder
 		private bool ModInitiatedPause { get; set; } = false;
 		private void ResetVariables()
 		{
+			Log("ResetVariables called", true);
 			LatestOutputPath = "";
 			IsPaused = false;
-			ExternalRecording = false;
+			
 			ModInitiatedPause = false;
 			//QueuedForStopping = false;
 			ModInitiatedStop = false;
@@ -77,7 +78,8 @@ namespace ObsAutoRecorder
 			//Do not reset request variables
 			/*StartRequestedByMod = false;
 			StopRequestedByMod = false;
-			PauseRequestedByMod = false;*/
+			PauseRequestedByMod = false;
+			ExternalRecording = false;*/
 
 
 

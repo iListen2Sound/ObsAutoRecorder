@@ -181,6 +181,7 @@ namespace ObsAutoRecorder
 		}
 		public override void OnUpdate()
 		{
+			
 			if (!_sceneIsLoaded)
 				return;
 

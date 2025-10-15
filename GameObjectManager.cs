@@ -23,6 +23,7 @@ using UnityEngine.Video;
 using Il2CppSteamworks;
 using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
+using Il2CppPhoton.Compression;
 namespace ObsAutoRecorder
 {
 
@@ -38,6 +39,7 @@ namespace ObsAutoRecorder
 		private GameObject RecordIcon { get; set; }
 		private GameObject OBSIcon { get; set; }
 		private GameObject MinimalLogo { get; set; }
+		private GameObject ReplayBufferLogo { get; set; }
 
 		private GameObject _scrollBar;
 		private GameObject PlayerUi;
@@ -80,6 +82,7 @@ namespace ObsAutoRecorder
 			PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(6).GetChild(0).gameObject;
 			Log("PlayerUI loaded", true);
 			OBSIcon = GameObject.Instantiate(LogoPack.transform.GetChild(0).gameObject);
+			OBSIcon.SetName("OBS Icon");
 			Log("OBSIcon loaded", true);
 			PauseIcon = OBSIcon.transform.GetChild(0).gameObject;
 			Log("PauseIcon loaded", true);
@@ -92,18 +95,31 @@ namespace ObsAutoRecorder
 			OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
 
 			//70.0001 155 180
-			OBSIcon.transform.localRotation = Quaternion.Euler(70, 155, 180);
+			OBSIcon.transform.localRotation = Quaternion.Euler(70, 150, 180);
 			OBSIcon.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
 			OBSIcon.SetActive(false);
 
 			MinimalLogo = GameObject.Instantiate(LogoPack.transform.GetChild(2).GetChild(0).gameObject);
+			MinimalLogo.SetName("OBS Icon Minimal");
 			MinimalLogo.transform.SetParent(PlayerUi.transform, false);
 			MinimalLogo.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
 			//20 335 0
-			MinimalLogo.transform.localRotation = Quaternion.Euler(70, 155, 180);
+			MinimalLogo.transform.localRotation = Quaternion.Euler(70, 150, 180);
 			//0.03 0.03 0.001
 			MinimalLogo.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
 			MinimalLogo.SetActive(false);
+
+			ReplayBufferLogo = GameObject.Instantiate(LogoPack.transform.GetChild(3).gameObject);
+			ReplayBufferLogo.SetName("Replay Buffer Icon");
+			ReplayBufferLogo.transform.SetParent(PlayerUi.transform, false);
+			//20 340 0
+			ReplayBufferLogo.transform.localRotation = Quaternion.Euler(20, 333, 0);
+			//-0.214 0.027 0.956
+			ReplayBufferLogo.transform.localPosition = new Vector3(-0.214f, 0.027f, 0.956f);
+			//0.03 0.03 0.03
+			ReplayBufferLogo.transform.localScale = new Vector3(0.015f, 0.015f, 0.015f);
+			ReplayBufferLogo.SetActive(true);
+
 		}
 
 		private void BuildTagHolders()
