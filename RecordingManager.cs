@@ -33,6 +33,8 @@ namespace ObsAutoRecorder
 	public partial class ObsAutoRecorder : MelonMod
 	{
 
+		private object _stopQueueCor = null;
+
 		//OBS Recording states
 		private PlayfabInfo LastRecordedPlayer { get; set; }
 		//private PlayfabInfo NextPlayerToRecord { get; set; }
@@ -44,6 +46,17 @@ namespace ObsAutoRecorder
 		//private bool QueuedForStopping { get; set; } = false;
 		private bool ModInitiatedStop { get; set; } = false;
 		private bool IsWaitingForLastRecordStop { get; set; } = false;
+
+		private int ParkPlayers { get; set; } = 0;
+		private void onPlayerSpawn()
+		{
+			if(SceneName == "park")
+			{
+				ParkPlayers = PlayerManager.instance.AllPlayers.Count - 1;
+				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park players", "-1");
+			}
+
+		}
 
 		private string LastSceneName { get; set; } = "loader";
 
@@ -108,7 +121,7 @@ namespace ObsAutoRecorder
 				ActivePlayerInArena = new PlayfabInfo("Howard", "0000000000000000", int.MaxValue);
 
 			if (SceneName == "park")
-				ActivePlayerInArena = new PlayfabInfo($"{PlayerManager.instance.AllPlayers.Count} park players", "-1");
+				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park players", "-1");
 
 
 			if (!OBS.IsConnected())
@@ -137,8 +150,12 @@ namespace ObsAutoRecorder
 
 			if (PauseAfterMatch.Value)
 				PauseRecording();
+
+			
 			if (!(_stopQueueCor is null))
-				Log("Existing recording hold coroutine found. Continuing", true, 0);	
+			{
+				Log("Existing recording hold coroutine found. Continuing", true, 0);
+			}
 			else
 				_stopQueueCor = MelonCoroutines.Start(RecordingHoldCoroutine(RecordingPauseHoldTimeout.Value));
 		}
@@ -165,6 +182,7 @@ namespace ObsAutoRecorder
 				Log($"Fight Session Start: Cancelling recording hold coroutine");
 				MelonCoroutines.Stop(_stopQueueCor);
 				_stopQueueCor = null;
+				mainIconBlinker = false;
 			}
 
 
@@ -218,7 +236,7 @@ namespace ObsAutoRecorder
 			Task.Run(() =>
 			{
 				float startTime = Time.realtimeSinceStartup;
-				int secondsToRetry = 5;
+				int secondsToRetry = 10;
 				bool succeeded = false;
 				while (StopRequestInProgress && !((Time.realtimeSinceStartup - startTime) > secondsToRetry))
 				{
@@ -257,6 +275,7 @@ namespace ObsAutoRecorder
 					{
 						MelonCoroutines.Stop(_stopQueueCor);
 						_stopQueueCor = null;
+						mainIconBlinker = false;
 					}
 
 				}
@@ -343,7 +362,7 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStop(string outputPath)
 		{
-			Log("Recording stopped");
+			Log("OnRecordStop: Recording stopped");
 			if (ExternalRecording)
 				return;
 
@@ -381,7 +400,15 @@ namespace ObsAutoRecorder
 
 		private void onReplayBufferSaved(string outputPath)
 		{
-			Log($"Replay buffer saved to: {outputPath}");
+			if(!(_replayBufferBlink is null))
+			{
+				replayBufferBlinker = false;
+				MelonCoroutines.Stop(_replayBufferBlink);
+				_replayBufferBlink = null;
+			}
+			_replayBufferBlink = MelonCoroutines.Start(BlinkReplayBufferCoRoutine());
+
+				Log($"Replay buffer saved to: {outputPath}");
 			string newFileName = outputPath;
 
 			if (!SceneName.Contains("map"))
@@ -497,7 +524,15 @@ namespace ObsAutoRecorder
 		private IEnumerator RecordingHoldCoroutine(float duration)
 		{
 			Log($"RecordingHold: Stop Queue States: "/*QueuedForStopping: {{QueuedForStopping}}, */ + $"ExternalRecording {ExternalRecording}", true);
-			yield return new WaitForSeconds(duration);
+			//yield return new WaitForSeconds(duration);
+
+			float starttime = Time.realtimeSinceStartup;
+			while((Time.realtimeSinceStartup - starttime) < duration)
+			{
+				mainIconBlinker = !mainIconBlinker;
+				yield return new WaitForSeconds(0.5f);
+			}
+			mainIconBlinker = false;
 			Log($"RecordingHold: "/*QueuedForStopping: {QueuedForStopping}, */ + $"ExternalRecording {ExternalRecording}", true);
 			if (!ExternalRecording)
 			{

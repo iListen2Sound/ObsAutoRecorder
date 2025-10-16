@@ -29,8 +29,85 @@ using Il2CppSystem;
 
 namespace ObsAutoRecorder
 {
+	
 	public partial class ObsAutoRecorder : MelonMod
 	{
 
-    }
+		private Color pauseColor = new Color(1f, 1f, 0f, 0.75f);
+		private Color recordColor = new Color(1f, 1f, 1f, 0.75f);
+
+		private Color errorColor = new Color(1f, 0f, 0f, 0.75f);
+
+
+		private bool mainIconBlinker = false;
+		private bool replayBufferBlinker = false;
+
+		private object _standbyBlink = null;
+		private object _replayBufferBlink = null;
+
+		private IEnumerator BlinkReplayBufferCoRoutine()
+		{
+			float startTime = Time.realtimeSinceStartup;
+			float duration = 3;
+			float interval = 0.3f;
+			while((Time.realtimeSinceStartup - startTime) < duration)
+			{
+				replayBufferBlinker = !replayBufferBlinker;
+				yield return new WaitForSeconds(interval);
+			}
+			replayBufferBlinker = false;
+		}
+		
+		
+		private void SetIndicatorState()
+		{
+			//Log($"OBS.IsRecordingActive(): {OBS.IsRecordingActive()}\tIsPaused: {IsPaused}", true);
+			if (PreferMinimalIcon.Value)
+			{
+				try
+				{
+					MinimalLogo.SetActive((OBS.IsRecordingActive() || IsPaused) ^ mainIconBlinker);
+					MinimalLogo.GetComponent<MeshRenderer>().material.color = IsPaused ? pauseColor : recordColor;
+				}
+				catch (System.Exception ex)
+				{
+					Log($"SetIndicatorState: {ex.Message}", false, 2);
+
+				}
+
+
+			}
+			else
+			{
+				try
+				{
+					OBSIcon.SetActive((IsPaused || OBS.IsRecordingActive()) ^ mainIconBlinker);
+					PauseIcon.SetActive(IsPaused);
+					//&&!IsPaused required due to inconsistency in OBS API. 
+					RecordIcon.SetActive(OBS.IsRecordingActive());
+
+				}
+				catch (System.Exception ex)
+				{
+					Log($"SetIndicatorState: {ex.Message}", false, 2);
+				}
+			}
+			try
+			{
+				ReplayBufferLogo.SetActive(ClippingIconVisibleByDefault.Value ^ replayBufferBlinker);
+				if(IsPaused)
+				{
+					ReplayBufferLogo.GetComponent<MeshRenderer>().material.color = pauseColor;
+				}
+				else
+				{
+					ReplayBufferLogo.GetComponent<MeshRenderer>().material.color = OBS.IsReplayBufferActive() ? recordColor : errorColor;
+				}
+			}catch(System.Exception ex)
+			{
+
+			}
+			
+		}
+	}
 }

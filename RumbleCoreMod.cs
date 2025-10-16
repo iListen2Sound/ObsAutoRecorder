@@ -60,6 +60,7 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<bool> AddChapterMarkers;
 		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
 		private MelonPreferences_Entry<bool> PreferMinimalIcon;
+		private MelonPreferences_Entry<bool> ClippingIconVisibleByDefault;
 		private MelonPreferences_Entry<int> RecordByBPThreshold;
 		private MelonPreferences_Entry<bool> PauseAfterMatch;
 		private List<string> AutoRecordList { get; set; } = new();
@@ -71,13 +72,12 @@ namespace ObsAutoRecorder
 
 
 
-		private Color pauseColor = new Color(1f, 1f, 0f, 0.75f);
-		private Color recordColor = new Color(1f, 1f, 1f, 0.75f);
+
 
 		private object _debounceCor = null;
 		private object _pollTagsCor = null;
 		private object _pollPageCor = null;
-		private object _stopQueueCor = null;
+
 		//private object _recordingWaitCor = null;
 		public static GameObject GetIndicator()
 		{
@@ -125,9 +125,9 @@ namespace ObsAutoRecorder
 			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording paused until auto stop");
 			PauseAfterMatch = OBSAutoRecorderSettings.CreateEntry("Pause recording after match", false, null, "Pause recording when not fighting recordable player. Replay buffer will not work when paused");
 
+
 			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator");
-			//PlayersToRecord = OBSAutoRecorderSettings.CreateEntry("PlayersToRecord", "", "List of players to Record");
-			//AutoRecordList = PlayersToRecord.Value.Split(SEPARATOR).ToList();
+			ClippingIconVisibleByDefault = OBSAutoRecorderSettings.CreateEntry("Clip Icon Default Visibility", true, null, "Make the replay buffer icon always visible. Otherwise, it's only shown to show an inactive replay buffer and blinks when a clip is saved");
 
 
 
@@ -173,6 +173,7 @@ namespace ObsAutoRecorder
 			OBS.onConnect += onConnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
 
+			Calls.onPlayerSpawned += onPlayerSpawn;
 			Instance = this;
 		}
 		public override void OnSceneWasUnloaded(int buildIndex, string sceneName)
@@ -185,40 +186,8 @@ namespace ObsAutoRecorder
 			if (!_sceneIsLoaded)
 				return;
 
-
-			//Log($"OBS.IsRecordingActive(): {OBS.IsRecordingActive()}\tIsPaused: {IsPaused}", true);
-			if (PreferMinimalIcon.Value)
-			{
-				try
-				{
-					MinimalLogo.SetActive(OBS.IsRecordingActive() || IsPaused);
-					MinimalLogo.GetComponent<MeshRenderer>().material.color = IsPaused ? pauseColor : recordColor;
-				}
-				catch (System.Exception ex)
-				{
-					Log($"ObsAutoRecorder: {ex.Message}", false, 2);
-
-				}
-
-
-			}
-			else
-			{
-				try
-				{
-					OBSIcon.SetActive(IsPaused || OBS.IsRecordingActive());
-					PauseIcon.SetActive(IsPaused);
-					//&&!IsPaused required due to inconsistency in OBS API. 
-					RecordIcon.SetActive(OBS.IsRecordingActive());
-
-				}
-				catch (System.Exception ex)
-				{
-					Log($"OBS Control API error: {ex.Message}", false, 2);
-				}
-
-
-			}
+			SetIndicatorState();
+			
 		}
 		/// <summary>
 		/// Called when map is fully initialized reducing the risk of null references.
