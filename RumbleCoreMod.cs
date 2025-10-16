@@ -78,7 +78,7 @@ namespace ObsAutoRecorder
 		private object _pollTagsCor = null;
 		private object _pollPageCor = null;
 		private object _stopQueueCor = null;
-		private object _recordingWaitCor = null;
+		//private object _recordingWaitCor = null;
 		public static GameObject GetIndicator()
 		{
 			return GameObject.Instantiate(IndicatorsBase);
@@ -90,10 +90,10 @@ namespace ObsAutoRecorder
 		}
 		public override void OnApplicationQuit()
 		{
-			if (ModInitiatedRecording)
+			if (!ExternalRecording)
 			{
 				Log("Game Closing. Forcing recording stop");
-				StopRecording();
+				RequestRecordingStop();
 				OBS.StopRecord();
 			}
 			OBSAutoRecorderSettings.SaveToFile();
@@ -282,6 +282,7 @@ namespace ObsAutoRecorder
 				BuildTagHolders();
 
 				isFirstLoad = false;
+				
 			}
 
 
@@ -302,6 +303,7 @@ namespace ObsAutoRecorder
 
 			SetRecordingState();
 			_sceneIsLoaded = true;
+			LastSceneName = SceneName;
 		}
 
 
@@ -411,6 +413,7 @@ namespace ObsAutoRecorder
 		{
 
 			return _displayedFriendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
+			
 
 		}
 
@@ -427,17 +430,15 @@ namespace ObsAutoRecorder
 
 			if (targets.Count > 1)
 			{
-				Log($"Warning: More than one entry found for {playFabID.Split(" - ")[0]} in AutoRecord list", false, 1);
+				Log($"Warning: More than one entry found for {playFabID.Split(" - ")[0]} in AutoRecord list. {targets.Count}", false, 1);
 			}
 
 			foreach (string entry in targets)
 			{
 				Log($"Found target: {entry}", true);
 			}
-			Log($"{targets.Count()}", true);
-
+			
 			bool result = targets.Count > 0;
-			Log($"Checking {playFabID} if in auto record list: {result}", true);
 			return result;
 		}
 		/// <summary>
@@ -485,98 +486,14 @@ namespace ObsAutoRecorder
 			}
 			else
 			{
-				Log($"Last recording stopped. Starting new recording for {CurrentOrLastRecordedPlayer}");
-				StartRecording(CurrentOrLastRecordedPlayer);
+				Log($"Last recording stopped. Starting new recording for {LastRecordedPlayer.ToString()}");
+				//StartRecording(NextPlayerToRecord);
 			}
-			_recordingWaitCor = null;
+			//_recordingWaitCor = null;
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="duration"></param>
-		/// <returns></returns>
-		/// <remarks>TODO: Ensure that user-started recordings are not stopped</remarks>
-		private IEnumerator RecordingHoldCoroutine(float duration)
-		{
-			Log($"Coroutine started: Stop Queue States: QueuedForStopping: {QueuedForStopping}, ModInitiatedRecording {ModInitiatedRecording}", true);
-			yield return new WaitForSeconds(duration);
-			Log($"Stop Queue States: QueuedForStopping: {QueuedForStopping}, ModInitiatedRecording {ModInitiatedRecording}", true);
-			if (QueuedForStopping && ModInitiatedRecording)
-			{
-				StopRecording();
-			}
-			_stopQueueCor = null;
-		}
-		/// <summary>
-		/// Start recording session
-		/// </summary>
-		/// <param name="playerID">ID - PublicName of other player loaded in the park</param>
-		/// <remarks>Sets ModInitiatedRecording to true</remarks>
-
-
-		private string RenameOutput(string oldOutputPath, string newName)
-		{
-			//File renaming
-			string newPath = "";
-
-			string playerName = "Unknown";
-			if (!string.IsNullOrEmpty(CurrentOrLastRecordedPlayer))
-			{
-				playerName = TagHolder.Sanitize(CurrentOrLastRecordedPlayer.Split(" - ")[1].Trim());
-			}
-
-			Log($"Player name for file rename: {playerName}");
-			string date = System.DateTime.Now.ToString(DateFormat.Value);
-			string time = System.DateTime.Now.ToString(TimeFormat.Value);
-			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
-			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
-			int copyIndex = 1;
-			while (System.IO.File.Exists(newPath))
-			{
-				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
-				copyIndex++;
-			}
-			Task.Run(() =>
-			{
-				bool success = false;
-				float startTime = Time.realtimeSinceStartup;
-				float currentTime = Time.realtimeSinceStartup;
-				int secondsToRetry = 5;
-				while (!success && !(currentTime - startTime > secondsToRetry))
-				{
-					currentTime = Time.realtimeSinceStartup;
-					try
-					{
-
-						System.IO.File.Move(oldOutputPath, newPath);
-						oldOutputPath = newPath;
-						success = true;
-						Log($"Recording renamed to: {newFileName}", false);
-					}
-
-					catch (IOException ex)
-					{
-						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
-
-
-					}
-					catch (System.Exception ex)
-					{
-						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
-
-
-					}
-				}
-				if (!success)
-				{
-					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
-				}
-			});
-
-
-			return newPath;
-		}
+		
+		
 
 	}
 }

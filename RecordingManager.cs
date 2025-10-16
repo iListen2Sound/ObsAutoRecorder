@@ -24,6 +24,8 @@ using Il2CppSteamworks;
 using System.Threading.Tasks;
 using System.Threading;
 using static OBS_Control_API.RequestResponse;
+using Il2CppPlayFab.EconomyModels;
+using Il2CppSystem;
 
 namespace ObsAutoRecorder
 {
@@ -32,250 +34,304 @@ namespace ObsAutoRecorder
 	{
 
 		//OBS Recording states
-		private string CurrentOrLastRecordedPlayer { get; set; } = "";
-		private string NewWaitingPlayer { get; set; } = "";
-		private bool IsRecording { get; set; } = false;
+		private PlayfabInfo LastRecordedPlayer { get; set; }
+		//private PlayfabInfo NextPlayerToRecord { get; set; }
+		private PlayfabInfo ActivePlayerInArena { get; set; }
+
 		private bool IsPaused { get; set; } = false;
-		private bool ModInitiatedRecording { get; set; } = false;
-		private bool ModInitiatedPause { get; set; } = false;
-		private bool QueuedForStopping { get; set; } = false;
+		private bool ExternalRecording { get; set; } = false;
+
+		//private bool QueuedForStopping { get; set; } = false;
 		private bool ModInitiatedStop { get; set; } = false;
 		private bool IsWaitingForLastRecordStop { get; set; } = false;
 
+		private string LastSceneName { get; set; } = "loader";
+
+		string LatestOutputPath = "";
 
 
 		private bool StartRequestedByMod = false;
 		private bool StopRequestedByMod = false;
 		private bool PauseRequestedByMod = false;
+		private bool IsSafeToRequestStart = true;
+
+
+
+		private bool StopRequestInProgress { get; set; } = false;
+
+		//variables for kidnapping external recording
+		float TimeOfLastExternalPause { get; set; }
+		private bool ModRequestedPause { get; set; } = false;
+		private bool ModInitiatedPause { get; set; } = false;
+		private void ResetVariables()
+		{
+			LatestOutputPath = "";
+			//IsPaused = false;
+
+			ModInitiatedPause = false;
+			//QueuedForStopping = false;
+			ModInitiatedStop = false;
+
+			//NextPlayerToRecord = null;
+
+			//Do not reset request variables
+			/*StartRequestedByMod = false;
+			ExternalRecording = false;
+			StopRequestedByMod = false;
+			LastRecordedPlayer = null;
+			PauseRequestedByMod = false;*/
+
+
+
+			//IsSafeToRequestStart = false; Should only be set by events and requests
+			//StopRequestInProgress = false; Should only be set by events and requests
+		}
+		private bool IsAutoRecordable(PlayfabInfo player)
+		{
+			Log($"IsAutoRecordable? Opponent BP: {player.BP} BP threshold: {RecordByBPThreshold.Value}");
+			if (IsInAutoRecordList(player.ID)) { return true; }
+
+			if (RecordByBPThreshold.Value == -1) { return false; }
+
+			if (player.BP >= RecordByBPThreshold.Value) { return true; }
+
+			return false;
+		}
 
 		private void SetRecordingState()
 		{
+			if (SceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
+				ActivePlayerInArena = new PlayfabInfo(PlayerManager.instance.AllPlayers[1]);
+
+			if (SceneName == "gym")
+				ActivePlayerInArena = new PlayfabInfo("Howard", "0000000000000000", int.MaxValue);
+
+			if (SceneName == "park")
+				ActivePlayerInArena = new PlayfabInfo($"{PlayerManager.instance.AllPlayers.Count} park players", "-1");
+
+
 			if (!OBS.IsConnected())
 			{
 				Log("No active websocket connection to OBS detected", false, 1);
 				return;
 			}
 
-			if (SceneName == "gym")
+			if ((SceneName == "gym") && LastSceneName.Contains("map"))
 			{
-				WhenInGym();
+				FightSessionEnd();
 			}
 
 
-			if (SceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
+			if (SceneName.Contains("map") && (LastSceneName == "gym") && PlayerManager.instance.AllPlayers.Count > 1)
 			{
-				WhenInArena();
+				FightSessionStart();
 			}
+
 		}
-		private void WhenInGym()
+		private void FightSessionEnd()
 		{
-			if ((OBS.IsRecordingActive() || IsPaused) && ModInitiatedRecording)
+			if (ExternalRecording)
+			{ return; }
+
+
+			if (PauseAfterMatch.Value)
+				PauseRecording();
+			if (!(_stopQueueCor is null))
+				Log("Existing recording hold coroutine found. Continuing", true, 0);	
+			else
+				_stopQueueCor = MelonCoroutines.Start(RecordingHoldCoroutine(RecordingPauseHoldTimeout.Value));
+		}
+
+
+		private void FightSessionStart()
+		{
+			string lastPlayer = LastRecordedPlayer is null ? "null" : LastRecordedPlayer.ToString();
+			Log($"FightSessionStart: LastRecordedPlayer: {lastPlayer} ActivePlayerInArena: {ActivePlayerInArena.ToString()}");
+			//Skip if active recording is started externally
+			if ((OBS.IsRecordingActive() || IsPaused) && ExternalRecording)
 			{
-				if (!QueuedForStopping)
+				Log("FightSessionStart: External Recording. Exiting");
+				return;
+			}
+
+			//Skip is active player is not recordable
+			if (!IsAutoRecordable(ActivePlayerInArena)) { Log($"Player {ActivePlayerInArena.ToString()} does not meet auto record criteria.", false, 0); return; }
+
+
+			//At this point, recording hold coroutine should be stopped if currently active regardless of results
+			if (!(_stopQueueCor is null))
+			{
+				Log($"Fight Session Start: Cancelling recording hold coroutine");
+				MelonCoroutines.Stop(_stopQueueCor);
+				_stopQueueCor = null;
+			}
+
+
+			//Null currentRecorded player means no recording active. Start new one.
+			if (LastRecordedPlayer is null)
+			{
+				RequestStartRecording(ActivePlayerInArena);
+				return;
+			}
+
+			//If opponent found is the same as the opponent having a recording hold, continue recording
+			if (ActivePlayerInArena.ID == LastRecordedPlayer.ID)
+			{
+				Log($"Previous opponent {LastRecordedPlayer.ToString()} found. Resuming recording");
+				if (IsPaused)
 				{
-
-					if (PauseAfterMatch.Value)
+					ResumeRecording();
+				}
+				else
+				{
+					if (!OBS.IsRecordingActive())
 					{
-						PauseRecording();
+						Log($"No active recording on hold. Starting new recording for {ActivePlayerInArena.ToString()}");
+						RequestStartRecording(ActivePlayerInArena);
 					}
+					else
+					{
+						Log("$Recording already active. No action");
+					}
+				}
+				return;
+			}
+			//All other cases means recording is currently held for previous player
 
-					QueuedForStopping = true;
+
+			Log($"FightSessionStart: Replacing recording currently active (real obs status:  {OBS.IsRecordingActive()}, Pause status: {IsPaused}) for player {LastRecordedPlayer.Name} with {ActivePlayerInArena.Name}", false);
+			RequestRecordingStop();
+			RequestStartRecording(ActivePlayerInArena);
+		}
+
+		private void RequestStartRecording(PlayfabInfo player)
+		{
+			//NextPlayerToRecord = player;
+			if ((OBS.IsRecordingActive() || IsPaused) && !StopRequestInProgress)
+			{
+				Log($"RequestStartRecording: Start recording request started when recording is in progress with no prior request to stop", true, 1);
+			}
+			StartRequestedByMod = true;
+
+			//Keep requesting record start until successful
+			Task.Run(() =>
+			{
+				float startTime = Time.realtimeSinceStartup;
+				int secondsToRetry = 5;
+				bool succeeded = false;
+				while (StopRequestInProgress && !((Time.realtimeSinceStartup - startTime) > secondsToRetry))
+				{
+					Thread.Sleep(100);
+					Log($"RequestStartRecording: Stop request in progress. Waiting", true);
+				}
+				startTime = Time.realtimeSinceStartup;
+
+				while (!succeeded && !((Time.realtimeSinceStartup - startTime) > secondsToRetry))
+				{
+					succeeded = OBS.StartRecord();
+					Thread.Sleep(100);
+					RequestResponse.GetRecordStatus req = OBS.GetRecordStatus();
+					//check possible status mismatches as it is apparently possible with obs
+					Log($"RequestRecordStart: OBS.StartRecord result: {succeeded}. Actual record status: {req.outputActive}. Duration: {req.outputDuration}. IsRecordingActive: {OBS.IsRecordingActive()} ", true, succeeded == req.outputActive ? 1 : 2);
+					if (!req.outputActive)
+						succeeded = false;
+				}
+
+
+				if (succeeded)
+				{
+					Log($"RequestStartRecording: Success!", true, 0);
+					player.RecordingStart = System.DateTime.Now;
+					player.RecordingOutputPath = LatestOutputPath;
+					player.IsRecording = true;
+					ExternalRecording = false;
+					
+
+					//NextPlayerToRecord = null;
+
+					StartRequestedByMod = false;
+
+					//Stop recording hold coroutine
 					if (_stopQueueCor != null)
 					{
 						MelonCoroutines.Stop(_stopQueueCor);
 						_stopQueueCor = null;
 					}
-					Log("Starting Stop Hold Coroutine");
-					_stopQueueCor = MelonCoroutines.Start(RecordingHoldCoroutine(RecordingPauseHoldTimeout.Value));
-				}
-				else { Log($"Hold not started. QueuedForStopping = {QueuedForStopping}, IsPaused: {IsPaused}"); }
 
-			}
-		}
-
-
-		private void WhenInArena()
-		{
-			var opp = PlayerManager.instance.AllPlayers[1];
-			var oppId = opp?.Data?.GeneralData?.PlayFabMasterId;
-			var oppName = opp?.Data?.GeneralData?.PublicUsername ?? "Unknown";
-			int oppBp = opp.Data.GeneralData.BattlePoints;
-
-			string opponentInfo = $"{oppId} - {oppName}";
-
-			if (IsAutoRecordable(oppId, oppBp))
-			{
-				
-				if (!(_recordingWaitCor is null))
-				{
-					MelonCoroutines.Stop(_recordingWaitCor);
-					_recordingWaitCor = null;
-				}
-
-				if (CurrentOrLastRecordedPlayer.Split(" - ")[0] == oppId && ModInitiatedRecording)
-				{
-					Log($"Found previous opponent {oppName}. ");
-					if (IsPaused)
-					{
-						Log($"Resuming recording");
-						ResumeRecording();
-						QueuedForStopping = false;
-					}
 				}
 				else
 				{
-					Log($"Found new opponent: {opponentInfo}. Replacing current recording", true);
-					NewWaitingPlayer = opponentInfo;
-					if (OBS.IsRecordingActive() || IsPaused)
-					{
-						IsWaitingForLastRecordStop = true;
-						StopRecording();
-						if (_stopQueueCor != null)
-						{
-							MelonCoroutines.Stop(_stopQueueCor);
-							_stopQueueCor = null;
-						}
-					}
-						
-					StartRecording(NewWaitingPlayer);
-					Log($"Recording Started by  When in Arena logic {NewWaitingPlayer}", true);
-
-					NewWaitingPlayer = "";
+					Log($"RequestRecordStart: Failed to start recording for player {player.ToString()}. Timeout.", false, 2);
+					ResetVariables();
 				}
-			}
-		}
 
-		private bool IsAutoRecordable(string opponentInfo, int opponentBP)
-		{
-			Log($"IsAutoRecordable? Opponent BP: {opponentBP} BP threshold: {RecordByBPThreshold.Value}");
-			if (IsInAutoRecordList(opponentInfo)) { return true; }
-
-			if (RecordByBPThreshold.Value == -1) { return false; }
-
-			if (opponentBP >= RecordByBPThreshold.Value) { return true; }
-
-			return false;
-		}
-
-		private void StartRecording(string playerID = "")
-		{
-
-			if (OBS.IsRecordingActive() || IsPaused)
-			{
-				string pauseStatus = IsPaused ? "Paused " : "";
-				Log($"Recording already in progress or paused", false, 1);
-
+				LastRecordedPlayer = player;
 				
-			}
-			StartRequestedByMod = true;
-			Log($"Starting recording for: {playerID}", false);
-			
-			QueuedForStopping = false;
-			Task.Run(() =>
-			{
-				float startTime = Time.realtimeSinceStartup;
-				int secondsToRetry = 5;
-				bool success = false;
-				while (!success && !(Time.realtimeSinceStartup - startTime > secondsToRetry))
-				{
-					success = OBS.StartRecord();
-					Thread.Sleep(250);
-					if (success != OBS.IsRecordingActive())
-					{
-						Log("Mismatch between start recording status and IsRecordingActive. Retrying", true, 1);
-						success = false;
-					}
-					else
-					{
-						Log("Match between start recording status and IsRecordingActive. Should be a success", true, 1);
-					}
-					
-				}
-				if(success)
-				{
-					Log("Recording started successfully", false);
-					
-				}
-				else
-				{
-					Log("Recording failed to start", false, 1);
-				}
-				CurrentOrLastRecordedPlayer = playerID;
 			});
 		}
 
-		private void StopRecording()
+		private void RequestRecordingStop()
 		{
-			if (!(OBS.IsRecordingActive() || IsPaused))
-			{
-				Log("No recording in progress", true);
-				return;
-			}
-
+			StopRequestInProgress = true;
 			OBS.StopRecord();
-
 		}
 
 		private void PauseRecording()
 		{
-
-			if (!(OBS.IsRecordingActive() || IsPaused))
-			{
-				Log("No recording in progress", true);
-				return;
-			}
-			if (IsPaused)
-				return;
-			PauseRequestedByMod = true;
+			ModRequestedPause = true;
 			OBS.PauseRecord();
 		}
 
 		private void ResumeRecording()
 		{
 			OBS.ResumeRecord();
-			ModInitiatedPause = false;
-			QueuedForStopping = false;
-			
 		}
 
 		private void onRecordPause()
 		{
+			Log("Recording paused");
 			IsPaused = true;
-			ModInitiatedPause = PauseRequestedByMod;
-			PauseRequestedByMod = false;
-			Log($"Recording paused for player: {CurrentOrLastRecordedPlayer}");
+
+
+
+			//kidnapping mechanic
+			if (!ModRequestedPause)
+				TimeOfLastExternalPause = Time.realtimeSinceStartup;
+
+
+			ModInitiatedPause = ModRequestedPause;
+			ModRequestedPause = false;
+
+
 		}
 		private void onRecordResume()
 		{
-			if (_stopQueueCor != null)
+			Log("Recording resumed");
+			if (ExternalRecording)
 			{
-				MelonCoroutines.Stop(_stopQueueCor);
-				_stopQueueCor = null;
+				//If paused externally then resumed within 0.5 seconds, claim recording as mod-owned and no longer external
+				ExternalRecording = !((Time.realtimeSinceStartup - TimeOfLastExternalPause) < 0.5f);
 			}
-
-			Log("Starting Stop Hold Coroutine");
-			ModInitiatedRecording = true;
 			IsPaused = false;
-			QueuedForStopping = false;
-			Log($"Recording Resumed for player: {CurrentOrLastRecordedPlayer}");
 		}
 		private void onRecordStart(string outputPath)
 		{
-			if (_stopQueueCor != null)
+			
+			LatestOutputPath = outputPath;
+			IsPaused = false;
+			if (!StartRequestedByMod)
 			{
-				MelonCoroutines.Stop(_stopQueueCor);
-				_stopQueueCor = null;
+				Log("onRecordStart: Recording started externally", false, 1);
+
 			}
 
-			IsPaused = false;
-			//IsRecording = true;
-			if(!StartRequestedByMod)
-			{
-				Log("Recording started externally", false, 1);
-			}
-			ModInitiatedRecording = StartRequestedByMod;
-			StartRequestedByMod = false;
-			Log($"Recording started for: {outputPath}");
+			Log($"onRecordStart: Recording started for: {outputPath}");
+
+			//Assume externally initiated recording if no start request from within mod
+			ExternalRecording = !StartRequestedByMod;
+
+			/*if (ExternalRecording)
+				NextPlayerToRecord.RecordingOutputPath = outputPath;*/
 		}
 
 		public string GetSafeFilename(string filename)
@@ -286,32 +342,29 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStop(string outputPath)
 		{
-			Log($"onRecordStop ({outputPath})", true);
-			Log($"Recording saved to: {outputPath}");
-			ModInitiatedStop = StopRequestedByMod;
-			StopRequestedByMod = false;
-			if (!ModInitiatedStop)
-				Log("Recording stopped Externally", false, 1);
+			Log("Recording stopped");
+			if (ExternalRecording)
+				return;
+
+
+			if (outputPath != LastRecordedPlayer.RecordingOutputPath)
+			{
+				//warn if outputpath does not match expected output path assigned to player. Use player-assigned outputpath
+				Log($"onRecordStop: mismatch between event output path {outputPath} and LastRecordedPlayer.RecordingOutputPath: {LastRecordedPlayer.RecordingOutputPath}", false, 1);
+
+			}
 			if (DoAutoRename.Value)
 			{
-				Log($"Recording renamed to {RenameOutput(outputPath, AutoRenameString.Value)}");
-
+				RenameOutput(LastRecordedPlayer.RecordingOutputPath, AutoRenameString.Value, LastRecordedPlayer, false);
 			}
 			else
 			{
-				Log("AutoRename disabled. Saving file as-is");
+				Task.Run(CheckUntilFileIsWritable);
+
 			}
+			ResetVariables();
 
-			//Reset recording states
-
-			//IsRecording = false;
 			IsPaused = false;
-			ModInitiatedRecording = false;
-			ModInitiatedPause = false;
-			QueuedForStopping = false;
-			ModInitiatedStop = false;
-			CurrentOrLastRecordedPlayer = "";
-			
 		}
 
 		private void onConnect()
@@ -329,7 +382,12 @@ namespace ObsAutoRecorder
 		{
 			Log($"Replay buffer saved to: {outputPath}");
 			string newFileName = outputPath;
-			newFileName = RenameOutput(outputPath, "R- " + AutoRenameString.Value);
+
+			if (!SceneName.Contains("map"))
+			{
+
+			}
+			newFileName = RenameOutput(outputPath, "R- " + AutoRenameString.Value, ActivePlayerInArena, true);
 			newFileName = System.IO.Path.GetFileName(newFileName);
 			if (AddChapterMarkers.Value)
 			{
@@ -339,6 +397,112 @@ namespace ObsAutoRecorder
 
 				Log("Adding Chapter Marker", true);
 			}
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="oldOutputPath"> Location of the original file to be renamed. Should be the same as player.RecordingOutputPath if recording, and remain the same if it's a clip</param>
+		/// <param name="newName"></param>
+		/// <param name="player"></param>
+		/// <param name="isReplay"></param>
+		/// <returns></returns>
+		private string RenameOutput(string oldOutputPath, string newName, PlayfabInfo player, bool isReplay = false)
+		{
+			//File renaming
+			string newPath = "";
+
+			string date = isReplay ? System.DateTime.Now.ToString(DateFormat.Value) : player.RecordingStart.ToString(DateFormat.Value);
+			string time = isReplay ? System.DateTime.Now.ToString(TimeFormat.Value) : player.RecordingStart.ToString(TimeFormat.Value);
+
+
+			Log($"Player name for file rename: {player.Name}");
+
+			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(player.Name)}").Replace("{date}", date).Replace("{time}", time);
+			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
+			int copyIndex = 1;
+
+
+			while (System.IO.File.Exists(newPath))
+			{
+				Log($"File exists: {newPath} ", false, 1);
+				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
+				
+				copyIndex++;
+			}
+
+
+			Task.Run(() =>
+			{
+				bool success = false;
+				float startTime = Time.realtimeSinceStartup;
+				float currentTime = Time.realtimeSinceStartup;
+				int secondsToRetry = 5;
+				while (!success && !(currentTime - startTime > secondsToRetry))
+				{
+					currentTime = Time.realtimeSinceStartup;
+					try
+					{
+
+						System.IO.File.Move(oldOutputPath, newPath);
+						oldOutputPath = newPath;
+						success = true;
+						Log($"Recording renamed to: {newFileName}", false);
+					}
+
+					catch (IOException ex)
+					{
+						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
+						if(ex.Message.ToLower().Contains("could not find file"))
+						{
+							break;
+						}
+
+
+					}
+					catch (System.Exception ex)
+					{
+						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
+
+
+					}
+				}
+				if (!success)
+				{
+					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
+				}
+				StopRequestInProgress = false;
+
+			});
+
+
+
+			return newPath;
+		}
+
+		private void CheckUntilFileIsWritable()
+		{
+			//TODO: Do proper check when able
+			Thread.Sleep(500);
+			StopRequestInProgress = false;
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="duration"></param>
+		/// <returns></returns>
+		/// <remarks>TODO: Ensure that user-started recordings are not stopped</remarks>
+		private IEnumerator RecordingHoldCoroutine(float duration)
+		{
+			Log($"RecordingHold: Stop Queue States: "/*QueuedForStopping: {{QueuedForStopping}}, */ + $"ExternalRecording {ExternalRecording}", true);
+			yield return new WaitForSeconds(duration);
+			Log($"RecordingHold: "/*QueuedForStopping: {QueuedForStopping}, */ + $"ExternalRecording {ExternalRecording}", true);
+			if (!ExternalRecording)
+			{
+				RequestRecordingStop();
+			}
+			_stopQueueCor = null;
 		}
 	}
 }
