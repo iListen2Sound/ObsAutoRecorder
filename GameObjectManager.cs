@@ -29,6 +29,9 @@ namespace ObsAutoRecorder
 
 	public partial class ObsAutoRecorder : MelonMod
 	{
+		private int VR_ONLY_LAYER { get { return LayerMask.NameToLayer("PlayerFade"); } }
+
+
 
 		private GameObject TagFrame;
 		private List<TagHolder> _displayedFriendTags = new();
@@ -75,6 +78,8 @@ namespace ObsAutoRecorder
 			IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
 
 			IndicatorsBase.SetActive(false);
+
+			MelonCoroutines.Start(ExternalRecordingBlinkerCoroutine());
 		}
 
 		private void BuildPlayerIndicators()
@@ -83,18 +88,21 @@ namespace ObsAutoRecorder
 			Log("PlayerUI loaded", true);
 			OBSIcon = GameObject.Instantiate(LogoPack.transform.GetChild(0).gameObject);
 			OBSIcon.SetName("OBS Icon");
+			OBSIcon.layer = RockCamVisibility.Value ? 0 : VR_ONLY_LAYER;
 			Log("OBSIcon loaded", true);
+
 			PauseIcon = OBSIcon.transform.GetChild(0).gameObject;
-			Log("PauseIcon loaded", true);
 			PauseIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
 			PauseIcon.transform.localRotation = Quaternion.Euler(270, 0, 0);
+			PauseIcon.layer = RockCamVisibility.Value ? 0 : VR_ONLY_LAYER;
+			Log("PauseIcon loaded", true);
+
 			RecordIcon = OBSIcon.transform.GetChild(1).gameObject;
 			RecordIcon.transform.localPosition = new Vector3(0.4f, -5f, -0.4f);
-			OBSIcon.transform.SetParent(PlayerUi.transform, false);
-			//-0.24 0.035 0.945
-			OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
+			RecordIcon.layer = RockCamVisibility.Value? 0 : VR_ONLY_LAYER;
 
-			//70.0001 155 180
+			OBSIcon.transform.SetParent(PlayerUi.transform, false);
+			OBSIcon.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
 			OBSIcon.transform.localRotation = Quaternion.Euler(70, 150, 180);
 			OBSIcon.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
 			OBSIcon.SetActive(false);
@@ -103,11 +111,10 @@ namespace ObsAutoRecorder
 			MinimalLogo.SetName("OBS Icon Minimal");
 			MinimalLogo.transform.SetParent(PlayerUi.transform, false);
 			MinimalLogo.transform.localPosition = new Vector3(-0.24f, 0.035f, 0.945f);
-			//20 335 0
 			MinimalLogo.transform.localRotation = Quaternion.Euler(70, 150, 180);
-			//0.03 0.03 0.001
 			MinimalLogo.transform.localScale = new Vector3(0.03f, 0.0001f, 0.03f);
 			MinimalLogo.SetActive(false);
+			MinimalLogo.layer = RockCamVisibility.Value ? 0 : VR_ONLY_LAYER;
 
 			ReplayBufferLogo = GameObject.Instantiate(LogoPack.transform.GetChild(3).gameObject);
 			ReplayBufferLogo.SetName("Replay Buffer Icon");
@@ -119,7 +126,7 @@ namespace ObsAutoRecorder
 			//0.03 0.03 0.03
 			ReplayBufferLogo.transform.localScale = new Vector3(0.015f, 0.015f, 0.015f);
 			ReplayBufferLogo.SetActive(true);
-
+			ReplayBufferLogo.layer = RockCamVisibility.Value ? 0 : VR_ONLY_LAYER;
 		}
 
 		private void BuildTagHolders()

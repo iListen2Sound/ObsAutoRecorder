@@ -41,6 +41,7 @@ namespace ObsAutoRecorder
 
 		private bool mainIconBlinker = false;
 		private bool replayBufferBlinker = false;
+		private bool recordPauseBlinker = false;
 
 		private object _standbyBlink = null;
 		private object _replayBufferBlink = null;
@@ -48,7 +49,7 @@ namespace ObsAutoRecorder
 		private IEnumerator BlinkReplayBufferCoRoutine()
 		{
 			float startTime = Time.realtimeSinceStartup;
-			float duration = 3;
+			float duration = 7;
 			float interval = 0.3f;
 			while((Time.realtimeSinceStartup - startTime) < duration)
 			{
@@ -58,7 +59,22 @@ namespace ObsAutoRecorder
 			replayBufferBlinker = false;
 		}
 		
-		
+
+		private IEnumerator ExternalRecordingBlinkerCoroutine()
+		{
+			while(true)
+			{
+				if(ExternalRecording)
+				{
+					mainIconBlinker = !mainIconBlinker;
+				}
+				else
+				{
+					mainIconBlinker = false;
+				}
+				yield return new WaitForSeconds(1f);
+			}
+		}
 		private void SetIndicatorState()
 		{
 			//Log($"OBS.IsRecordingActive(): {OBS.IsRecordingActive()}\tIsPaused: {IsPaused}", true);
@@ -82,9 +98,9 @@ namespace ObsAutoRecorder
 				try
 				{
 					OBSIcon.SetActive((IsPaused || OBS.IsRecordingActive()) ^ mainIconBlinker);
-					PauseIcon.SetActive(IsPaused);
+					PauseIcon.SetActive(IsPaused ^ recordPauseBlinker);
 					//&&!IsPaused required due to inconsistency in OBS API. 
-					RecordIcon.SetActive(OBS.IsRecordingActive());
+					RecordIcon.SetActive(OBS.IsRecordingActive() ^ recordPauseBlinker);
 
 				}
 				catch (System.Exception ex)

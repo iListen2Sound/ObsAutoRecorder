@@ -51,18 +51,25 @@ namespace ObsAutoRecorder
 		string SceneName { get; set; }
 		private MelonPreferences_Category OBSAutoRecorderSettings;
 		private MelonPreferences_Entry<bool> isDebugMode;
+
 		//private MelonPreferences_Entry<string> PlayersToRecord;
 		private MelonPreferences_Entry<string> AutoRenameString;
 		private MelonPreferences_Entry<bool> DoAutoRename;
 		private MelonPreferences_Entry<string> DateFormat;
 		private MelonPreferences_Entry<string> TimeFormat;
 		private MelonPreferences_Entry<string> ReplayPrefix;
+
 		private MelonPreferences_Entry<bool> AddChapterMarkers;
 		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
-		private MelonPreferences_Entry<bool> PreferMinimalIcon;
-		private MelonPreferences_Entry<bool> ClippingIconVisibleByDefault;
 		private MelonPreferences_Entry<int> RecordByBPThreshold;
 		private MelonPreferences_Entry<bool> PauseAfterMatch;
+
+
+		private MelonPreferences_Entry<bool> PreferMinimalIcon;
+		private MelonPreferences_Entry<bool> ClippingIconVisibleByDefault;
+		private MelonPreferences_Entry<bool> RockCamVisibility;
+
+
 		private List<string> AutoRecordList { get; set; } = new();
 
 
@@ -113,21 +120,22 @@ namespace ObsAutoRecorder
 
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", true, null, "Enable debug with more verbose logging");
 
-			RecordByBPThreshold = OBSAutoRecorderSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
+			
 
 			DoAutoRename = OBSAutoRecorderSettings.CreateEntry("Enable Auto Rename", true, null, "Enable automatic renaming of recorded files");
 			AutoRenameString = OBSAutoRecorderSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
 			DateFormat = OBSAutoRecorderSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = OBSAutoRecorderSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
 			ReplayPrefix = OBSAutoRecorderSettings.CreateEntry("Replay Prefix", "R- ", null, "String to prefix replay buffers with.");
+			
 			AddChapterMarkers = OBSAutoRecorderSettings.CreateEntry("Chapter Markers", false, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
-
 			RecordingPauseHoldTimeout = OBSAutoRecorderSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording paused until auto stop");
 			PauseAfterMatch = OBSAutoRecorderSettings.CreateEntry("Pause recording after match", false, null, "Pause recording when not fighting recordable player. Replay buffer will not work when paused");
-
+			RecordByBPThreshold = OBSAutoRecorderSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
 
 			PreferMinimalIcon = OBSAutoRecorderSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator");
 			ClippingIconVisibleByDefault = OBSAutoRecorderSettings.CreateEntry("Clip Icon Default Visibility", true, null, "Make the replay buffer icon always visible. Otherwise, it's only shown to show an inactive replay buffer and blinks when a clip is saved");
+			RockCamVisibility = OBSAutoRecorderSettings.CreateEntry("Show Icons on Camera", true, null, "Make Icons Visible on Rock Cam and Legacy Cam");
 
 
 

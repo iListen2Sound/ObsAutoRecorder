@@ -32,6 +32,8 @@ namespace ObsAutoRecorder
 
 	public partial class ObsAutoRecorder : MelonMod
 	{
+		
+	
 
 		private object _stopQueueCor = null;
 
@@ -47,13 +49,12 @@ namespace ObsAutoRecorder
 		private bool ModInitiatedStop { get; set; } = false;
 		private bool IsWaitingForLastRecordStop { get; set; } = false;
 
-		private int ParkPlayers { get; set; } = 0;
+		private int ParkPlayers { get { return PlayerManager.instance.AllPlayers.Count - 1; } }
 		private void onPlayerSpawn()
 		{
 			if(SceneName == "park")
 			{
-				ParkPlayers = PlayerManager.instance.AllPlayers.Count - 1;
-				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park players", "-1");
+				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park player{(ParkPlayers == 1 ? "" : "s")}", "-1");
 			}
 
 		}
@@ -121,7 +122,7 @@ namespace ObsAutoRecorder
 				ActivePlayerInArena = new PlayfabInfo("Howard", "0000000000000000", int.MaxValue);
 
 			if (SceneName == "park")
-				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park players", "-1");
+				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park player{(ParkPlayers == 1 ? "" : "s") }", "-1");
 
 
 			if (!OBS.IsConnected())
@@ -248,7 +249,7 @@ namespace ObsAutoRecorder
 				while (!succeeded && !((Time.realtimeSinceStartup - startTime) > secondsToRetry))
 				{
 					succeeded = OBS.StartRecord();
-					Thread.Sleep(100);
+					Thread.Sleep(400);
 					RequestResponse.GetRecordStatus req = OBS.GetRecordStatus();
 					//check possible status mismatches as it is apparently possible with obs
 					Log($"RequestRecordStart: OBS.StartRecord result: {succeeded}. Actual record status: {req.outputActive}. Duration: {req.outputDuration}. IsRecordingActive: {OBS.IsRecordingActive()} ", true, succeeded == req.outputActive ? 1 : 2);
@@ -362,7 +363,7 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStop(string outputPath)
 		{
-			Log("OnRecordStop: Recording stopped");
+			Log($"OnRecordStop: Recording stopped {outputPath}");
 			if (ExternalRecording)
 				return;
 
@@ -393,6 +394,8 @@ namespace ObsAutoRecorder
 			GetRecordStatus recordStatus = OBS.GetRecordStatus();
 			Log($"GetRecordStatus: outputActive: {recordStatus.outputActive}, outputPaused: {recordStatus.outputPaused}");
 			IsPaused = recordStatus.outputPaused;
+
+			ExternalRecording = (recordStatus.outputPaused || recordStatus.outputPaused);
 
 			SetRecordingState();
 
@@ -529,10 +532,10 @@ namespace ObsAutoRecorder
 			float starttime = Time.realtimeSinceStartup;
 			while((Time.realtimeSinceStartup - starttime) < duration)
 			{
-				mainIconBlinker = !mainIconBlinker;
+				recordPauseBlinker = !mainIconBlinker;
 				yield return new WaitForSeconds(0.5f);
 			}
-			mainIconBlinker = false;
+			recordPauseBlinker = false;
 			Log($"RecordingHold: "/*QueuedForStopping: {QueuedForStopping}, */ + $"ExternalRecording {ExternalRecording}", true);
 			if (!ExternalRecording)
 			{
