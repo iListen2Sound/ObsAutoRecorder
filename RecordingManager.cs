@@ -146,7 +146,7 @@ namespace ObsAutoRecorder
 		private void FightSessionEnd()
 		{
 			if (ExternalRecording)
-			{ return; }
+			{ Log("FightSessionEnd: External Recording. Exiting"); return; }
 
 
 			if (PauseAfterMatch.Value)
@@ -166,12 +166,17 @@ namespace ObsAutoRecorder
 		{
 			string lastPlayer = LastRecordedPlayer is null ? "null" : LastRecordedPlayer.ToString();
 			Log($"FightSessionStart: LastRecordedPlayer: {lastPlayer} ActivePlayerInArena: {ActivePlayerInArena.ToString()}");
+
 			//Skip if active recording is started externally
-			if ((OBS.IsRecordingActive() || IsPaused) && ExternalRecording)
+			if(ExternalRecording)
+			{	Log("FightSessionStart: External Recording. Exiting"); return;	}
+
+			/*
+			if ((OBS.IsRecordingActive() || IsPaused))
 			{
 				Log("FightSessionStart: External Recording. Exiting");
 				return;
-			}
+			}*/
 
 			//Skip is active player is not recordable
 			if (!IsAutoRecordable(ActivePlayerInArena)) { Log($"Player {ActivePlayerInArena.ToString()} does not meet auto record criteria.", false, 0); return; }
@@ -190,6 +195,9 @@ namespace ObsAutoRecorder
 			//Null currentRecorded player means no recording active. Start new one.
 			if (LastRecordedPlayer is null)
 			{
+				if(OBS.IsRecordingActive() || IsPaused)
+					Log($"FightSessionStart: Internal recording active but LastRecordedPlayer is null. Please report. IsRecordingActive: {OBS.IsRecordingActive}, IsPaused: {IsPaused}, LastRecordedPlayer is null: {LastRecordedPlayer is null}");
+				
 				RequestStartRecording(ActivePlayerInArena);
 				return;
 			}
@@ -278,7 +286,8 @@ namespace ObsAutoRecorder
 						_stopQueueCor = null;
 						mainIconBlinker = false;
 					}
-
+					LastRecordedPlayer = player;
+					Log($"LastRecordedPlayer = {LastRecordedPlayer.ToString()}", true);
 				}
 				else
 				{
@@ -286,7 +295,7 @@ namespace ObsAutoRecorder
 					ResetVariables();
 				}
 
-				LastRecordedPlayer = player;
+				
 				
 			});
 		}
@@ -395,6 +404,7 @@ namespace ObsAutoRecorder
 			Log($"GetRecordStatus: outputActive: {recordStatus.outputActive}, outputPaused: {recordStatus.outputPaused}");
 			IsPaused = recordStatus.outputPaused;
 
+			//If currently recording, assume external recording.
 			ExternalRecording = (recordStatus.outputPaused || recordStatus.outputPaused);
 
 			SetRecordingState();
@@ -502,6 +512,13 @@ namespace ObsAutoRecorder
 				{
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
+
+				if(SceneName == "gym")
+				{
+					LastRecordedPlayer = null;
+					Log("LastRecordedPlayer = null", true, 0);
+				}
+
 				StopRequestInProgress = false;
 
 			});
@@ -529,11 +546,21 @@ namespace ObsAutoRecorder
 			Log($"RecordingHold: Stop Queue States: "/*QueuedForStopping: {{QueuedForStopping}}, */ + $"ExternalRecording {ExternalRecording}", true);
 			//yield return new WaitForSeconds(duration);
 
+			if(ExternalRecording)
+				return;
+
+
 			float starttime = Time.realtimeSinceStartup;
+			float interval = 0.5f;
 			while((Time.realtimeSinceStartup - starttime) < duration)
 			{
-				recordPauseBlinker = !mainIconBlinker;
-				yield return new WaitForSeconds(0.5f);
+				recordPauseBlinker = !recordPauseBlinker;
+				if(duration - (Time.realtimeSinceStartup - starttime) < 10)
+					interval = 0.2f;
+				else if(duration - (Time.realtimeSinceStartup - starttime) < 3)
+					interval = 0.1f;
+					
+				yield return new WaitForSeconds(interval);
 			}
 			recordPauseBlinker = false;
 			Log($"RecordingHold: "/*QueuedForStopping: {QueuedForStopping}, */ + $"ExternalRecording {ExternalRecording}", true);
@@ -541,7 +568,10 @@ namespace ObsAutoRecorder
 			{
 				RequestRecordingStop();
 			}
+
+			
 			_stopQueueCor = null;
+			
 		}
 	}
 }
