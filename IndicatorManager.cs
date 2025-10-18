@@ -33,6 +33,7 @@ namespace ObsAutoRecorder
 	public partial class ObsAutoRecorder : MelonMod
 	{
 
+		Random random = new Random();
 		private Color pauseColor = new Color(1f, 1f, 0f, 0.75f);
 		private Color recordColor = new Color(1f, 1f, 1f, 0.75f);
 
@@ -72,7 +73,7 @@ namespace ObsAutoRecorder
 				{
 					mainIconBlinker = false;
 				}
-				yield return new WaitForSeconds(1f);
+				yield return new WaitForSeconds((float) random.NextDouble() * 0.7);
 			}
 		}
 		private void SetIndicatorState()
@@ -83,7 +84,14 @@ namespace ObsAutoRecorder
 				try
 				{
 					MinimalLogo.SetActive((OBS.IsRecordingActive() || IsPaused) ^ mainIconBlinker);
-					MinimalLogo.GetComponent<MeshRenderer>().material.color = IsPaused ? pauseColor : recordColor;
+					if(!ExternalRecording)
+					{
+						MinimalLogo.GetComponent<MeshRenderer>().material.color = IsPaused ? pauseColor : recordColor;
+					}
+					else
+					{
+						MinimalLogo.GetComponent<MeshRenderer>().material.color = errorColor;
+					}
 				}
 				catch (System.Exception ex)
 				{
