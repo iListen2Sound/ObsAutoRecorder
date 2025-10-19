@@ -284,7 +284,7 @@ namespace ObsAutoRecorder
 					{
 						MelonCoroutines.Stop(_stopQueueCor);
 						_stopQueueCor = null;
-						mainIconBlinker = false;
+						recordPauseBlinker = false;
 					}
 					LastRecordedPlayer = player;
 					Log($"LastRecordedPlayer = {LastRecordedPlayer.ToString()}", true);
@@ -346,7 +346,12 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStart(string outputPath)
 		{
-			
+			if (_stopQueueCor != null)
+			{
+				MelonCoroutines.Stop(_stopQueueCor);
+				_stopQueueCor = null;
+				recordPauseBlinker = false;
+			}
 			LatestOutputPath = outputPath;
 			IsPaused = false;
 			if (!StartRequestedByMod)
@@ -373,9 +378,17 @@ namespace ObsAutoRecorder
 		private void onRecordStop(string outputPath)
 		{
 			Log($"OnRecordStop: Recording stopped {outputPath}");
+			if (_stopQueueCor != null)
+			{
+				MelonCoroutines.Stop(_stopQueueCor);
+				_stopQueueCor = null;
+				recordPauseBlinker = false;
+			}
 			if (ExternalRecording)
+			{
+				ExternalRecording = false;
 				return;
-
+			}
 
 			if (outputPath != LastRecordedPlayer.RecordingOutputPath)
 			{
@@ -547,7 +560,7 @@ namespace ObsAutoRecorder
 			//yield return new WaitForSeconds(duration);
 
 			if(ExternalRecording)
-				return;
+				yield break;
 
 
 			float starttime = Time.realtimeSinceStartup;

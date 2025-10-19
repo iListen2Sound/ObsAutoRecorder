@@ -33,7 +33,7 @@ namespace ObsAutoRecorder
 	public partial class ObsAutoRecorder : MelonMod
 	{
 
-		Random random = new Random();
+		System.Random random = new System.Random();
 		private Color pauseColor = new Color(1f, 1f, 0f, 0.75f);
 		private Color recordColor = new Color(1f, 1f, 1f, 0.75f);
 
@@ -73,7 +73,7 @@ namespace ObsAutoRecorder
 				{
 					mainIconBlinker = false;
 				}
-				yield return new WaitForSeconds((float) random.NextDouble() * 0.7);
+				yield return new WaitForSeconds((float) (random.NextDouble() * 0.7));
 			}
 		}
 		private void SetIndicatorState()
@@ -106,9 +106,9 @@ namespace ObsAutoRecorder
 				try
 				{
 					OBSIcon.SetActive((IsPaused || OBS.IsRecordingActive()) ^ mainIconBlinker);
-					PauseIcon.SetActive(IsPaused ^ recordPauseBlinker);
+					PauseIcon.SetActive((IsPaused ^ recordPauseBlinker) && IsPaused);
 					//&&!IsPaused required due to inconsistency in OBS API. 
-					RecordIcon.SetActive(OBS.IsRecordingActive() ^ recordPauseBlinker);
+					RecordIcon.SetActive((OBS.IsRecordingActive() ^ recordPauseBlinker) && OBS.IsRecordingActive());
 
 				}
 				catch (System.Exception ex)
