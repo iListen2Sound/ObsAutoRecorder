@@ -34,6 +34,7 @@ namespace ObsAutoRecorder
 
 
 		private GameObject TagFrame;
+		private GameObject RecentTags;
 		private List<TagHolder> _displayedFriendTags = new();
 		private GameObject HoldButton;
 		private List<GameObject> HoldButtons = new();
@@ -43,6 +44,9 @@ namespace ObsAutoRecorder
 		private GameObject OBSIcon { get; set; }
 		private GameObject MinimalLogo { get; set; }
 		private GameObject ReplayBufferLogo { get; set; }
+
+		private GameObject DebugUi;
+		private TextMeshPro DebugUiText;
 
 		private GameObject _scrollBar;
 		private GameObject PlayerUi;
@@ -62,6 +66,7 @@ namespace ObsAutoRecorder
 
 		private void FirstLoad()
 		{
+			OBS.Connect();
 			LogoPack = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "logopack"));
 			Log("LogoPack loaded", true);
 			GameObject.DontDestroyOnLoad(LogoPack);
@@ -127,6 +132,15 @@ namespace ObsAutoRecorder
 			ReplayBufferLogo.transform.localScale = new Vector3(0.015f, 0.015f, 0.015f);
 			ReplayBufferLogo.SetActive(true);
 			ReplayBufferLogo.layer = RockCamVisibility.Value ? 0 : VR_ONLY_LAYER;
+
+			DebugUi = Calls.Create.NewText(" ##LOGDIFF: Record: True, Pause: False, External Recording: False, \nFighterInMap: Tacoslayer, LastRecorded: Tacoslayer", 1f, Color.white, new Vector3(0f, 0.1f, 1f), Quaternion.Euler(0, 0, 0));
+			DebugUi.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+			DebugUi.transform.localPosition = new Vector3(0f, 0.1f, 0.96f);
+			DebugUi.transform.SetParent(PlayerUi.transform, false);
+			DebugUiText = DebugUi.GetComponent<TextMeshPro>();
+			DebugUi.SetActive(isDebugMode.Value);
+			
+
 		}
 
 		private void BuildTagHolders()
@@ -149,6 +163,7 @@ namespace ObsAutoRecorder
 				MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
 				ToggleAutoRecord(_selectedFriend);
 			});
+			_selectedFriend.IsSelected = true;
 		}
 
 		private List<TagHolder> GetPlayerTags()
@@ -165,10 +180,22 @@ namespace ObsAutoRecorder
 					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
 				});
 			}
+
+			for (int i = 0; i < RecentTags.transform.childCount; i++)
+			{
+				TagHolder friendInfo = new TagHolder();
+				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
+				friendInfos.Add(friendInfo);
+				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+				{
+					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
+				});
+			}
+
 			return friendInfos;
 
 		}
 
-
+		//			
 	}
 }

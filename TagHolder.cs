@@ -27,8 +27,9 @@ using static OBS_Control_API.RequestResponse;
 
 namespace ObsAutoRecorder
 {
-	public class TagHolder : MelonMod
+	public class TagHolder
 	{
+		public static bool isDebug = true;
 		//ideal location for autorecord status 0.2391 -0.0336 -0.0091
 		//friendblock path --------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Friend Screen/Player Tags/Player Tag 2.0/InteractionButton/Meshes/
 		//status block location: playertag 0 0 0 
@@ -37,6 +38,11 @@ namespace ObsAutoRecorder
 		public GameObject RecordIconBlock { get; private set; }
 		public GameObject RecordIcon { get; private set; }
 
+		public GameObject PlatformStatus { get; set; }
+
+		private GameObject NameBlock { get; set; }
+
+		public bool IsSelected { get; set; } = false;
 
 		private bool _autoRecordable = false;
 
@@ -60,6 +66,17 @@ namespace ObsAutoRecorder
 				_autoRecordable = value;
 				Color statusColor = _autoRecordable ? new Color(0.45f, 0.31f, 0.22f, 1f) : new Color(0.56f, 0.52f, 0.4f, 1f);
 				RecordIcon.transform.GetChild(0).GetComponent<RawImage>().color = statusColor;
+				/*if (!IsSelected)
+				{
+					PlatformStatus.SetActive(!_autoRecordable);
+					RecordIcon.SetActive(_autoRecordable);
+				}
+				else
+				{
+					Log("Selected tag. disabling platform status", true, 0);
+					PlatformStatus.SetActive(false);
+					RecordIcon.SetActive(true);
+				}*/
 			}
 		}
 		public string PlayFabID
@@ -111,10 +128,14 @@ namespace ObsAutoRecorder
 
 		private void CreateAutoRecordBlock()
 		{
+			//0130
+			PlatformStatus = TagObject.transform.GetChild(0).GetChild(1).GetChild(3).GetChild(0).gameObject;
 			RecordIconBlock = GameObject.Instantiate(TagObject.transform.GetChild(0).GetChild(0).GetChild(0).gameObject);
+			RecordIconBlock.SetName("RecordIconBlock");
 
 			RecordIconBlock.transform.SetParent(TagObject.transform.GetChild(0).GetChild(0), false);
-			RecordIconBlock.transform.localPosition = new Vector3(0.2391f, -0.0336f, -0.0091f);
+			//-0.2644 0.0349 -0.0091
+			RecordIconBlock.transform.localPosition = new Vector3(0.2656f, 0.0349f, -0.0091f);
 
 			RecordIcon = ObsAutoRecorder.GetIndicator();
 			RecordIcon.transform.SetParent(RecordIconBlock.transform, false);
@@ -126,6 +147,13 @@ namespace ObsAutoRecorder
 			//new Color (R = .45, G = .31, B = .22)
 			AutoRecordable = false;
 
+			//nameblock
+			//localscale 0.0037 0.0341 -0.0095
+			//scale 0.0324 0.224 0.1285
+			//003
+			NameBlock = TagObject.transform.GetChild(0).GetChild(0).GetChild(3).gameObject;
+			NameBlock.transform.localPosition = new Vector3(0.0037f, 0.0341f, -0.0095f);
+			NameBlock.transform.localScale = new Vector3(0.0324f, 0.224f, 0.1285f);
 		}
 
 		public TagHolder()
@@ -139,6 +167,24 @@ namespace ObsAutoRecorder
 
 			string pattern = @"<[^>]*>";
 			return Regex.Replace(Input, pattern, string.Empty);
+		}
+		public void Log(string message, bool debugOnly = false, int logLevel = 0)
+		{
+			if (debugOnly && !isDebug)
+				return;
+
+			switch (logLevel)
+			{
+				case 1:
+					Melon<ObsAutoRecorder>.Logger.Warning("Warn: " + message);
+					break;
+				case 2:
+					Melon<ObsAutoRecorder>.Logger.Warning("Error: " + message);
+					break;
+				default:
+					Melon<ObsAutoRecorder>.Logger.Warning(message);
+					break;
+			}
 		}
 	}
 }

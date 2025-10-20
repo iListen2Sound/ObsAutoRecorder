@@ -40,6 +40,8 @@ namespace ObsAutoRecorder
 	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
+		private string lastLogDiff;
+
 		//Hold button location 
 		//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
 		private const string USER_DATA = "UserData/ObsAutoRecorder/";
@@ -195,7 +197,20 @@ namespace ObsAutoRecorder
 				return;
 
 			SetIndicatorState();
-			
+
+			LogDiff($"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External Recording: {ExternalRecording}, FighterInMap: {(ActivePlayerInArena  is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}" );
+
+			if(DebugUiText != null)
+			{
+				try
+				{
+					DebugUiText.text = $"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External: {ExternalRecording}, \nFighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}\nHold Coroutine: {!(_stopQueueCor is null)}";
+				}
+				catch(System.Exception ex)
+				{
+					Log(ex.Message, true);
+				}
+			}
 		}
 		/// <summary>
 		/// Called when map is fully initialized reducing the risk of null references.
@@ -212,6 +227,7 @@ namespace ObsAutoRecorder
 				_scrollBar = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
 				_selectedTag = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
 				TagFrame = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+				RecentTags = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
 
 			}
 			if (SceneName == "park")
@@ -219,6 +235,7 @@ namespace ObsAutoRecorder
 				_scrollBar = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
 				_selectedTag = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
 				TagFrame = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+				RecentTags = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
 			}
 
 			if (SceneName != "loader")
@@ -342,6 +359,7 @@ namespace ObsAutoRecorder
 				yield return null;
 			}
 			UpdateDisplayedTags();
+			_selectedFriend.PlatformStatus.SetActive(false);
 
 
 			_isPolling = false;
@@ -354,6 +372,7 @@ namespace ObsAutoRecorder
 				info.AutoRecordable = IsInAutoRecordList(info);
 				//Log(info.PublicName, true);
 			}
+			
 		}
 		private IEnumerator PollPageTurnCoRoutine()
 		{
@@ -444,6 +463,15 @@ namespace ObsAutoRecorder
 			}
 		}
 
+		private void LogDiff(string message, int logLevel = 0)
+		{
+			if(message != lastLogDiff)
+			{
+				Log($"##LOGDIFF: {message}", true, logLevel);
+				lastLogDiff = message;
+			}
+
+		}
 
 
 

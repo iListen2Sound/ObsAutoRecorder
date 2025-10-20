@@ -54,6 +54,7 @@ namespace ObsAutoRecorder
 			float interval = 0.3f;
 			while((Time.realtimeSinceStartup - startTime) < duration)
 			{
+
 				replayBufferBlinker = !replayBufferBlinker;
 				yield return new WaitForSeconds(interval);
 			}
@@ -65,7 +66,7 @@ namespace ObsAutoRecorder
 		{
 			while(true)
 			{
-				if(ExternalRecording)
+				if(ExternalRecording && !PreferMinimalIcon.Value)
 				{
 					mainIconBlinker = !mainIconBlinker;
 				}
@@ -73,17 +74,18 @@ namespace ObsAutoRecorder
 				{
 					mainIconBlinker = false;
 				}
-				yield return new WaitForSeconds((float) (random.NextDouble() * 0.7));
+				yield return new WaitForSeconds(0.7f);
 			}
 		}
 		private void SetIndicatorState()
 		{
+			bool isRecording = OBS.IsRecordingActive();
 			//Log($"OBS.IsRecordingActive(): {OBS.IsRecordingActive()}\tIsPaused: {IsPaused}", true);
 			if (PreferMinimalIcon.Value)
 			{
 				try
 				{
-					MinimalLogo.SetActive((OBS.IsRecordingActive() || IsPaused) ^ mainIconBlinker);
+					MinimalLogo.SetActive((isRecording || IsPaused) ^ mainIconBlinker);
 					if(!ExternalRecording)
 					{
 						MinimalLogo.GetComponent<MeshRenderer>().material.color = IsPaused ? pauseColor : recordColor;
@@ -105,11 +107,10 @@ namespace ObsAutoRecorder
 			{
 				try
 				{
-					OBSIcon.SetActive((IsPaused || OBS.IsRecordingActive()) ^ mainIconBlinker);
+					OBSIcon.SetActive((IsPaused || isRecording) ^ mainIconBlinker);
 					PauseIcon.SetActive((IsPaused ^ recordPauseBlinker) && IsPaused);
 					//&&!IsPaused required due to inconsistency in OBS API. 
-					RecordIcon.SetActive((OBS.IsRecordingActive() ^ recordPauseBlinker) && OBS.IsRecordingActive());
-
+					RecordIcon.SetActive((isRecording ^ recordPauseBlinker) && isRecording);
 				}
 				catch (System.Exception ex)
 				{

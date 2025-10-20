@@ -188,6 +188,7 @@ namespace ObsAutoRecorder
 				Log($"Fight Session Start: Cancelling recording hold coroutine");
 				MelonCoroutines.Stop(_stopQueueCor);
 				_stopQueueCor = null;
+				recordPauseBlinker = false;
 				mainIconBlinker = false;
 			}
 
@@ -195,9 +196,11 @@ namespace ObsAutoRecorder
 			//Null currentRecorded player means no recording active. Start new one.
 			if (LastRecordedPlayer is null)
 			{
-				if(OBS.IsRecordingActive() || IsPaused)
-					Log($"FightSessionStart: Internal recording active but LastRecordedPlayer is null. Please report. IsRecordingActive: {OBS.IsRecordingActive}, IsPaused: {IsPaused}, LastRecordedPlayer is null: {LastRecordedPlayer is null}");
-				
+				if (OBS.IsRecordingActive() || IsPaused)
+				{
+					Log($"FightSessionStart: Internal recording active but LastRecordedPlayer is null. Please report. IsRecordingActive: {OBS.IsRecordingActive()}, IsPaused: {IsPaused}, LastRecordedPlayer is null: {LastRecordedPlayer is null}");
+					RequestRecordingStop();
+				}
 				RequestStartRecording(ActivePlayerInArena);
 				return;
 			}
@@ -285,6 +288,7 @@ namespace ObsAutoRecorder
 						MelonCoroutines.Stop(_stopQueueCor);
 						_stopQueueCor = null;
 						recordPauseBlinker = false;
+						mainIconBlinker = false;
 					}
 					LastRecordedPlayer = player;
 					Log($"LastRecordedPlayer = {LastRecordedPlayer.ToString()}", true);
@@ -340,7 +344,9 @@ namespace ObsAutoRecorder
 			if (ExternalRecording)
 			{
 				//If paused externally then resumed within 0.5 seconds, claim recording as mod-owned and no longer external
-				ExternalRecording = !((Time.realtimeSinceStartup - TimeOfLastExternalPause) < 0.5f);
+				float timeSinceLastPaused = (Time.realtimeSinceStartup - TimeOfLastExternalPause);
+				Log($"OnRecordResume: Time from Last Pause: {timeSinceLastPaused}");
+				ExternalRecording = !( timeSinceLastPaused < 0.5f);
 			}
 			IsPaused = false;
 		}
@@ -351,6 +357,7 @@ namespace ObsAutoRecorder
 				MelonCoroutines.Stop(_stopQueueCor);
 				_stopQueueCor = null;
 				recordPauseBlinker = false;
+				mainIconBlinker = false;
 			}
 			LatestOutputPath = outputPath;
 			IsPaused = false;
@@ -383,6 +390,7 @@ namespace ObsAutoRecorder
 				MelonCoroutines.Stop(_stopQueueCor);
 				_stopQueueCor = null;
 				recordPauseBlinker = false;
+				mainIconBlinker = false;
 			}
 			if (ExternalRecording)
 			{
@@ -414,14 +422,14 @@ namespace ObsAutoRecorder
 		{
 			//Use in case pause status is out of sync as in the case of starting the game with a paused OBS recording already running
 			GetRecordStatus recordStatus = OBS.GetRecordStatus();
-			Log($"GetRecordStatus: outputActive: {recordStatus.outputActive}, outputPaused: {recordStatus.outputPaused}");
+			Log($"OnConnect: GetRecordStatus: outputActive: {recordStatus.outputActive}, outputPaused: {recordStatus.outputPaused}");
 			IsPaused = recordStatus.outputPaused;
 
 			//If currently recording, assume external recording.
-			ExternalRecording = (recordStatus.outputPaused || recordStatus.outputPaused);
+			
 
 			SetRecordingState();
-
+			ExternalRecording = (recordStatus.outputPaused || recordStatus.outputActive);
 		}
 
 		private void onReplayBufferSaved(string outputPath)
@@ -565,8 +573,16 @@ namespace ObsAutoRecorder
 
 			float starttime = Time.realtimeSinceStartup;
 			float interval = 0.5f;
-			while((Time.realtimeSinceStartup - starttime) < duration)
+			if (PreferMinimalIcon.Value)
 			{
+				interval = 0.2f;
+			}
+			while ((Time.realtimeSinceStartup - starttime) < duration)
+			{
+				if(PreferMinimalIcon.Value)
+				{
+					mainIconBlinker = !mainIconBlinker;
+				}
 				recordPauseBlinker = !recordPauseBlinker;
 				if(duration - (Time.realtimeSinceStartup - starttime) < 10)
 					interval = 0.2f;
@@ -576,6 +592,7 @@ namespace ObsAutoRecorder
 				yield return new WaitForSeconds(interval);
 			}
 			recordPauseBlinker = false;
+			mainIconBlinker = false;
 			Log($"RecordingHold: "/*QueuedForStopping: {QueuedForStopping}, */ + $"ExternalRecording {ExternalRecording}", true);
 			if (!ExternalRecording)
 			{
@@ -584,6 +601,7 @@ namespace ObsAutoRecorder
 
 			
 			_stopQueueCor = null;
+			
 			
 		}
 	}
