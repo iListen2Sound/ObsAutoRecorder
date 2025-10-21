@@ -103,7 +103,8 @@ namespace ObsAutoRecorder
 		}
 		private bool IsAutoRecordable(PlayfabInfo player)
 		{
-			Log($"IsAutoRecordable? Opponent BP: {player.BP} BP threshold: {RecordByBPThreshold.Value}");
+
+			Log($"IsAutoRecordable? {IsInAutoRecordList(player.ID)}, Opponent BP: {player.BP}, BP threshold: {RecordByBPThreshold.Value}");
 			if (IsInAutoRecordList(player.ID)) { return true; }
 
 			if (RecordByBPThreshold.Value == -1) { return false; }
@@ -345,8 +346,20 @@ namespace ObsAutoRecorder
 			{
 				//If paused externally then resumed within 0.5 seconds, claim recording as mod-owned and no longer external
 				float timeSinceLastPaused = (Time.realtimeSinceStartup - TimeOfLastExternalPause);
-				Log($"OnRecordResume: Time from Last Pause: {timeSinceLastPaused}");
-				ExternalRecording = !( timeSinceLastPaused < 0.5f);
+				Log($"OnRecordResume: Time from Last Pause: {timeSinceLastPaused}", true);
+				//ExternalRecording = !( timeSinceLastPaused < 0.5f);
+				if(timeSinceLastPaused < 0.5f)
+				{
+					ExternalRecording = false;
+					Log("OnRecordResume: External recording resumed quickly. Claiming recording as mod-initiated", false);
+					LastRecordedPlayer = ActivePlayerInArena;
+					LastRecordedPlayer.RecordingOutputPath = LatestOutputPath;
+				}
+				else
+				{
+					Log("OnRecordResume: External recording resumed after delay. Remaining external", true, 1);
+				}
+
 			}
 			IsPaused = false;
 		}
@@ -514,19 +527,15 @@ namespace ObsAutoRecorder
 
 					catch (IOException ex)
 					{
-						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
+						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}\n{ex.Message}", true, 2);
 						if(ex.Message.ToLower().Contains("could not find file"))
 						{
 							break;
 						}
-
-
 					}
 					catch (System.Exception ex)
 					{
 						Log($"System Exception when renaming file: {ex.Message}. File Path: {newPath}", true, 2);
-
-
 					}
 				}
 				if (!success)
@@ -536,7 +545,10 @@ namespace ObsAutoRecorder
 
 				if(SceneName == "gym")
 				{
-					LastRecordedPlayer = null;
+					if (!isReplay)
+					{
+						LastRecordedPlayer = null;
+					}
 					Log("LastRecordedPlayer = null", true, 0);
 				}
 

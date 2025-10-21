@@ -170,6 +170,20 @@ namespace ObsAutoRecorder
 		{
 			List<TagHolder> friendInfos = new();
 
+
+			//doesn't work
+			
+			/*for (int i = 0; i < RecentTags.transform.childCount; i++)
+			{
+				TagHolder friendInfo = new TagHolder();
+				friendInfo.TagObject = RecentTags.transform.GetChild(i).gameObject;
+				friendInfos.Add(friendInfo);
+				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+				{
+					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
+				});
+			}*/
+
 			for (int i = 0; i < TagFrame.transform.childCount; i++)
 			{
 				TagHolder friendInfo = new TagHolder();
@@ -180,17 +194,7 @@ namespace ObsAutoRecorder
 					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
 				});
 			}
-
-			for (int i = 0; i < RecentTags.transform.childCount; i++)
-			{
-				TagHolder friendInfo = new TagHolder();
-				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
-				friendInfos.Add(friendInfo);
-				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
-				{
-					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
-				});
-			}
+			
 
 			return friendInfos;
 
