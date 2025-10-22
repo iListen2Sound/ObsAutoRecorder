@@ -105,7 +105,6 @@ namespace ObsAutoRecorder
 			{
 				Log("Game Closing. Forcing recording stop");
 				RequestRecordingStop();
-				OBS.StopRecord();
 			}
 			OBSAutoRecorderSettings.SaveToFile();
 		}

@@ -4,7 +4,7 @@ Automatically controls OBS to record match sessions based on your preferences.
 
 ## Quick Start: 
 
-### If you already use Kalamart's OBS control API, just go to your friends list and start picking people to auto record
+### If you already use [Kalamart's OBS control API](https://thunderstore.io/c/rumble/p/Kalamart/OBS_Control_API/), just go to your friends list and start picking people to auto record
 #### If not go set it up even if you're not gonna use this mod it's honestly not that hard and it's very useful
 
 ## Features
@@ -34,7 +34,7 @@ Automatically controls OBS to record match sessions based on your preferences.
     - If you match with the same player again before it times out, the recording continues
     - Matching with a different opponent stops the current recording and starts a new recording for that opponent
 3. **Manual Recording Behavior**:
-    - If you start recording manually through OBS, the mod will remain inactive and not interfere. Indicated by an irregular blinking of the OBS icon in the game
+    - If you start recording manually through OBS, the mod will remain inactive and not interfere. Indicated by the OBS icon blinking in the game.
     - To make recording automatic, just do a quick pause and resume on OBS
 4. **Replay Buffer Usage**:
     - Enable replay buffer in OBS to use clip-saving features.
@@ -45,7 +45,7 @@ Automatically controls OBS to record match sessions based on your preferences.
     - When active, the recording status is displayed on the health bar.
 6. **Managing AutoRecord List**:
     - You can manually edit `AutoRecordList.txt` in your **userdata** folder for people not in your friends list:
-```CSharp
+```
 {playfabID} - {public name}
 ```
 7. **Edit the configuration file** 
@@ -69,11 +69,11 @@ Automatically controls OBS to record match sessions based on your preferences.
 | Recording Hold Timeout | 0 | Seconds to keep recording paused before auto-stop. |
 | Pause After Match | false | Pause recording on returning to gym (Replay buffer doesn't work while recording is paused). |
 | BP Threshold | -1 | Record players with BP greater than this value. -1 disables threshold. |
-| Chapter Markers | true | Add chapter markers to video (Hybrid MP4 only). |
+| Chapter Markers | true | Add chapter markers to video when clipping (Hybrid MP4 only). |
 ### Indicator Settings
 | Option | Default | Description |
 |---|---|---|
-| Prefer Minimal Icon | false | Use minimal OBS icon for recording indicator. |
+| Prefer Minimal Icon | false | Use minimal OBS icon for recording indicator. (a little broken but usable. No motivation to fix it)|
 | Clip Icon Default Visibility | true | Show replay buffer icon always; otherwise, only shown blinking when a clip is saved. |
 | Show Icons on Camera | true | Display icons on Rock Cam and Legacy Cam. |
 ### ObsAutoRecorder
@@ -107,7 +107,7 @@ You can customize this string using placeholders:
 
 ## Notes
 
-- End of sessions are determined by entry into a map, and then exits when you go back to your gym. 
+- Fight sessions are determined by entry into a map, and then exits when you go back to your gym. 
 - Uses Kalamart's OBS Control API to connect to OBS. Make sure it is [properly configured and connected](https://github.com/Kalamart1/OBS_Control_API?tab=readme-ov-file#setup)
 - ModUI support is not planned.
 - Chapter marker support is only available for Hybrid MP4 output. Check your OBS settings 
