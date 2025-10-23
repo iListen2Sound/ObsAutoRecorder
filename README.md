@@ -13,17 +13,17 @@ Automatically controls OBS to record match sessions based on your preferences.
 - Automatically rename recordings to include opponent names.
 - Display OBS recording status on the health bar.
 - Replay buffer support with optional chapter markers.
-- Remembers the last recorded opponent for a short time after a match, allowing seamless continuation if you rematch them.
+- Keeps recording active for a short time after a match, allowing seamless continuation if you rematch them. (Recording Hold Timout in config)
 - If the recording was started manually through OBS, the mod won't interfere and remains inactive.
 - If you pause and then resume the recording within 0.5 seconds, the mod is reactivated and resumes control of the recording.
-- When the mod is inactive due to an externally started recording, the OBS logo will blink irregularly (minimal icon appears red).
+- When the mod is inactive due to an externally started recording, the OBS logo will blink (minimal icon appears red).
 
 ---
 
 ## How to Use
 
 
-### Advanced Details
+### Skippable Details (might answer some questionsn. idk. you can just dm me tbh)
 
 1. **Selecting Opponents for Auto Recording**   
     - Go to your **Friends** or **Recently Met** list.
@@ -48,7 +48,7 @@ Automatically controls OBS to record match sessions based on your preferences.
 ```
 {playfabID} - {public name}
 ```
-7. **Edit the configuration file** 
+7. **Config file in UserData/ObsAutoRecorder** 
     - Generated after first launching the game. 
 
 ---
@@ -59,7 +59,7 @@ Automatically controls OBS to record match sessions based on your preferences.
 | Option | Default | Description |
 |---|---|---|
 | Enable Auto Rename | true | Automatically rename recorded files. |
-| Auto Rename String | {date} {time} vs {player} | Format for renaming. Use {player}, {date}, {time} as placeholders. The date and time is according to when the recording was started |
+| Auto Rename String | {date} {time} vs {player} | Format for renaming. Use {player}, {date}, {time} as placeholders. Dated according to when you loaded into the map with the player |
 | Date Format | yyyy-MM-dd | Date format for renaming. [Format Reference](https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) |
 | Time Format | HH-mm-ss | Time format for renaming. |
 | Replay Prefix | R- | Prefix for replay buffer files. |
@@ -79,29 +79,7 @@ Automatically controls OBS to record match sessions based on your preferences.
 ### ObsAutoRecorder
 | Option | Default | Description |
 |---|---|---|
-| Debug Mode | false | Enable verbose logging for troubleshooting. |
-
----
-
-### Example Rename Template
-
-Default template:
-
-```CSharp
-{date} {time} vs {player}
-```
-
-Example output:
-
-```CSharp
-2025-10-17 21-30-00 vs Howard
-```
-
-You can customize this string using placeholders:
-
-- `{player}` → Opponent name
-- `{date}` → Date using your configured format
-- `{time}` → Time using your configured format
+| Debug Mode | false | Enable verbose logging for troubleshooting. (Also enables an in-game debug monitor)|
 
 ---
 

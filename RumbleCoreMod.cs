@@ -79,7 +79,6 @@ namespace ObsAutoRecorder
 
 
 		private static GameObject IndicatorsBase;
-		RequestResponse.GetRecordStatus getRecordStatus = new();
 
 
 
@@ -211,7 +210,7 @@ namespace ObsAutoRecorder
 
 			LogDiff($"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External Recording: {ExternalRecording}, FighterInMap: {(ActivePlayerInArena  is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}" );
 
-			if(DebugUiText != null)
+			if(isDebugMode.Value && DebugUiText != null)
 			{
 				try
 				{
@@ -340,11 +339,8 @@ namespace ObsAutoRecorder
 			//PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
 			UpdateAutoRecordFile();
 			OBSAutoRecorderSettings.SaveToFile();
-
-			foreach (TagHolder friend in _displayedFriendTags)
-			{
-				friend.AutoRecordable = IsInAutoRecordList(friend);
-			}
+						
+			UpdateDisplayedTags();
 
 		}
 
@@ -383,7 +379,11 @@ namespace ObsAutoRecorder
 				info.AutoRecordable = IsInAutoRecordList(info);
 				//Log(info.PublicName, true);
 			}
-			
+			foreach(TagHolder info in _recentlyMetTags)
+			{
+				info.AutoRecordable = IsInAutoRecordList(info);
+
+			}
 		}
 		private IEnumerator PollPageTurnCoRoutine()
 		{
