@@ -112,7 +112,6 @@ namespace ObsAutoRecorder
 			{
 				Log("Game Closing. Forcing recording stop");
 				RequestRecordingStop();
-				OBS.StopRecord();
 			}
 			SaveSettings();
 		}
@@ -145,10 +144,10 @@ namespace ObsAutoRecorder
 			RecordingSettings = MelonPreferences.CreateCategory("Recording Settings");
 			RecordingSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
-			AddChapterMarkers = RecordingSettings.CreateEntry("Chapter Markers", false, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
-			RecordingPauseHoldTimeout = RecordingSettings.CreateEntry("Recording Hold Timeout", 180, null, "Seconds to keep the recording held before stopping automatically");
-			PauseAfterMatch = RecordingSettings.CreateEntry("Pause recording after match", false, null, "Pause recording after fighting auto recorded player. Replay buffer will not work when paused");
+			RecordingPauseHoldTimeout = RecordingSettings.CreateEntry("Recording Hold Timeout", 0, null, "Seconds to keep the recording held before stopping automatically");
+			PauseAfterMatch = RecordingSettings.CreateEntry("Pause recording after match", false, null, "Pause recording on returning to gym. Replay buffer will not work when paused");
 			RecordByBPThreshold = RecordingSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
+			AddChapterMarkers = RecordingSettings.CreateEntry("Chapter Markers", true, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
 
 
 			IndicatorSettings = MelonPreferences.CreateCategory("Indicator Settings");

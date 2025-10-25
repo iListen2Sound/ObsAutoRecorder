@@ -145,7 +145,7 @@ namespace ObsAutoRecorder
 
 			if (!OBS.IsConnected())
 			{
-				Log("No active websocket connection to OBS detected", false, 1);
+				Log("SetRecordingState: No active websocket connection to OBS detected", false, 1);
 				return;
 			}
 
@@ -309,7 +309,7 @@ namespace ObsAutoRecorder
 						mainIconBlinker = false;
 					}
 					LastRecordedPlayer = player;
-					Log($"LastRecordedPlayer = {LastRecordedPlayer.ToString()}", true);
+					Log($"RequestStartRecording: LastRecordedPlayer = {LastRecordedPlayer.ToString()}", true);
 				}
 				else
 				{

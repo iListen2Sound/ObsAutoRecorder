@@ -171,7 +171,7 @@ namespace ObsAutoRecorder
 			List<TagHolder> friendInfos = new();
 
 
-			//doesn't work
+			//doesn't work because IsFriendInfoLoaded() checks if every displayed tag has text to return true.
 			
 			/*for (int i = 0; i < RecentTags.transform.childCount; i++)
 			{
@@ -189,6 +189,8 @@ namespace ObsAutoRecorder
 				TagHolder friendInfo = new TagHolder();
 				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
 				friendInfos.Add(friendInfo);
+
+				//Event handler to update the selected fighter's auto-recordable status
 				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
 				{
 					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
