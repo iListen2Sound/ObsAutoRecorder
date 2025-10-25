@@ -90,6 +90,13 @@ namespace ObsAutoRecorder
 		private object _pollPageCor = null;
 
 		//private object _recordingWaitCor = null;
+		private void SaveSettings()
+		{
+			OBSAutoRecorderSettings.SaveToFile();
+			AutoRenameSettings.SaveToFile();
+			RecordingSettings.SaveToFile();
+			IndicatorSettings.SaveToFile();
+		}
 		public static GameObject GetIndicator()
 		{
 			return GameObject.Instantiate(IndicatorsBase);
@@ -107,7 +114,7 @@ namespace ObsAutoRecorder
 				RequestRecordingStop();
 				OBS.StopRecord();
 			}
-			OBSAutoRecorderSettings.SaveToFile();
+			SaveSettings();
 		}
 
 		public override void OnInitializeMelon()
@@ -155,7 +162,7 @@ namespace ObsAutoRecorder
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
-			OBSAutoRecorderSettings.SaveToFile();
+			SaveSettings();
 
 			foreach (string entry in AutoRecordList)
 			{
@@ -193,6 +200,7 @@ namespace ObsAutoRecorder
 			OBS.onRecordingResumed += onRecordResume;
 
 			OBS.onConnect += onConnect;
+			OBS.onDisconnect += onDisconnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
 
 			Calls.onPlayerSpawned += onPlayerSpawn;
@@ -340,7 +348,7 @@ namespace ObsAutoRecorder
 
 			//PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
 			UpdateAutoRecordFile();
-			OBSAutoRecorderSettings.SaveToFile();
+			SaveSettings();
 
 			foreach (TagHolder friend in _displayedFriendTags)
 			{

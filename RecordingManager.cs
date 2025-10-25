@@ -26,14 +26,17 @@ using System.Threading;
 using static OBS_Control_API.RequestResponse;
 using Il2CppPlayFab.EconomyModels;
 using Il2CppSystem;
+using UnityEngine.Rendering;
 
 namespace ObsAutoRecorder
 {
 
 	public partial class ObsAutoRecorder : MelonMod
 	{
-		
-	
+
+
+		private object _obsReconnectCor = null;
+
 
 		private object _stopQueueCor = null;
 
@@ -52,7 +55,7 @@ namespace ObsAutoRecorder
 		private int ParkPlayers { get { return PlayerManager.instance.AllPlayers.Count - 1; } }
 		private void onPlayerSpawn()
 		{
-			if(SceneName == "park")
+			if (SceneName == "park")
 			{
 				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park player{(ParkPlayers == 1 ? "" : "s")}", "-1");
 			}
@@ -113,9 +116,23 @@ namespace ObsAutoRecorder
 
 			return false;
 		}
-
+		private void StartTryReconnecting()
+		{
+			Log("Checking if OBS is connected...", true);
+			if (_obsReconnectCor != null)
+			{
+				MelonCoroutines.Stop(_obsReconnectCor);
+				_obsReconnectCor = null;
+			}
+			else
+			{
+				_obsReconnectCor = MelonCoroutines.Start(TryConnectCoroutine());
+			}
+		}
 		private void SetRecordingState()
 		{
+			StartTryReconnecting();
+			
 			if (SceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
 				ActivePlayerInArena = new PlayfabInfo(PlayerManager.instance.AllPlayers[1]);
 
@@ -123,7 +140,7 @@ namespace ObsAutoRecorder
 				ActivePlayerInArena = new PlayfabInfo("Howard", "0000000000000000", int.MaxValue);
 
 			if (SceneName == "park")
-				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park player{(ParkPlayers == 1 ? "" : "s") }", "-1");
+				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park player{(ParkPlayers == 1 ? "" : "s")}", "-1");
 
 
 			if (!OBS.IsConnected())
@@ -153,7 +170,7 @@ namespace ObsAutoRecorder
 			if (PauseAfterMatch.Value)
 				PauseRecording();
 
-			
+
 			if (!(_stopQueueCor is null))
 			{
 				Log("Existing recording hold coroutine found. Continuing", true, 0);
@@ -169,8 +186,8 @@ namespace ObsAutoRecorder
 			Log($"FightSessionStart: LastRecordedPlayer: {lastPlayer} ActivePlayerInArena: {ActivePlayerInArena.ToString()}");
 
 			//Skip if active recording is started externally
-			if(ExternalRecording)
-			{	Log("FightSessionStart: External Recording. Exiting"); return;	}
+			if (ExternalRecording)
+			{ Log("FightSessionStart: External Recording. Exiting"); return; }
 
 			/*
 			if ((OBS.IsRecordingActive() || IsPaused))
@@ -277,7 +294,7 @@ namespace ObsAutoRecorder
 					player.RecordingOutputPath = LatestOutputPath;
 					player.IsRecording = true;
 					ExternalRecording = false;
-					
+
 
 					//NextPlayerToRecord = null;
 
@@ -300,8 +317,8 @@ namespace ObsAutoRecorder
 					ResetVariables();
 				}
 
-				
-				
+
+
 			});
 		}
 
@@ -348,12 +365,13 @@ namespace ObsAutoRecorder
 				float timeSinceLastPaused = (Time.realtimeSinceStartup - TimeOfLastExternalPause);
 				Log($"OnRecordResume: Time from Last Pause: {timeSinceLastPaused}", true);
 				//ExternalRecording = !( timeSinceLastPaused < 0.5f);
-				if(timeSinceLastPaused < 0.5f)
+				if (timeSinceLastPaused < 0.5f)
 				{
 					ExternalRecording = false;
 					Log("OnRecordResume: External recording resumed quickly. Claiming recording as mod-initiated", false);
 					LastRecordedPlayer = ActivePlayerInArena;
 					LastRecordedPlayer.RecordingOutputPath = LatestOutputPath;
+					LastRecordedPlayer.RecordingStart = System.DateTime.Now;
 				}
 				else
 				{
@@ -380,6 +398,14 @@ namespace ObsAutoRecorder
 
 			}
 
+			//Make sure howard has a start recording date
+			if (ActivePlayerInArena.ID == "0000000000000000" || ActivePlayerInArena.ID == "-1")
+			{
+				if (ActivePlayerInArena.RecordingStart.Equals(DateTime.MinValue))
+				{
+					ActivePlayerInArena.RecordingStart = System.DateTime.Now;
+				}
+			}
 			Log($"onRecordStart: Recording started for: {outputPath}");
 
 			//Assume externally initiated recording if no start request from within mod
@@ -415,6 +441,10 @@ namespace ObsAutoRecorder
 			{
 				//warn if outputpath does not match expected output path assigned to player. Use player-assigned outputpath
 				Log($"onRecordStop: mismatch between event output path {outputPath} and LastRecordedPlayer.RecordingOutputPath: {LastRecordedPlayer.RecordingOutputPath}", false, 1);
+				if(LatestOutputPath != outputPath)
+				{
+					LatestOutputPath = outputPath;
+				}
 
 			}
 			if (DoAutoRename.Value)
@@ -439,15 +469,18 @@ namespace ObsAutoRecorder
 			IsPaused = recordStatus.outputPaused;
 
 			//If currently recording, assume external recording.
-			
+
 
 			SetRecordingState();
 			ExternalRecording = (recordStatus.outputPaused || recordStatus.outputActive);
 		}
-
+		private void onDisconnect()
+		{
+			//StartTryReconnecting();
+		}
 		private void onReplayBufferSaved(string outputPath)
 		{
-			if(!(_replayBufferBlink is null))
+			if (!(_replayBufferBlink is null))
 			{
 				replayBufferBlinker = false;
 				MelonCoroutines.Stop(_replayBufferBlink);
@@ -455,7 +488,7 @@ namespace ObsAutoRecorder
 			}
 			_replayBufferBlink = MelonCoroutines.Start(BlinkReplayBufferCoRoutine());
 
-				Log($"Replay buffer saved to: {outputPath}");
+			Log($"Replay buffer saved to: {outputPath}");
 			string newFileName = outputPath;
 
 			if (!SceneName.Contains("map"))
@@ -468,7 +501,7 @@ namespace ObsAutoRecorder
 			{
 				Log("Attempting to add chapter marker", true);
 				var param = new { chapterName = newFileName };
-				Task.Run(() => { OBS.SendRequest("CreateRecordChapter", param); Log("Chapter Marker Request Sent"); });
+				Task.Run(() => { Log($"CreateChapterResponse: {OBS.SendRequest("CreateRecordChapter", param)}"); Log("Chapter Marker Request Sent"); });
 
 				Log("Adding Chapter Marker", true);
 			}
@@ -485,6 +518,14 @@ namespace ObsAutoRecorder
 		private string RenameOutput(string oldOutputPath, string newName, PlayfabInfo player, bool isReplay = false)
 		{
 			//File renaming
+			if (String.IsNullOrEmpty(oldOutputPath))
+			{
+				Log($"RenameOutput: Provided oldOutputPath is empty. Using latest output path", false, 1);
+
+				oldOutputPath = LatestOutputPath;
+			}
+
+
 			string newPath = "";
 
 			string date = isReplay ? System.DateTime.Now.ToString(DateFormat.Value) : player.RecordingStart.ToString(DateFormat.Value);
@@ -502,7 +543,7 @@ namespace ObsAutoRecorder
 			{
 				Log($"File exists: {newPath} ", false, 1);
 				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
-				
+
 				copyIndex++;
 			}
 
@@ -528,7 +569,7 @@ namespace ObsAutoRecorder
 					catch (IOException ex)
 					{
 						Log($"IOException when renaming file: {ex.Message}. File Path: {newPath}\n{ex.Message}", true, 2);
-						if(ex.Message.ToLower().Contains("could not find file"))
+						if (ex.Message.ToLower().Contains("could not find file"))
 						{
 							break;
 						}
@@ -543,7 +584,7 @@ namespace ObsAutoRecorder
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
 
-				if(SceneName == "gym")
+				if (SceneName == "gym")
 				{
 					if (!isReplay)
 					{
@@ -579,7 +620,7 @@ namespace ObsAutoRecorder
 			Log($"RecordingHold: Stop Queue States: "/*QueuedForStopping: {{QueuedForStopping}}, */ + $"ExternalRecording {ExternalRecording}", true);
 			//yield return new WaitForSeconds(duration);
 
-			if(ExternalRecording)
+			if (ExternalRecording)
 				yield break;
 
 
@@ -591,16 +632,16 @@ namespace ObsAutoRecorder
 			}
 			while ((Time.realtimeSinceStartup - starttime) < duration)
 			{
-				if(PreferMinimalIcon.Value)
+				if (PreferMinimalIcon.Value)
 				{
 					mainIconBlinker = !mainIconBlinker;
 				}
 				recordPauseBlinker = !recordPauseBlinker;
-				if(duration - (Time.realtimeSinceStartup - starttime) < 10)
+				if (duration - (Time.realtimeSinceStartup - starttime) < 10)
 					interval = 0.2f;
-				else if(duration - (Time.realtimeSinceStartup - starttime) < 3)
+				else if (duration - (Time.realtimeSinceStartup - starttime) < 3)
 					interval = 0.1f;
-					
+
 				yield return new WaitForSeconds(interval);
 			}
 			recordPauseBlinker = false;
@@ -611,10 +652,24 @@ namespace ObsAutoRecorder
 				RequestRecordingStop();
 			}
 
-			
+
 			_stopQueueCor = null;
-			
-			
+
+
+		}
+		private IEnumerator TryConnectCoroutine()
+		{
+			while (!OBS.IsConnected())
+			{
+				Log("TryConnectCoroutine: Not Connected Attempting to connect to OBS", true);
+				OBS.Connect();
+				yield return new WaitForSeconds(10f);			
+				
+			}
+
+			Log("TryConnectCoroutine: Connected to OBS", true);
+			_obsReconnectCor = null;
+			yield break;
 		}
 	}
 }
