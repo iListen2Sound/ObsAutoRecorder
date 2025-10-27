@@ -4,14 +4,15 @@ Automatically controls OBS to record match sessions based on your preferences.
 
 ## Quick Start: 
 
-### If you already use [Kalamart's OBS control API](https://thunderstore.io/c/rumble/p/Kalamart/OBS_Control_API/), just go to your friends list and start picking people to auto record
+### Install [Kalamart's OBS control API](https://thunderstore.io/c/rumble/p/Kalamart/OBS_Control_API/) and just go to your friends list and start picking people to auto record by clicking their name in fighter options
+![bippit](img/bippit.png)
 #### If not go set it up even if you're not gonna use this mod it's honestly not that hard and it's very useful
 
 ## Features
 
 - Auto-record matches based on a BP threshold or a custom list.
 - Automatically rename recordings to include opponent names.
-- Display OBS recording status on the health bar.
+- Display OBS recording status on the health bar. (Can be hidden from rock cam and legacy cam)
 - Replay buffer support with optional chapter markers.
 - Remembers the last recorded opponent for a short time after a match, allowing seamless continuation if you rematch them.
 - If the recording was started manually through OBS, the mod won't interfere and remains inactive.
@@ -59,7 +60,7 @@ Automatically controls OBS to record match sessions based on your preferences.
 | Option | Default | Description |
 |---|---|---|
 | Enable Auto Rename | true | Automatically rename recorded files. |
-| Auto Rename String | {date} {time} vs {player} | Format for renaming. Use {player}, {date}, {time} as placeholders. The date and time is according to when the recording was started |
+| Auto Rename String | `{date}` `{time}` vs `{player}` | Format for renaming. Use `{player}`, `{date}`, `{time}` as placeholders. The date and time is according to when you enter the match with the player |
 | Date Format | yyyy-MM-dd | Date format for renaming. [Format Reference](https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) |
 | Time Format | HH-mm-ss | Time format for renaming. |
 | Replay Prefix | R- | Prefix for replay buffer files. |

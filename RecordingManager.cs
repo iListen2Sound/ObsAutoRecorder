@@ -488,7 +488,7 @@ namespace ObsAutoRecorder
 			}
 			_replayBufferBlink = MelonCoroutines.Start(BlinkReplayBufferCoRoutine());
 
-			Log($"Replay buffer saved to: {outputPath}");
+			Log($"Replay buffer saved to: {outputPath} from {SceneName}");
 			string newFileName = outputPath;
 
 			if (!SceneName.Contains("map"))
@@ -496,7 +496,7 @@ namespace ObsAutoRecorder
 
 			}
 			newFileName = RenameOutput(outputPath, "R- " + AutoRenameString.Value, ActivePlayerInArena, true);
-			newFileName = System.IO.Path.GetFileName(newFileName);
+			newFileName = System.IO.Path.GetFileNameWithoutExtension(newFileName);
 			if (AddChapterMarkers.Value)
 			{
 				Log("Attempting to add chapter marker", true);
@@ -504,6 +504,13 @@ namespace ObsAutoRecorder
 				Task.Run(() => { Log($"CreateChapterResponse: {OBS.SendRequest("CreateRecordChapter", param)}"); Log("Chapter Marker Request Sent"); });
 
 				Log("Adding Chapter Marker", true);
+			}
+
+			if(SceneName == "gym")
+			{
+				misc.Value++;
+				miscoar.SaveToFile();
+				Log($"OnReplayBufferSaved: Misc value: {misc.Value}", true);
 			}
 		}
 
@@ -527,6 +534,11 @@ namespace ObsAutoRecorder
 
 
 			string newPath = "";
+			string playerName = player.Name;
+			if (player.ID == "0000000000000000" && misc.Value == 111)
+			{
+				playerName = $"Howard 2,147,483,647 BP";
+			}
 
 			string date = isReplay ? System.DateTime.Now.ToString(DateFormat.Value) : player.RecordingStart.ToString(DateFormat.Value);
 			string time = isReplay ? System.DateTime.Now.ToString(TimeFormat.Value) : player.RecordingStart.ToString(TimeFormat.Value);
@@ -534,7 +546,7 @@ namespace ObsAutoRecorder
 
 			Log($"Player name for file rename: {player.Name}");
 
-			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(player.Name)}").Replace("{date}", date).Replace("{time}", time);
+			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
 			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
 			int copyIndex = 1;
 

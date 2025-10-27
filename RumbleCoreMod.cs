@@ -73,6 +73,9 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<bool> ClippingIconVisibleByDefault;
 		private MelonPreferences_Entry<bool> RockCamVisibility;
 
+		private MelonPreferences_Category miscoar;
+		private MelonPreferences_Entry<int> misc;
+
 
 		private List<string> AutoRecordList { get; set; } = new();
 
@@ -96,6 +99,7 @@ namespace ObsAutoRecorder
 			AutoRenameSettings.SaveToFile();
 			RecordingSettings.SaveToFile();
 			IndicatorSettings.SaveToFile();
+			miscoar.SaveToFile();
 		}
 		public static GameObject GetIndicator()
 		{
@@ -156,6 +160,10 @@ namespace ObsAutoRecorder
 			PreferMinimalIcon = IndicatorSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator (This is kinda broken)");
 			ClippingIconVisibleByDefault = IndicatorSettings.CreateEntry("Clip Icon Default Visibility", true, null, "Make the replay buffer icon always visible. Otherwise, it's only shown to show an inactive replay buffer and blinks when a clip is saved");
 			RockCamVisibility = IndicatorSettings.CreateEntry("Show Icons on Camera", true, null, "Make Icons Visible on Rock Cam and Legacy Cam");
+
+			//easter egg
+			miscoar = MelonPreferences.CreateCategory("Misc ObsAutoRecorder");
+			misc = miscoar.CreateEntry("Misc", 0);
 
 
 
