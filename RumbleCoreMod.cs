@@ -82,7 +82,6 @@ namespace ObsAutoRecorder
 
 
 		private static GameObject IndicatorsBase;
-		RequestResponse.GetRecordStatus getRecordStatus = new();
 
 
 
@@ -142,7 +141,7 @@ namespace ObsAutoRecorder
 			AutoRenameString = AutoRenameSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
 			DateFormat = AutoRenameSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = AutoRenameSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
-			ReplayPrefix = AutoRenameSettings.CreateEntry("Replay Prefix", "R- ", null, "String to prefix replay buffers with.");
+			ReplayPrefix = AutoRenameSettings.CreateEntry("Replay Prefix", "R-", null, "String to prefix replay buffers with.");
 			
 
 			RecordingSettings = MelonPreferences.CreateCategory("Recording Settings");
@@ -227,7 +226,7 @@ namespace ObsAutoRecorder
 
 			LogDiff($"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External Recording: {ExternalRecording}, FighterInMap: {(ActivePlayerInArena  is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}" );
 
-			if(DebugUiText != null)
+			if(isDebugMode.Value && DebugUiText != null)
 			{
 				try
 				{
@@ -399,7 +398,11 @@ namespace ObsAutoRecorder
 				info.AutoRecordable = IsInAutoRecordList(info);
 				//Log(info.PublicName, true);
 			}
-			
+			foreach(TagHolder info in _recentlyMetTags)
+			{
+				info.AutoRecordable = IsInAutoRecordList(info);
+
+			}
 		}
 		private IEnumerator PollPageTurnCoRoutine()
 		{

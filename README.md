@@ -14,17 +14,17 @@ Automatically controls OBS to record match sessions based on your preferences.
 - Automatically rename recordings to include opponent names.
 - Display OBS recording status on the health bar. (Can be hidden from rock cam and legacy cam)
 - Replay buffer support with optional chapter markers.
-- Remembers the last recorded opponent for a short time after a match, allowing seamless continuation if you rematch them.
+- Keeps recording active for a short time after a match, allowing seamless continuation if you rematch them. (Recording Hold Timout in config)
 - If the recording was started manually through OBS, the mod won't interfere and remains inactive.
 - If you pause and then resume the recording within 0.5 seconds, the mod is reactivated and resumes control of the recording.
-- When the mod is inactive due to an externally started recording, the OBS logo will blink irregularly (minimal icon appears red).
+- When the mod is inactive due to an externally started recording, the OBS logo will blink (minimal icon appears red).
 
 ---
 
 ## How to Use
 
 
-### Advanced Details
+### Skippable Details (might answer some questions. idk. you can just dm me tbh)
 
 1. **Selecting Opponents for Auto Recording**   
     - Go to your **Friends** or **Recently Met** list.
@@ -49,7 +49,7 @@ Automatically controls OBS to record match sessions based on your preferences.
 ```
 {playfabID} - {public name}
 ```
-7. **Edit the configuration file** 
+7. **Config file in UserData/ObsAutoRecorder** 
     - Generated after first launching the game. 
 
 ---
@@ -80,29 +80,7 @@ Automatically controls OBS to record match sessions based on your preferences.
 ### ObsAutoRecorder
 | Option | Default | Description |
 |---|---|---|
-| Debug Mode | false | Enable verbose logging for troubleshooting. |
-
----
-
-### Example Rename Template
-
-Default template:
-
-```CSharp
-{date} {time} vs {player}
-```
-
-Example output:
-
-```CSharp
-2025-10-17 21-30-00 vs Howard
-```
-
-You can customize this string using placeholders:
-
-- `{player}` → Opponent name
-- `{date}` → Date using your configured format
-- `{time}` → Time using your configured format
+| Debug Mode | false | Enable verbose logging for troubleshooting. (Also enables an in-game debug monitor)|
 
 ---
 

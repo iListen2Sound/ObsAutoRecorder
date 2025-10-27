@@ -34,8 +34,9 @@ namespace ObsAutoRecorder
 
 
 		private GameObject TagFrame;
-		private GameObject RecentTags;
 		private List<TagHolder> _displayedFriendTags = new();
+		private GameObject RecentTags;
+		private List<TagHolder> _recentlyMetTags = new();
 		private GameObject HoldButton;
 		private List<GameObject> HoldButtons = new();
 		private GameObject LogoPack { get; set; }
@@ -133,7 +134,7 @@ namespace ObsAutoRecorder
 			ReplayBufferLogo.SetActive(true);
 			ReplayBufferLogo.layer = RockCamVisibility.Value ? 0 : VR_ONLY_LAYER;
 
-			DebugUi = Calls.Create.NewText(" ##LOGDIFF: Record: True, Pause: False, External Recording: False, \nFighterInMap: Tacoslayer, LastRecorded: Tacoslayer", 1f, Color.white, new Vector3(0f, 0.1f, 1f), Quaternion.Euler(0, 0, 0));
+			DebugUi = Calls.Create.NewText("Placeholder text. You shouldn't be seeing this without some UE Shenanigans\n or decompiled code. Doesn't count if it's you, Ava. I (probably) told you about this.", 1f, Color.white, new Vector3(0f, 0.1f, 1f), Quaternion.Euler(0, 0, 0));
 			DebugUi.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
 			DebugUi.transform.localPosition = new Vector3(0f, 0.1f, 0.96f);
 			DebugUi.transform.SetParent(PlayerUi.transform, false);
@@ -146,7 +147,8 @@ namespace ObsAutoRecorder
 		private void BuildTagHolders()
 		{
 			_selectedFriend = new TagHolder() { TagObject = _selectedTag };
-			_displayedFriendTags = GetPlayerTags();
+			_displayedFriendTags = GetPlayerTags(TagFrame);
+			_recentlyMetTags = GetPlayerTags(RecentTags);
 			if (_pollTagsCor != null)
 			{
 				MelonCoroutines.Stop(_pollTagsCor);
@@ -162,43 +164,30 @@ namespace ObsAutoRecorder
 
 				MelonCoroutines.Start(DebounceCoRoutine(_selectedFriend));
 				ToggleAutoRecord(_selectedFriend);
+				UpdateDisplayedTags();
 			});
 			_selectedFriend.IsSelected = true;
 		}
 
-		private List<TagHolder> GetPlayerTags()
+		private List<TagHolder> GetPlayerTags(GameObject phoneFrame)
 		{
-			List<TagHolder> friendInfos = new();
-
-
-			//doesn't work because IsFriendInfoLoaded() checks if every displayed tag has text to return true.
-			
-			/*for (int i = 0; i < RecentTags.transform.childCount; i++)
-			{
-				TagHolder friendInfo = new TagHolder();
-				friendInfo.TagObject = RecentTags.transform.GetChild(i).gameObject;
-				friendInfos.Add(friendInfo);
-				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
-				{
-					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
-				});
-			}*/
+			List<TagHolder> tagInfos = new();
 
 			for (int i = 0; i < TagFrame.transform.childCount; i++)
 			{
-				TagHolder friendInfo = new TagHolder();
-				friendInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
-				friendInfos.Add(friendInfo);
+				TagHolder tagInfo = new TagHolder();
+				tagInfo.TagObject = TagFrame.transform.GetChild(i).gameObject;
+				tagInfos.Add(tagInfo);
 
 				//Event handler to update the selected fighter's auto-recordable status
-				friendInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+				tagInfo.InteractionButton.GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
 				{
-					_selectedFriend.AutoRecordable = IsInAutoRecordList(friendInfo);
+					_selectedFriend.AutoRecordable = IsInAutoRecordList(tagInfo);
 				});
 			}
 			
 
-			return friendInfos;
+			return tagInfos;
 
 		}
 
