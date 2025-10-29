@@ -5,7 +5,7 @@ Automatically controls OBS to record match sessions based on your preferences.
 ## Quick Start: 
 
 ### Install [Kalamart's OBS control API](https://thunderstore.io/c/rumble/p/Kalamart/OBS_Control_API/) and just go to your friends list and start picking people to auto record by clicking their name in fighter options
-![bippit](img/bippit.png)
+![bippit](https://i.imgur.com/fyFDi5Z.png)
 #### If not go set it up even if you're not gonna use this mod it's honestly not that hard and it's very useful
 
 ## Features

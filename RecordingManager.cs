@@ -214,11 +214,13 @@ namespace ObsAutoRecorder
 			//Null currentRecorded player means no recording active. Start new one.
 			if (LastRecordedPlayer is null)
 			{
+				Log($"Starting new recording for player {ActivePlayerInArena.ToString()}", true);
 				if (OBS.IsRecordingActive() || IsPaused)
 				{
-					Log($"FightSessionStart: Internal recording active but LastRecordedPlayer is null. Please report. IsRecordingActive: {OBS.IsRecordingActive()}, IsPaused: {IsPaused}, LastRecordedPlayer is null: {LastRecordedPlayer is null}");
+					Log($"FightSessionStart: Internal recording active but LastRecordedPlayer is null. Please report. IsRecordingActive: {OBS.IsRecordingActive()}, IsPaused: {IsPaused}, LastRecordedPlayer is null: {LastRecordedPlayer is null}", false, 1);
 					RequestRecordingStop();
 				}
+
 				RequestStartRecording(ActivePlayerInArena);
 				return;
 			}
