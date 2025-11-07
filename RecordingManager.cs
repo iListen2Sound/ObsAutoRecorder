@@ -131,7 +131,7 @@ namespace ObsAutoRecorder
 		}
 		private void SetRecordingState()
 		{
-			StartTryReconnecting();
+			//StartTryReconnecting();
 			
 			if (SceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
 				ActivePlayerInArena = new PlayfabInfo(PlayerManager.instance.AllPlayers[1]);
