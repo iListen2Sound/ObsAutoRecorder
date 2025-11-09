@@ -72,6 +72,9 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<bool> PreferMinimalIcon;
 		private MelonPreferences_Entry<bool> ClippingIconVisibleByDefault;
 		private MelonPreferences_Entry<bool> RockCamVisibility;
+		private MelonPreferences_Entry<int> MainIconPosition;
+		private MelonPreferences_Entry<float> ReplayIconOffset;
+
 
 
 		private List<string> AutoRecordList { get; set; } = new();
@@ -149,6 +152,8 @@ namespace ObsAutoRecorder
 			PreferMinimalIcon = IndicatorSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator (This is kinda broken)");
 			ClippingIconVisibleByDefault = IndicatorSettings.CreateEntry("Clip Icon Default Visibility", true, null, "Make the replay buffer icon always visible. Otherwise, it's only shown to show an inactive replay buffer and blinks when a clip is saved");
 			RockCamVisibility = IndicatorSettings.CreateEntry("Show Icons on Camera", true, null, "Make Icons Visible on Rock Cam and Legacy Cam");
+			MainIconPosition = IndicatorSettings.CreateEntry("Main Icon Position", 0, null, "Position of OBS Icon along healthbar. Left to right from 0 to 100");
+			ReplayIconOffset = IndicatorSettings.CreateEntry("Replay Icon Offset", 5f, null, "Offset of Replay Buffer Icon from main OBS Icon");
 
 
 
@@ -261,10 +266,6 @@ namespace ObsAutoRecorder
 
 			if (SceneName == "gym" || SceneName == "park")
 			{
-
-
-
-
 				for (int i = 0; i < 4; i++)
 				{
 					_scrollBar.transform.GetChild(i).GetChild(0).GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
@@ -482,31 +483,6 @@ namespace ObsAutoRecorder
 				lastLogDiff = message;
 			}
 
-		}
-
-
-
-		private IEnumerator StartRecordingAfterStopCoroutine()
-		{
-			float startTime = Time.realtimeSinceStartup;
-			float currentTime = Time.realtimeSinceStartup - startTime;
-			while ((OBS.IsRecordingActive() || IsPaused) && currentTime < 5f)
-			{
-				yield return null;
-				currentTime = Time.realtimeSinceStartup - startTime;
-				Log($"Waiting for last recording end", true);
-			}
-
-			if (currentTime >= 5f && OBS.IsRecordingActive())
-			{
-				Log($"Restart recording for new player failed: timeout", false, 1);
-			}
-			else
-			{
-				Log($"Last recording stopped. Starting new recording for {LastRecordedPlayer.ToString()}");
-				//StartRecording(NextPlayerToRecord);
-			}
-			//_recordingWaitCor = null;
 		}
 
 		
