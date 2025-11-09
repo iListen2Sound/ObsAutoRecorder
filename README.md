@@ -1,6 +1,6 @@
 # ObsAutoRecorder
 
-Automatically controls OBS to record match sessions based on your preferences.
+Automatically controls OBS to record match sessions based on your preferences. Also renames clips and writes chapter markers coinciding with said clips to videos.
 
 ## Quick Start: 
 
@@ -45,10 +45,7 @@ Automatically controls OBS to record match sessions based on your preferences.
     - When the mod is inactive due to external recording, the OBS logo will blink and the minimal icon will appear red.
     - When active, the recording status is displayed on the health bar.
 6. **Managing AutoRecord List**:
-    - You can manually edit `AutoRecordList.txt` in your **userdata** folder for people not in your friends list:
-```
-{playfabID} - {public name}
-```
+    - You can manually edit `AutoRecordList.txt` in your **userdata** folder for people not in your friends list: `{playfabID} - {public name}`
 7. **Config file in UserData/ObsAutoRecorder** 
     - Generated after first launching the game. 
 
