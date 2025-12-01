@@ -57,10 +57,11 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Category AutoRenameSettings;
 		//private MelonPreferences_Entry<string> PlayersToRecord;
 		private MelonPreferences_Entry<string> AutoRenameString;
+		private MelonPreferences_Entry<string> ReplayAutoRenameString;
 		private MelonPreferences_Entry<bool> DoAutoRename;
 		private MelonPreferences_Entry<string> DateFormat;
 		private MelonPreferences_Entry<string> TimeFormat;
-		private MelonPreferences_Entry<string> ReplayPrefix;
+
 
 		private MelonPreferences_Category RecordingSettings;
 		private MelonPreferences_Entry<bool> AddChapterMarkers;
@@ -97,6 +98,11 @@ namespace ObsAutoRecorder
 		//private object _recordingWaitCor = null;
 		private void SaveSettings()
 		{
+			OBSAutoRecorderSettings.LoadFromFile();
+			AutoRenameSettings.LoadFromFile();
+			RecordingSettings.LoadFromFile();
+			IndicatorSettings.LoadFromFile();
+
 			OBSAutoRecorderSettings.SaveToFile();
 			AutoRenameSettings.SaveToFile();
 			RecordingSettings.SaveToFile();
@@ -141,10 +147,10 @@ namespace ObsAutoRecorder
 			AutoRenameSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
 			DoAutoRename = AutoRenameSettings.CreateEntry("Enable Auto Rename", true, null, "Enable automatic renaming of recorded files");
-			AutoRenameString = AutoRenameSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
+			AutoRenameString = AutoRenameSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, {map}, and {time} as variables.");
+			ReplayAutoRenameString = AutoRenameSettings.CreateEntry("Clip Auto Rename String", "R-{date} {time} vs {player}", null, "Rename format for saved replay buffer files");
 			DateFormat = AutoRenameSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = AutoRenameSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
-			ReplayPrefix = AutoRenameSettings.CreateEntry("Replay Prefix", "R-", null, "String to prefix replay buffers with.");
 			
 
 			RecordingSettings = MelonPreferences.CreateCategory("Recording Settings");
@@ -174,6 +180,7 @@ namespace ObsAutoRecorder
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
 			SaveSettings();
+			FindDeprecatedConfs();
 
 			foreach (string entry in AutoRecordList)
 			{
@@ -181,6 +188,23 @@ namespace ObsAutoRecorder
 			}
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
 
+		}
+
+		private void FindDeprecatedConfs()
+		{
+			string[] lines = File.ReadAllLines(Path.Combine(USER_DATA, CONFIG_FILE));
+			string depIndicator = "deprecated: "
+			foreach(string line in lines)
+			{
+				if(line.Contains("Replay Prefix") && !(line.Contains(depIndicator)))
+				{
+					Log($"Found unmarked deprecated config option: \"{line}\".", false, 1);
+					Log("Marking...", false, 0);
+					line = depIndicator + line + " | No longer used. Please delete";
+				}
+			}
+
+			File.WriteAllLines(Path.Combine(USER_DATA, CONFIG_FILE), lines);
 		}
 
 		private void UpdateAutoRecordFile()

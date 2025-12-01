@@ -57,10 +57,10 @@ Automatically controls OBS to record match sessions based on your preferences. A
 | Option | Default | Description |
 |---|---|---|
 | Enable Auto Rename | true | Automatically rename recorded files. |
-| Auto Rename String | `{date}` `{time}` vs `{player}` | Format for renaming. Use `{player}`, `{date}`, `{time}` as placeholders. The date and time is according to when you enter the match with the player |
+| Auto Rename String | `{date}` `{time}` vs `{player}` | Format for renaming. Use `{player}`, `{date}`, `{map}`, and `{time}` as placeholders. The date and time is according to when you enter the match with the player |
+| Clip Auto Rename String | R-`{date}` `{time}` vs `{player}` | Rename format for saved replay buffer files |
 | Date Format | yyyy-MM-dd | Date format for renaming. [Format Reference](https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) |
 | Time Format | HH-mm-ss | Time format for renaming. |
-| Replay Prefix | R- | Prefix for replay buffer files. |
 ### Recording Settings
 | Option | Default | Description |
 |---|---|---|
@@ -74,7 +74,7 @@ Automatically controls OBS to record match sessions based on your preferences. A
 | Prefer Minimal Icon | false | Use minimal OBS icon for recording indicator. (a little broken but usable. No motivation to fix it)|
 | Clip Icon Default Visibility | true | Show replay buffer icon always; otherwise, only shown blinking when a clip is saved. |
 | Show Icons on Camera | true | Display icons on Rock Cam and Legacy Cam. |
-| Map Icon Position | 0 | Position of OBS Icon along healthbar. Left to right from 0 to 100 |
+| OBS Icon Position | 0 | Position of OBS Icon along healthbar. Left to right from 0 to 100 |
 | Replay OBS Offset | 5 | Offset of Replay Buffer Icon from main OBS Icon | 
 ### ObsAutoRecorder
 | Option | Default | Description |
