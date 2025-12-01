@@ -98,16 +98,21 @@ namespace ObsAutoRecorder
 		//private object _recordingWaitCor = null;
 		private void SaveSettings()
 		{
-			OBSAutoRecorderSettings.LoadFromFile();
-			AutoRenameSettings.LoadFromFile();
-			RecordingSettings.LoadFromFile();
-			IndicatorSettings.LoadFromFile();
-
+			
 			OBSAutoRecorderSettings.SaveToFile();
 			AutoRenameSettings.SaveToFile();
 			RecordingSettings.SaveToFile();
 			IndicatorSettings.SaveToFile();
 			miscoar.SaveToFile();
+		}
+
+		private void ReadSettings()
+		{
+			OBSAutoRecorderSettings.LoadFromFile();
+			AutoRenameSettings.LoadFromFile();
+			RecordingSettings.LoadFromFile();
+			IndicatorSettings.LoadFromFile();
+
 		}
 		public static GameObject GetIndicator()
 		{
@@ -126,6 +131,7 @@ namespace ObsAutoRecorder
 				RequestRecordingStop();
 			}
 			SaveSettings();
+			FindDeprecatedConfs();
 		}
 
 		public override void OnInitializeMelon()
@@ -193,14 +199,14 @@ namespace ObsAutoRecorder
 		private void FindDeprecatedConfs()
 		{
 			string[] lines = File.ReadAllLines(Path.Combine(USER_DATA, CONFIG_FILE));
-			string depIndicator = "deprecated: "
-			foreach(string line in lines)
+			string depIndicator = "\"deprecated: ";
+			for(int i = 0; i < lines.Length; i++) 
 			{
-				if(line.Contains("Replay Prefix") && !(line.Contains(depIndicator)))
+				if (lines[i].Contains("Replay Prefix") && !(lines[i].Contains(depIndicator)))
 				{
-					Log($"Found unmarked deprecated config option: \"{line}\".", false, 1);
+					Log($"Found unmarked deprecated config option: \"{lines[i]}\".", false, 1);
 					Log("Marking...", false, 0);
-					line = depIndicator + line + " | No longer used. Please delete";
+					lines[i] = "\n#↓↓↓ No longer used. Please delete\n" + depIndicator + lines[i].TrimStart('\"');
 				}
 			}
 
@@ -272,6 +278,7 @@ namespace ObsAutoRecorder
 		/// </summary>
 		private void OnMapInitialized()
 		{
+			ReadSettings();
 
 
 
@@ -330,11 +337,6 @@ namespace ObsAutoRecorder
 				isFirstLoad = false;
 				
 			}
-
-
-
-
-
 			//Solo recording start test
 			if (SceneName == "park")
 			{
@@ -379,7 +381,6 @@ namespace ObsAutoRecorder
 
 			//PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
 			UpdateAutoRecordFile();
-			SaveSettings();
 
 			foreach (TagHolder friend in _displayedFriendTags)
 			{
