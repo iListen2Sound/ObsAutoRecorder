@@ -1,6 +1,6 @@
 # ObsAutoRecorder
 
-Automatically controls OBS to record match sessions based on your preferences.
+Automatically controls OBS to record match sessions based on your preferences. Also renames clips and writes chapter markers coinciding with said clips to videos.
 
 ## Quick Start: 
 
@@ -45,10 +45,7 @@ Automatically controls OBS to record match sessions based on your preferences.
     - When the mod is inactive due to external recording, the OBS logo will blink and the minimal icon will appear red.
     - When active, the recording status is displayed on the health bar.
 6. **Managing AutoRecord List**:
-    - You can manually edit `AutoRecordList.txt` in your **userdata** folder for people not in your friends list:
-```
-{playfabID} - {public name}
-```
+    - You can manually edit `AutoRecordList.txt` in your **userdata** folder for people not in your friends list: `{playfabID} - {public name}`
 7. **Config file in UserData/ObsAutoRecorder** 
     - Generated after first launching the game. 
 
@@ -77,6 +74,8 @@ Automatically controls OBS to record match sessions based on your preferences.
 | Prefer Minimal Icon | false | Use minimal OBS icon for recording indicator. (a little broken but usable. No motivation to fix it)|
 | Clip Icon Default Visibility | true | Show replay buffer icon always; otherwise, only shown blinking when a clip is saved. |
 | Show Icons on Camera | true | Display icons on Rock Cam and Legacy Cam. |
+| Map Icon Position | 0 | Position of OBS Icon along healthbar. Left to right from 0 to 100 |
+| Replay OBS Offset | 5 | Offset of Replay Buffer Icon from main OBS Icon | 
 ### ObsAutoRecorder
 | Option | Default | Description |
 |---|---|---|
