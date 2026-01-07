@@ -57,7 +57,7 @@ Automatically controls OBS to record match sessions based on your preferences. A
 | Option | Default | Description |
 |---|---|---|
 | Enable Auto Rename | true | Automatically rename recorded files. |
-| Auto Rename String | `{date}` `{time}` vs `{player}` | Format for renaming. Use `{player}`, `{date}`, `{map}`, and `{time}` as placeholders. The date and time is according to when you enter the match with the player |
+| Auto Rename String | `{date}` `{time}` vs `{player}` | Format for renaming. Use `{player}`, `{date}`, `{map}`, and `{time}` as placeholders. The date and time is according to when you enter the match with the player. Supports folder creation e.g. `{player}/{date} {time}` |
 | Clip Auto Rename String | R-`{date}` `{time}` vs `{player}` | Rename format for saved replay buffer files |
 | Date Format | yyyy-MM-dd | Date format for renaming. [Format Reference](https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) |
 | Time Format | HH-mm-ss | Time format for renaming. |
@@ -87,5 +87,5 @@ Automatically controls OBS to record match sessions based on your preferences. A
 
 - Fight sessions are determined by entry into a map, and then exits when you go back to your gym. 
 - Uses Kalamart's OBS Control API to connect to OBS. Make sure it is [properly configured and connected](https://github.com/Kalamart1/OBS_Control_API?tab=readme-ov-file#setup)
-- ModUI support is not planned.
+- ModUI support is not planned (until it adds melon preferences support)
 - Chapter marker support is only available for Hybrid MP4 output. Check your OBS settings 
