@@ -497,7 +497,7 @@ namespace ObsAutoRecorder
 			{
 
 			}
-			newFileName = RenameOutput(outputPath, "R- " + AutoRenameString.Value, ActivePlayerInArena, true);
+			newFileName = RenameOutput(outputPath, ReplayAutoRenameString.Value, ActivePlayerInArena, true);
 			newFileName = System.IO.Path.GetFileNameWithoutExtension(newFileName);
 			if (AddChapterMarkers.Value)
 			{
@@ -547,23 +547,45 @@ namespace ObsAutoRecorder
 
 
 			Log($"Player name for file rename: {player.Name}");
-
-			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
-			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
-			int copyIndex = 1;
-
-
-			while (System.IO.File.Exists(newPath))
+			string mapName;
+			switch (SceneName)
 			{
-				Log($"File exists: {newPath} ", false, 1);
-				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
-
-				copyIndex++;
+				case "map0":
+					mapName = "Ring";
+					break;
+				case "map1":
+					mapName = "Pit";
+					break;
+				case "gym":
+					mapName = "Gym";
+					break;
+				case "park":
+					mapName = "Park";
+					break;
+				default:
+					mapName = "Unknown";
+					break;
 			}
-
 
 			Task.Run(() =>
 			{
+				string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time).Replace("{map}", mapName);
+
+				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
+				int copyIndex = 1;
+				FileInfo fileInfo = new FileInfo(newPath);
+				fileInfo.Directory.Create();
+
+				while (System.IO.File.Exists(newPath))
+				{
+					Log($"File exists: {newPath} ", false, 1);
+					newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
+					
+					copyIndex++;
+				}
+
+
+
 				bool success = false;
 				float startTime = Time.realtimeSinceStartup;
 				float currentTime = Time.realtimeSinceStartup;
