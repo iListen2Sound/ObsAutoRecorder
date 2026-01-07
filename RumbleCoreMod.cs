@@ -36,7 +36,7 @@ namespace ObsAutoRecorder
 	{
 		public const string Name = "ObsAutoRecorder";
 		public const string Author = "iListen2Sound";
-		public const string Version = "1.1.0";
+		public const string Version = "1.2.0";
 	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
