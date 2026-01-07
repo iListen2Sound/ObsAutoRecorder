@@ -36,7 +36,7 @@ namespace ObsAutoRecorder
 	{
 		public const string Name = "ObsAutoRecorder";
 		public const string Author = "iListen2Sound";
-		public const string Version = "1.0.0";
+		public const string Version = "1.2.0";
 	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
@@ -57,10 +57,11 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Category AutoRenameSettings;
 		//private MelonPreferences_Entry<string> PlayersToRecord;
 		private MelonPreferences_Entry<string> AutoRenameString;
+		private MelonPreferences_Entry<string> ReplayAutoRenameString;
 		private MelonPreferences_Entry<bool> DoAutoRename;
 		private MelonPreferences_Entry<string> DateFormat;
 		private MelonPreferences_Entry<string> TimeFormat;
-		private MelonPreferences_Entry<string> ReplayPrefix;
+
 
 		private MelonPreferences_Category RecordingSettings;
 		private MelonPreferences_Entry<bool> AddChapterMarkers;
@@ -72,6 +73,9 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<bool> PreferMinimalIcon;
 		private MelonPreferences_Entry<bool> ClippingIconVisibleByDefault;
 		private MelonPreferences_Entry<bool> RockCamVisibility;
+		private MelonPreferences_Entry<int> MainIconPosition;
+		private MelonPreferences_Entry<float> ReplayIconOffset;
+
 
 		private MelonPreferences_Category miscoar;
 		private MelonPreferences_Entry<int> misc;
@@ -94,11 +98,21 @@ namespace ObsAutoRecorder
 		//private object _recordingWaitCor = null;
 		private void SaveSettings()
 		{
+			
 			OBSAutoRecorderSettings.SaveToFile();
 			AutoRenameSettings.SaveToFile();
 			RecordingSettings.SaveToFile();
 			IndicatorSettings.SaveToFile();
 			miscoar.SaveToFile();
+		}
+
+		private void ReadSettings()
+		{
+			OBSAutoRecorderSettings.LoadFromFile();
+			AutoRenameSettings.LoadFromFile();
+			RecordingSettings.LoadFromFile();
+			IndicatorSettings.LoadFromFile();
+
 		}
 		public static GameObject GetIndicator()
 		{
@@ -117,6 +131,7 @@ namespace ObsAutoRecorder
 				RequestRecordingStop();
 			}
 			SaveSettings();
+			FindDeprecatedConfs();
 		}
 
 		public override void OnInitializeMelon()
@@ -138,10 +153,10 @@ namespace ObsAutoRecorder
 			AutoRenameSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
 			DoAutoRename = AutoRenameSettings.CreateEntry("Enable Auto Rename", true, null, "Enable automatic renaming of recorded files");
-			AutoRenameString = AutoRenameSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
+			AutoRenameString = AutoRenameSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, {map}, and {time} as variables.");
+			ReplayAutoRenameString = AutoRenameSettings.CreateEntry("Clip Auto Rename String", "R-{date} {time} vs {player}", null, "Rename format for saved replay buffer files");
 			DateFormat = AutoRenameSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = AutoRenameSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
-			ReplayPrefix = AutoRenameSettings.CreateEntry("Replay Prefix", "R-", null, "String to prefix replay buffers with.");
 			
 
 			RecordingSettings = MelonPreferences.CreateCategory("Recording Settings");
@@ -159,6 +174,8 @@ namespace ObsAutoRecorder
 			PreferMinimalIcon = IndicatorSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator (This is kinda broken)");
 			ClippingIconVisibleByDefault = IndicatorSettings.CreateEntry("Clip Icon Default Visibility", true, null, "Make the replay buffer icon always visible. Otherwise, it's only shown to show an inactive replay buffer and blinks when a clip is saved");
 			RockCamVisibility = IndicatorSettings.CreateEntry("Show Icons on Camera", true, null, "Make Icons Visible on Rock Cam and Legacy Cam");
+			MainIconPosition = IndicatorSettings.CreateEntry("Main Icon Position", 0, null, "Position of OBS Icon along healthbar. Left to right from 0 to 100");
+			ReplayIconOffset = IndicatorSettings.CreateEntry("Replay Icon Offset", 5f, null, "Offset of Replay Buffer Icon from main OBS Icon");
 
 			//easter egg
 			miscoar = MelonPreferences.CreateCategory("Misc ObsAutoRecorder");
@@ -169,6 +186,7 @@ namespace ObsAutoRecorder
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
 			SaveSettings();
+			FindDeprecatedConfs();
 
 			foreach (string entry in AutoRecordList)
 			{
@@ -176,6 +194,23 @@ namespace ObsAutoRecorder
 			}
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
 
+		}
+
+		private void FindDeprecatedConfs()
+		{
+			string[] lines = File.ReadAllLines(Path.Combine(USER_DATA, CONFIG_FILE));
+			string depIndicator = "\"deprecated: ";
+			for(int i = 0; i < lines.Length; i++) 
+			{
+				if (lines[i].Contains("Replay Prefix") && !(lines[i].Contains(depIndicator)))
+				{
+					Log($"Found unmarked deprecated config option: \"{lines[i]}\".", false, 1);
+					Log("Marking...", false, 0);
+					lines[i] = "\n#↓↓↓ No longer used. Please delete\n" + depIndicator + lines[i].TrimStart('\"');
+				}
+			}
+
+			File.WriteAllLines(Path.Combine(USER_DATA, CONFIG_FILE), lines);
 		}
 
 		private void UpdateAutoRecordFile()
@@ -243,6 +278,7 @@ namespace ObsAutoRecorder
 		/// </summary>
 		private void OnMapInitialized()
 		{
+			ReadSettings();
 
 
 
@@ -276,10 +312,6 @@ namespace ObsAutoRecorder
 
 			if (SceneName == "gym" || SceneName == "park")
 			{
-
-
-
-
 				for (int i = 0; i < 4; i++)
 				{
 					_scrollBar.transform.GetChild(i).GetChild(0).GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
@@ -305,11 +337,6 @@ namespace ObsAutoRecorder
 				isFirstLoad = false;
 				
 			}
-
-
-
-
-
 			//Solo recording start test
 			if (SceneName == "park")
 			{
@@ -354,7 +381,6 @@ namespace ObsAutoRecorder
 
 			//PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
 			UpdateAutoRecordFile();
-			SaveSettings();
 
 			foreach (TagHolder friend in _displayedFriendTags)
 			{
@@ -501,31 +527,6 @@ namespace ObsAutoRecorder
 				lastLogDiff = message;
 			}
 
-		}
-
-
-
-		private IEnumerator StartRecordingAfterStopCoroutine()
-		{
-			float startTime = Time.realtimeSinceStartup;
-			float currentTime = Time.realtimeSinceStartup - startTime;
-			while ((OBS.IsRecordingActive() || IsPaused) && currentTime < 5f)
-			{
-				yield return null;
-				currentTime = Time.realtimeSinceStartup - startTime;
-				Log($"Waiting for last recording end", true);
-			}
-
-			if (currentTime >= 5f && OBS.IsRecordingActive())
-			{
-				Log($"Restart recording for new player failed: timeout", false, 1);
-			}
-			else
-			{
-				Log($"Last recording stopped. Starting new recording for {LastRecordedPlayer.ToString()}");
-				//StartRecording(NextPlayerToRecord);
-			}
-			//_recordingWaitCor = null;
 		}
 
 		
