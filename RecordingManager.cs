@@ -501,8 +501,9 @@ namespace ObsAutoRecorder
 			newFileName = System.IO.Path.GetFileNameWithoutExtension(newFileName);
 			if (AddChapterMarkers.Value)
 			{
+				//Since 2025-11-29 18-17-06, chapter names have been submitted as empty strings and don't contain new file name. That same day at 17-30-51, it was still working. No changes have been made to the code that I remember. Adding "Clip" at the start to ensure empty strings don't get through
 				Log("Attempting to add chapter marker", true);
-				var param = new { chapterName = newFileName };
+				var param = new { chapterName = "clip: " + newFileName};
 				Task.Run(() => { Log($"CreateChapterResponse: {OBS.SendRequest("CreateRecordChapter", param)}"); Log("Chapter Marker Request Sent"); });
 
 				Log("Adding Chapter Marker", true);

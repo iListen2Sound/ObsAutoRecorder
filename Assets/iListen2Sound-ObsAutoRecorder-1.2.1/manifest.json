@@ -1,6 +1,6 @@
 {
   "name": "ObsAutoRecorder",
-  "version_number": "1.2.0",
+  "version_number": "1.2.1",
   "description": "Automatically Manage OBS recordings and clips",
   "website_url": "",
   "dependencies": [
