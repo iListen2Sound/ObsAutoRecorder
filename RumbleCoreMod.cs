@@ -88,6 +88,8 @@ namespace ObsAutoRecorder
 		private static GameObject IndicatorsBase;
 
 
+		public static GameObject DDOLParent;
+
 
 
 
@@ -305,6 +307,8 @@ namespace ObsAutoRecorder
 				
 				if (isFirstLoad)
 				{
+					DDOLParent = new GameObject("ObsAutoRecorder_DDOLParent");
+					GameObject.DontDestroyOnLoad(DDOLParent);
 					FirstLoad();
 				}
 				BuildPlayerIndicators();

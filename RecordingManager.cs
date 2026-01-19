@@ -568,11 +568,11 @@ namespace ObsAutoRecorder
 					break;
 			}
 
+			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time).Replace("{map}", mapName);
+
+			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
 			Task.Run(() =>
 			{
-				string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time).Replace("{map}", mapName);
-
-				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
 				int copyIndex = 1;
 				FileInfo fileInfo = new FileInfo(newPath);
 				fileInfo.Directory.Create();

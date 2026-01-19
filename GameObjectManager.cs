@@ -71,13 +71,15 @@ namespace ObsAutoRecorder
 			OBS.Connect();
 			LogoPack = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "logopack"));
 			Log("LogoPack loaded", true);
-			GameObject.DontDestroyOnLoad(LogoPack);
+			//GameObject.DontDestroyOnLoad(LogoPack);
+			LogoPack.transform.SetParent(DDOLParent.transform, false);
 			LogoPack.SetActive(false);
 
 
 			IndicatorsBase = LogoPack.transform.GetChild(1).gameObject;
 			IndicatorsBase.SetName("OBS Logo");
-			GameObject.DontDestroyOnLoad(IndicatorsBase);
+			//GameObject.DontDestroyOnLoad(IndicatorsBase);
+			IndicatorsBase.transform.SetParent(DDOLParent.transform, false);
 			//_recordingIndicatorBase = GameObject.Instantiate(IndicatorsBase);
 			//_recordingIndicatorBase.SetActive(false);
 			IndicatorsBase.transform.GetChild(0).GetComponent<RawImage>().color = Color.black;
