@@ -78,10 +78,6 @@ namespace ObsAutoRecorder
 
 			IndicatorsBase = LogoPack.transform.GetChild(1).gameObject;
 			IndicatorsBase.SetName("OBS Logo");
-			//GameObject.DontDestroyOnLoad(IndicatorsBase);
-			IndicatorsBase.transform.SetParent(DDOLParent.transform, false);
-			//_recordingIndicatorBase = GameObject.Instantiate(IndicatorsBase);
-			//_recordingIndicatorBase.SetActive(false);
 			IndicatorsBase.transform.GetChild(0).GetComponent<RawImage>().color = Color.black;
 
 			IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
