@@ -25,7 +25,8 @@ using System.Threading.Tasks;
 using System.Threading;
 using static OBS_Control_API.RequestResponse;
 using Il2CppPlayFab.EconomyModels;
-using Il2CppSystem;
+//using Il2CppSystem;
+using System;
 using UnityEngine.Rendering;
 
 namespace ObsAutoRecorder
@@ -487,7 +488,7 @@ namespace ObsAutoRecorder
 			//Temporary timestamp file location for when recording is ongoing but with the location is unknown.
 			if(TempFileDir == "")
 			{
-				TempFileDir = System.IO.Path.GetDirectoryName(oldOutputPath);
+				TempFileDir = System.IO.Path.GetDirectoryName(outputPath);
 			}
 			AddNowStamp();
 

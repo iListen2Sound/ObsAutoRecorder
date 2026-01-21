@@ -52,7 +52,6 @@ namespace ObsAutoRecorder
 
 		private GameObject _scrollBar;
 		private GameObject PlayerUi;
-		private GameObject _recordingIndicatorBase;
 		//private GameObject _recordingIndicator;
 
 		bool isFirstLoad = true;
