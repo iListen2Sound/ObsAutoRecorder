@@ -90,6 +90,8 @@ namespace ObsAutoRecorder
 			//QueuedForStopping = false;
 			ModInitiatedStop = false;
 
+			TempFileDir = "";
+
 			//NextPlayerToRecord = null;
 
 			//Do not reset request variables
@@ -482,6 +484,13 @@ namespace ObsAutoRecorder
 		}
 		private void onReplayBufferSaved(string outputPath)
 		{
+			//Temporary timestamp file location for when recording is ongoing but with the location is unknown.
+			if(TempFileDir == "")
+			{
+				TempFileDir = System.IO.Path.GetDirectoryName(oldOutputPath);
+			}
+			AddNowStamp();
+
 			if (!(_replayBufferBlink is null))
 			{
 				replayBufferBlinker = false;
@@ -527,6 +536,7 @@ namespace ObsAutoRecorder
 		/// <returns></returns>
 		private string RenameOutput(string oldOutputPath, string newName, PlayfabInfo player, bool isReplay = false)
 		{
+
 			//File renaming
 			if (String.IsNullOrEmpty(oldOutputPath))
 			{

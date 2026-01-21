@@ -32,6 +32,7 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Entry<int> TimestampOffset;
 		private MelonPreferences_Entry<string> TimestampFormat;
 		private MelonPreferences_Entry<bool> SuppressRBuffer;
+		private MelonPreferences_Entry<string> TimecodeFormat;
 
 
 		private MelonPreferences_Category IndicatorSettings;
@@ -71,8 +72,9 @@ namespace ObsAutoRecorder
 			RecordByBPThreshold = RecordingSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
 			AddChapterMarkers = RecordingSettings.CreateEntry("Chapter Markers", true, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
 			TimeStampFile = RecordingSettings.CreateEntry("Write Timestamp File", true, null, "Enabling will write timestamps to a text file for when a replay buffer is saved. Only available when recording");
-			TimestampOffset = RecordingSettings.CreateEntry("Start Offset", 45, null, "Define a start offset for when the event you were clipping started");
-			TimestampFormat = RecordingSettings.CreateEntry("TimestampFormat", "{startoffset}-{timestamp}", null, "Format how timestamps are saved to make it easier to paste into utilities like ffmpeg or MKVToolNix or YouTube descriptions. Possible values are: {startoffset}, {timestamp}, {offsetduration}");
+			TimestampOffset = RecordingSettings.CreateEntry("Offset Duration", 45, null, "Define a start offset for when the event you were clipping started");
+			TimestampFormat = RecordingSettings.CreateEntry("Timestamp Format", "{offsettime}-{timestamp}", null, "Format how timestamps are saved to make it easier to paste into utilities like ffmpeg or MKVToolNix or YouTube descriptions. Possible values are: {offsettime}, {timestamp}, {offsetduration}");
+			TimecodeFormat = RecordingSettings.CreateEntry("Timecode Format", @"HH:mm:ss.ff", null, "The format of the timecodes in the timestamp");
 			SuppressRBuffer = RecordingSettings.CreateEntry("Suppress Replay Buffer", false, "Suppress replay buffer when recording with timestamps"); 
 
 			IndicatorSettings = MelonPreferences.CreateCategory("Indicator Settings");
