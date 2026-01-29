@@ -30,7 +30,7 @@ namespace ObsAutoRecorder
 
 		private void AddNowStamp()
 		{
-			TimeFileName = LatestOutputPath;
+			//TimeFileName = LatestOutputPath;
 
 
 			Task.Run(() =>
@@ -45,18 +45,15 @@ namespace ObsAutoRecorder
 				//Check if TimeFileName has been assigned an output to associate with. If not, make a temp text file
 				if (TimeFileName == "")
 				{
+					Log($"No output path found. Creating temp timestamp file.", false, 0);
 					TimeFileName = $"Temp {AutoRenameString.Value}";
-					string playerName = LastRecordedPlayer.Name;
-					if (LastRecordedPlayer.ID == "0000000000000000" && misc.Value == 111)
-					{
-						playerName = $"Howard 2,147,483,647 BP";
-					}
+					string playerName = "Unknown Player";
 
 					string date = System.DateTime.Now.ToString(DateFormat.Value);
 					string time = System.DateTime.Now.ToString(TimeFormat.Value);
 
 
-					Log($"Player name for file rename: {LastRecordedPlayer.Name}");
+					//Log($"Player name for file rename: {LastRecordedPlayer.Name}");
 					string mapName;
 					switch (SceneName)
 					{
@@ -80,8 +77,6 @@ namespace ObsAutoRecorder
 
 				}
 
-				TimeFileName += ".txt";
-
 				//Start retrieving recording data
 				System.TimeSpan currentPlayTime = TimeSpan.FromMilliseconds(req.outputDuration);
 				System.TimeSpan offsetDuration = TimeSpan.FromSeconds(TimestampOffset.Value);
@@ -95,8 +90,8 @@ namespace ObsAutoRecorder
 					.Replace("{offsettime}", offsetTime.ToString(TimecodeFormat.Value));
 				Timestamps.Add(formattedEntry);
 
-
-				File.WriteAllLines(TimeFileName, Timestamps);
+				Log($"Timestamp file recorded to : {TimeFileName}", false, 0);
+				File.WriteAllLines(TimeFileName + ".txt", Timestamps);
 
 
 
@@ -104,5 +99,18 @@ namespace ObsAutoRecorder
 			});
 		}
 
+		private void FinalRename(string newName)
+		{
+			try
+			{
+				System.IO.File.Move(TimeFileName + ".txt", newName + ".txt", false);
+				TimeFileName = "";
+				Timestamps.Clear();
+			}
+			catch (Exception ex)
+			{
+				Log($"FinalRename: Failed to rename timestamp file to {newName}.txt\n{ex.Message}", true, 1);
+			}
+		}
 	}
 }

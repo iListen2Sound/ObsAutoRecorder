@@ -388,6 +388,9 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStart(string outputPath)
 		{
+			TimeFileName = outputPath;
+
+
 			if (_stopQueueCor != null)
 			{
 				MelonCoroutines.Stop(_stopQueueCor);
@@ -596,7 +599,7 @@ namespace ObsAutoRecorder
 					copyIndex++;
 				}
 
-
+				
 
 				bool success = false;
 				float startTime = Time.realtimeSinceStartup;
@@ -631,6 +634,9 @@ namespace ObsAutoRecorder
 				{
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
+
+				if(!isReplay) 
+					FinalRename(newPath);
 
 				if (SceneName == "gym")
 				{
