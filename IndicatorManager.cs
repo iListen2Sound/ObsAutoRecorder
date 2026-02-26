@@ -56,7 +56,10 @@ namespace ObsAutoRecorder
 		}
 		private void SetIndicatorState()
 		{
+			
 			bool isRecording = OBS.IsRecordingActive();
+			if (isFirstLoad)
+				return;
 			//Log($"OBS.IsRecordingActive(): {OBS.IsRecordingActive()}\tIsPaused: {IsPaused}", true);
 			if (PreferMinimalIcon.Value)
 			{

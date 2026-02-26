@@ -9,7 +9,7 @@ using JetBrains.Annotations;
 using MelonLoader;
 using OBS_Control_API;
 using System.IO;
-using static RumbleModdingAPI.RumbleModdingAPI;
+using RumbleModdingAPI;
 using RumbleModdingAPI.RMAPI;
 
 using System.Collections;
@@ -72,7 +72,8 @@ namespace ObsAutoRecorder
 		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
 		{
 			SceneName = sceneName.ToLower();
-
+			Log("SceneLoaded: " + sceneName, true, 1);	
+			OnMapInitialized(SceneName);
 		}
 		public override void OnApplicationQuit()
 		{
@@ -132,7 +133,7 @@ namespace ObsAutoRecorder
 
 		public override void OnLateInitializeMelon()
 		{
-			Actions.onMapInitialized += OnMapInitialized;
+			//Actions.onMapInitialized += OnMapInitialized;
 
 			OBS.onRecordingPaused += onRecordPause;
 			OBS.onRecordingStopped += onRecordStop;
@@ -177,6 +178,11 @@ namespace ObsAutoRecorder
 		/// </summary>
 		private void OnMapInitialized(string map)
 		{
+
+
+			Log("RMAPI MAP INITIALIZED: " + SceneName, true, 1);
+
+			//SceneName = map.ToLower().Trim();
 			ReadSettings();
 
 

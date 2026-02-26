@@ -99,7 +99,7 @@ namespace ObsAutoRecorder
 
 		private void BuildPlayerIndicators()
 		{
-			PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(6).GetChild(0).gameObject;
+			PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
 			Log("PlayerUI loaded", true);
 
 			GameObject mainIconAnchor = new GameObject("OBSAutoRecorder-MainAnchor");
