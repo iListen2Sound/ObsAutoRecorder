@@ -4,6 +4,7 @@ using Il2CppRUMBLE.Interactions.InteractionBase;
 using Il2CppRUMBLE.Managers;
 using Il2CppRUMBLE.Social;
 using Il2CppRUMBLE.UI;
+using Il2CppRUMBLE.Players;
 using Il2CppTMPro;
 using JetBrains.Annotations;
 using MelonLoader;
@@ -28,6 +29,7 @@ using Il2CppPlayFab.EconomyModels;
 //using Il2CppSystem;
 using System;
 using UnityEngine.Rendering;
+using Player = Il2CppRUMBLE.Players.Player;
 
 namespace ObsAutoRecorder
 {
@@ -54,7 +56,7 @@ namespace ObsAutoRecorder
 		private bool IsWaitingForLastRecordStop { get; set; } = false;
 
 		private int ParkPlayers { get { return PlayerManager.instance.AllPlayers.Count - 1; } }
-		private void onPlayerSpawn()
+		private void onPlayerSpawn(Player player)
 		{
 			if (SceneName == "park")
 			{
