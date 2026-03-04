@@ -107,7 +107,7 @@ namespace ObsAutoRecorder
 				yield break;
 			}
 			timeLimiter.Stop();
-			OnMapInitialized(SceneName);
+			PlayerUIFound(SceneName);
 			yield break;
 		}
 
@@ -169,7 +169,7 @@ namespace ObsAutoRecorder
 
 		public override void OnLateInitializeMelon()
 		{
-			//Actions.onMapInitialized += OnMapInitialized;
+			//Actions.onMapInitialized += PlayerUIFound;
 
 			OBS.onRecordingPaused += onRecordPause;
 			OBS.onRecordingStopped += onRecordStop;
@@ -212,11 +212,8 @@ namespace ObsAutoRecorder
 		/// <summary>
 		/// Called when map is fully initialized reducing the risk of null references.
 		/// </summary>
-		private void OnMapInitialized(string map)
+		private void PlayerUIFound(string map)
 		{
-
-
-			Log("RMAPI MAP INITIALIZED: " + SceneName, true, 1);
 
 			//SceneName = map.ToLower().Trim();
 			ReadSettings();
