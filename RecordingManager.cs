@@ -4,6 +4,7 @@ using Il2CppRUMBLE.Interactions.InteractionBase;
 using Il2CppRUMBLE.Managers;
 using Il2CppRUMBLE.Social;
 using Il2CppRUMBLE.UI;
+using Il2CppRUMBLE.Players;
 using Il2CppTMPro;
 using JetBrains.Annotations;
 using MelonLoader;
@@ -25,8 +26,10 @@ using System.Threading.Tasks;
 using System.Threading;
 using static OBS_Control_API.RequestResponse;
 using Il2CppPlayFab.EconomyModels;
-using Il2CppSystem;
+//using Il2CppSystem;
+using System;
 using UnityEngine.Rendering;
+using Player = Il2CppRUMBLE.Players.Player;
 
 namespace ObsAutoRecorder
 {
@@ -53,7 +56,7 @@ namespace ObsAutoRecorder
 		private bool IsWaitingForLastRecordStop { get; set; } = false;
 
 		private int ParkPlayers { get { return PlayerManager.instance.AllPlayers.Count - 1; } }
-		private void onPlayerSpawn()
+		private void onPlayerSpawn(Player player)
 		{
 			if (SceneName == "park")
 			{
@@ -89,6 +92,8 @@ namespace ObsAutoRecorder
 			ModInitiatedPause = false;
 			//QueuedForStopping = false;
 			ModInitiatedStop = false;
+
+			TempFileDir = "";
 
 			//NextPlayerToRecord = null;
 
@@ -385,6 +390,9 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStart(string outputPath)
 		{
+			TimeFileName = outputPath;
+
+
 			if (_stopQueueCor != null)
 			{
 				MelonCoroutines.Stop(_stopQueueCor);
@@ -482,6 +490,13 @@ namespace ObsAutoRecorder
 		}
 		private void onReplayBufferSaved(string outputPath)
 		{
+			//Temporary timestamp file location for when recording is ongoing but with the location is unknown.
+			if(TempFileDir == "")
+			{
+				TempFileDir = System.IO.Path.GetDirectoryName(outputPath);
+			}
+			AddNowStamp();
+
 			if (!(_replayBufferBlink is null))
 			{
 				replayBufferBlinker = false;
@@ -497,7 +512,10 @@ namespace ObsAutoRecorder
 			{
 
 			}
-			newFileName = RenameOutput(outputPath, ReplayAutoRenameString.Value, ActivePlayerInArena, true);
+			if (DoAutoRename.Value)
+			{
+				newFileName = RenameOutput(outputPath, ReplayAutoRenameString.Value, ActivePlayerInArena, true);
+			}
 			newFileName = System.IO.Path.GetFileNameWithoutExtension(newFileName);
 			if (AddChapterMarkers.Value)
 			{
@@ -527,6 +545,7 @@ namespace ObsAutoRecorder
 		/// <returns></returns>
 		private string RenameOutput(string oldOutputPath, string newName, PlayfabInfo player, bool isReplay = false)
 		{
+
 			//File renaming
 			if (String.IsNullOrEmpty(oldOutputPath))
 			{
@@ -585,7 +604,7 @@ namespace ObsAutoRecorder
 					copyIndex++;
 				}
 
-
+				
 
 				bool success = false;
 				float startTime = Time.realtimeSinceStartup;
@@ -620,6 +639,9 @@ namespace ObsAutoRecorder
 				{
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
+
+				if(!isReplay) 
+					FinalRename(newPath);
 
 				if (SceneName == "gym")
 				{

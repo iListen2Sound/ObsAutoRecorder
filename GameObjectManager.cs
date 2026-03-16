@@ -51,8 +51,8 @@ namespace ObsAutoRecorder
 		private TextMeshPro DebugUiText;
 
 		private GameObject _scrollBar;
+
 		private GameObject PlayerUi;
-		private GameObject _recordingIndicatorBase;
 		//private GameObject _recordingIndicator;
 
 		bool isFirstLoad = true;
@@ -69,7 +69,7 @@ namespace ObsAutoRecorder
 		private void FirstLoad()
 		{
 			OBS.Connect();
-			LogoPack = GameObject.Instantiate(Calls.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "logopack"));
+			LogoPack = GameObject.Instantiate(RumbleModdingAPI.RMAPI.AssetBundles.LoadAssetFromStream<GameObject>(this, "ObsAutoRecorder.Assets.obsasset", "logopack"));
 			Log("LogoPack loaded", true);
 			//GameObject.DontDestroyOnLoad(LogoPack);
 			LogoPack.transform.SetParent(DDOLParent.transform, false);
@@ -78,10 +78,6 @@ namespace ObsAutoRecorder
 
 			IndicatorsBase = LogoPack.transform.GetChild(1).gameObject;
 			IndicatorsBase.SetName("OBS Logo");
-			//GameObject.DontDestroyOnLoad(IndicatorsBase);
-			IndicatorsBase.transform.SetParent(DDOLParent.transform, false);
-			//_recordingIndicatorBase = GameObject.Instantiate(IndicatorsBase);
-			//_recordingIndicatorBase.SetActive(false);
 			IndicatorsBase.transform.GetChild(0).GetComponent<RawImage>().color = Color.black;
 
 			IndicatorsBase.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
@@ -104,7 +100,7 @@ namespace ObsAutoRecorder
 
 		private void BuildPlayerIndicators()
 		{
-			PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(6).GetChild(0).gameObject;
+			//PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
 			Log("PlayerUI loaded", true);
 
 			GameObject mainIconAnchor = new GameObject("OBSAutoRecorder-MainAnchor");
@@ -158,7 +154,7 @@ namespace ObsAutoRecorder
 			ReplayBufferLogo.SetActive(true);
 			ReplayBufferLogo.layer = RockCamVisibility.Value ? 0 : VR_ONLY_LAYER;
 
-			DebugUi = Calls.Create.NewText("Placeholder text. You shouldn't be seeing this without some UE Shenanigans\n or decompiled code. Doesn't count if it's you, Ava. I (probably) told you about this.", 1f, Color.white, new Vector3(0f, 0.1f, 1f), Quaternion.Euler(0, 0, 0));
+			DebugUi = RumbleModdingAPI.RMAPI.Create.NewText("Placeholder text. You shouldn't be seeing this without some UE Shenanigans\n or decompiled code. Doesn't count if it's you, Ava. I (probably) told you about this.", 1f, Color.white, new Vector3(0f, 0.1f, 1f), Quaternion.Euler(0, 0, 0));
 			DebugUi.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
 			DebugUi.transform.localPosition = new Vector3(0f, 0.1f, 0.96f);
 			DebugUi.transform.SetParent(PlayerUi.transform, false);
