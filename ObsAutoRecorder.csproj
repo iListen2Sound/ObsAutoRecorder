@@ -31,6 +31,9 @@
 		<Reference Include="RumbleModdingAPI">
 			<HintPath>G:\SteamLibrary\steamapps\common\RUMBLE\Mods\RumbleModdingAPI.dll</HintPath>
 		</Reference>
+		<Reference Include="OBS_Control_API">
+			<HintPath>G:\SteamLibrary\steamapps\common\RUMBLE\Mods\UIFramework.dll</HintPath>
+		</Reference>
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

@@ -512,7 +512,10 @@ namespace ObsAutoRecorder
 			{
 
 			}
-			newFileName = RenameOutput(outputPath, ReplayAutoRenameString.Value, ActivePlayerInArena, true);
+			if (DoAutoRename.Value)
+			{
+				newFileName = RenameOutput(outputPath, ReplayAutoRenameString.Value, ActivePlayerInArena, true);
+			}
 			newFileName = System.IO.Path.GetFileNameWithoutExtension(newFileName);
 			if (AddChapterMarkers.Value)
 			{

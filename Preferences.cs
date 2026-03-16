@@ -1,5 +1,6 @@
 ﻿using MelonLoader;
 using System.IO;
+using System.Linq;
 namespace ObsAutoRecorder
 {
 	public partial class ObsAutoRecorder
@@ -41,14 +42,14 @@ namespace ObsAutoRecorder
 		private MelonPreferences_Category miscoar;
 		private MelonPreferences_Entry<int> misc;
 
-		private void InitPreferences() 
+		private void InitPreferences()
 		{
 			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
 			OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug with more verbose logging");
 
-			
+
 			AutoRenameSettings = MelonPreferences.CreateCategory("Auto Rename Settings");
 			AutoRenameSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
@@ -57,7 +58,7 @@ namespace ObsAutoRecorder
 			ReplayAutoRenameString = AutoRenameSettings.CreateEntry("Clip Auto Rename String", "R-{date} {time} vs {player}", null, "Rename format for saved replay buffer files");
 			DateFormat = AutoRenameSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
 			TimeFormat = AutoRenameSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
-			
+
 
 			RecordingSettings = MelonPreferences.CreateCategory("Recording Settings");
 			RecordingSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
@@ -70,7 +71,7 @@ namespace ObsAutoRecorder
 			TimestampOffset = RecordingSettings.CreateEntry("Offset Duration", 45, null, "Define a start offset for when the event you were clipping started");
 			TimestampFormat = RecordingSettings.CreateEntry("Timestamp Format", "{offsettime}-{timestamp}", null, "Format how timestamps are saved to make it easier to paste into utilities like ffmpeg or MKVToolNix or YouTube descriptions. Possible values are: {offsettime}, {timestamp}, {offsetduration}");
 			TimecodeFormat = RecordingSettings.CreateEntry("Timecode Format", @"HH:mm:ss.ff", null, "The format of the timecodes in the timestamp");
-			SuppressRBuffer = RecordingSettings.CreateEntry("Suppress Replay Buffer", false, "Suppress replay buffer when recording with timestamps"); 
+			SuppressRBuffer = RecordingSettings.CreateEntry("Suppress Replay Buffer", false, "Suppress replay buffer when recording with timestamps");
 
 			IndicatorSettings = MelonPreferences.CreateCategory("Indicator Settings");
 			IndicatorSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
@@ -84,13 +85,15 @@ namespace ObsAutoRecorder
 			//easter egg
 			miscoar = MelonPreferences.CreateCategory("Misc ObsAutoRecorder");
 			misc = miscoar.CreateEntry("Misc", 0);
+
 		}
+
 
 		private void FindDeprecatedConfs()
 		{
 			string[] lines = File.ReadAllLines(Path.Combine(USER_DATA, CONFIG_FILE));
 			string depIndicator = "\"deprecated: ";
-			for(int i = 0; i < lines.Length; i++) 
+			for (int i = 0; i < lines.Length; i++)
 			{
 				if (lines[i].Contains("Replay Prefix") && !(lines[i].Contains(depIndicator)))
 				{
@@ -105,7 +108,7 @@ namespace ObsAutoRecorder
 
 		private void SaveSettings()
 		{
-			
+
 			OBSAutoRecorderSettings.SaveToFile();
 			AutoRenameSettings.SaveToFile();
 			RecordingSettings.SaveToFile();

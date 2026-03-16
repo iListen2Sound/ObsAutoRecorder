@@ -25,6 +25,7 @@ using UnityEngine.Video;
 using Il2CppSteamworks;
 using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
+using UIFramework;
 using System.Diagnostics;
 
 
@@ -32,6 +33,7 @@ using System.Diagnostics;
 [assembly: MelonGame("Buckethead Entertainment", "RUMBLE")]
 [assembly: MelonAuthorColor(255, 87, 166, 80)]
 [assembly: MelonColor(255, 87, 166, 80)]
+[assembly: MelonAdditionalDependencies("UIFramework")]
 
 namespace ObsAutoRecorder
 {
@@ -101,7 +103,7 @@ namespace ObsAutoRecorder
 
 
 			} while (PlayerUi is null && timeLimiter.ElapsedMilliseconds < 10000);
-			if(timeLimiter.ElapsedMilliseconds >= 10000)
+			if (timeLimiter.ElapsedMilliseconds >= 10000)
 			{
 				Log("Failed to retrieve Player UI after multiple attempts. Aborting initialization to prevent errors.", false, 2);
 				yield break;
@@ -123,7 +125,8 @@ namespace ObsAutoRecorder
 		}
 
 		public override void OnInitializeMelon()
-		{
+		{	
+			
 
 			if (!Directory.Exists(USER_DATA))
 				Directory.CreateDirectory(USER_DATA);
@@ -133,8 +136,7 @@ namespace ObsAutoRecorder
 
 
 			InitPreferences();
-
-
+			UIFramework.UIFramework.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
@@ -146,6 +148,7 @@ namespace ObsAutoRecorder
 				Log(entry, true);
 			}
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
+
 
 		}
 
@@ -169,6 +172,8 @@ namespace ObsAutoRecorder
 
 		public override void OnLateInitializeMelon()
 		{
+
+
 			//Actions.onMapInitialized += PlayerUIFound;
 
 			OBS.onRecordingPaused += onRecordPause;
