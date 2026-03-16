@@ -10,6 +10,8 @@ using MelonLoader;
 using OBS_Control_API;
 using System.IO;
 using RumbleModdingAPI;
+using RumbleModdingAPI.RMAPI;
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,12 +25,15 @@ using UnityEngine.Video;
 using Il2CppSteamworks;
 using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
+using UIFramework;
+using System.Diagnostics;
 
 
 [assembly: MelonInfo(typeof(ObsAutoRecorder.ObsAutoRecorder), ObsAutoRecorder.BuildInfo.Name, ObsAutoRecorder.BuildInfo.Version, ObsAutoRecorder.BuildInfo.Author)]
 [assembly: MelonGame("Buckethead Entertainment", "RUMBLE")]
 [assembly: MelonAuthorColor(255, 87, 166, 80)]
 [assembly: MelonColor(255, 87, 166, 80)]
+[assembly: MelonAdditionalDependencies("UIFramework")]
 
 namespace ObsAutoRecorder
 {
@@ -36,7 +41,7 @@ namespace ObsAutoRecorder
 	{
 		public const string Name = "ObsAutoRecorder";
 		public const string Author = "iListen2Sound";
-		public const string Version = "1.0.0";
+		public const string Version = "1.2.1";
 	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
@@ -45,61 +50,24 @@ namespace ObsAutoRecorder
 		//Hold button location 
 		//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
 		private const string USER_DATA = "UserData/ObsAutoRecorder/";
-		private const string CONFIG_FILE = "config.cfg";
 		private const string RECORD_LIST = "AutoRecordList.txt";
 		private const string SEPARATOR = "\n";
 		public static ObsAutoRecorder Instance { get; private set; }
 
 		string SceneName { get; set; }
-		private MelonPreferences_Category OBSAutoRecorderSettings;
-		private MelonPreferences_Entry<bool> isDebugMode;
-
-		private MelonPreferences_Category AutoRenameSettings;
-		//private MelonPreferences_Entry<string> PlayersToRecord;
-		private MelonPreferences_Entry<string> AutoRenameString;
-		private MelonPreferences_Entry<bool> DoAutoRename;
-		private MelonPreferences_Entry<string> DateFormat;
-		private MelonPreferences_Entry<string> TimeFormat;
-		private MelonPreferences_Entry<string> ReplayPrefix;
-
-		private MelonPreferences_Category RecordingSettings;
-		private MelonPreferences_Entry<bool> AddChapterMarkers;
-		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
-		private MelonPreferences_Entry<int> RecordByBPThreshold;
-		private MelonPreferences_Entry<bool> PauseAfterMatch;
-
-		private MelonPreferences_Category IndicatorSettings;
-		private MelonPreferences_Entry<bool> PreferMinimalIcon;
-		private MelonPreferences_Entry<bool> ClippingIconVisibleByDefault;
-		private MelonPreferences_Entry<bool> RockCamVisibility;
-
-		private MelonPreferences_Category miscoar;
-		private MelonPreferences_Entry<int> misc;
-
 
 		private List<string> AutoRecordList { get; set; } = new();
 
-
-
 		private static GameObject IndicatorsBase;
 
-
-
-
+		public static GameObject DDOLParent;
 
 		private object _debounceCor = null;
 		private object _pollTagsCor = null;
 		private object _pollPageCor = null;
 
 		//private object _recordingWaitCor = null;
-		private void SaveSettings()
-		{
-			OBSAutoRecorderSettings.SaveToFile();
-			AutoRenameSettings.SaveToFile();
-			RecordingSettings.SaveToFile();
-			IndicatorSettings.SaveToFile();
-			miscoar.SaveToFile();
-		}
+
 		public static GameObject GetIndicator()
 		{
 			return GameObject.Instantiate(IndicatorsBase);
@@ -107,8 +75,44 @@ namespace ObsAutoRecorder
 		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
 		{
 			SceneName = sceneName.ToLower();
-
+			Log("SceneLoaded: " + sceneName, true, 1);
+			MelonCoroutines.Start(DelayPlayerRetrieval());
 		}
+
+		private IEnumerator DelayPlayerRetrieval()
+		{
+			float defaultWaitTime = 0.01f;
+			int attempts = 0;
+			Stopwatch timeLimiter = Stopwatch.StartNew();
+			do
+			{
+				try
+				{
+					PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
+				}
+				catch (System.Exception)
+				{
+					PlayerUi = null;
+				}
+				if (PlayerUi is null)
+				{
+					Log("Player UI not found. Retrying...", true, 1);
+					attempts++;
+					yield return new WaitForSeconds(defaultWaitTime * attempts * 2);
+				}
+
+
+			} while (PlayerUi is null && timeLimiter.ElapsedMilliseconds < 10000);
+			if (timeLimiter.ElapsedMilliseconds >= 10000)
+			{
+				Log("Failed to retrieve Player UI after multiple attempts. Aborting initialization to prevent errors.", false, 2);
+				yield break;
+			}
+			timeLimiter.Stop();
+			PlayerUIFound(SceneName);
+			yield break;
+		}
+
 		public override void OnApplicationQuit()
 		{
 			if (!ExternalRecording)
@@ -117,10 +121,12 @@ namespace ObsAutoRecorder
 				RequestRecordingStop();
 			}
 			SaveSettings();
+			FindDeprecatedConfs();
 		}
 
 		public override void OnInitializeMelon()
-		{
+		{	
+			
 
 			if (!Directory.Exists(USER_DATA))
 				Directory.CreateDirectory(USER_DATA);
@@ -128,53 +134,21 @@ namespace ObsAutoRecorder
 			if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
 				File.Create(Path.Combine(USER_DATA, RECORD_LIST));
 
-			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
-			OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
-			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug with more verbose logging");
-
-			
-			AutoRenameSettings = MelonPreferences.CreateCategory("Auto Rename Settings");
-			AutoRenameSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
-
-			DoAutoRename = AutoRenameSettings.CreateEntry("Enable Auto Rename", true, null, "Enable automatic renaming of recorded files");
-			AutoRenameString = AutoRenameSettings.CreateEntry("Auto Rename String", "{date} {time} vs {player}", null, "Rename format for recorded files. Use {player}, {date}, and {time} as variables.");
-			DateFormat = AutoRenameSettings.CreateEntry("Date Format", "yyyy-MM-dd", null, "Date format for renaming. https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings");
-			TimeFormat = AutoRenameSettings.CreateEntry("Time Format", "HH-mm-ss", null, "Time format for renaming.");
-			ReplayPrefix = AutoRenameSettings.CreateEntry("Replay Prefix", "R-", null, "String to prefix replay buffers with.");
-			
-
-			RecordingSettings = MelonPreferences.CreateCategory("Recording Settings");
-			RecordingSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
-
-			RecordingPauseHoldTimeout = RecordingSettings.CreateEntry("Recording Hold Timeout", 0, null, "Seconds to keep the recording held before stopping automatically");
-			PauseAfterMatch = RecordingSettings.CreateEntry("Pause recording after match", false, null, "Pause recording on returning to gym. Replay buffer will not work when paused");
-			RecordByBPThreshold = RecordingSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
-			AddChapterMarkers = RecordingSettings.CreateEntry("Chapter Markers", true, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
-
-
-			IndicatorSettings = MelonPreferences.CreateCategory("Indicator Settings");
-			IndicatorSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
-
-			PreferMinimalIcon = IndicatorSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator (This is kinda broken)");
-			ClippingIconVisibleByDefault = IndicatorSettings.CreateEntry("Clip Icon Default Visibility", true, null, "Make the replay buffer icon always visible. Otherwise, it's only shown to show an inactive replay buffer and blinks when a clip is saved");
-			RockCamVisibility = IndicatorSettings.CreateEntry("Show Icons on Camera", true, null, "Make Icons Visible on Rock Cam and Legacy Cam");
-
-			//easter egg
-			miscoar = MelonPreferences.CreateCategory("Misc ObsAutoRecorder");
-			misc = miscoar.CreateEntry("Misc", 0);
-
-
+			InitPreferences();
+			UIFramework.UIFramework.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
 			SaveSettings();
+			FindDeprecatedConfs();
 
 			foreach (string entry in AutoRecordList)
 			{
 				Log(entry, true);
 			}
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
+
 
 		}
 
@@ -198,7 +172,9 @@ namespace ObsAutoRecorder
 
 		public override void OnLateInitializeMelon()
 		{
-			Calls.onMapInitialized += OnMapInitialized;
+
+
+			//Actions.onMapInitialized += PlayerUIFound;
 
 			OBS.onRecordingPaused += onRecordPause;
 			OBS.onRecordingStopped += onRecordStop;
@@ -209,7 +185,7 @@ namespace ObsAutoRecorder
 			OBS.onDisconnect += onDisconnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
 
-			Calls.onPlayerSpawned += onPlayerSpawn;
+			Actions.onPlayerSpawned += onPlayerSpawn;
 			Instance = this;
 		}
 		public override void OnSceneWasUnloaded(int buildIndex, string sceneName)
@@ -218,21 +194,21 @@ namespace ObsAutoRecorder
 		}
 		public override void OnUpdate()
 		{
-			
+
 			if (!_sceneIsLoaded)
 				return;
 
 			SetIndicatorState();
 
-			LogDiff($"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External Recording: {ExternalRecording}, FighterInMap: {(ActivePlayerInArena  is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}" );
+			LogDiff($"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External Recording: {ExternalRecording}, FighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}");
 
-			if(isDebugMode.Value && DebugUiText != null)
+			if (isDebugMode.Value && DebugUiText != null)
 			{
 				try
 				{
-					DebugUiText.text = $"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External: {ExternalRecording}, \nFighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}\nHold Coroutine: {!(_stopQueueCor is null)}";
+					DebugUiText.text = $"TempTimeDir: {TempFileDir}\nTimeFileName: {TimeFileName} \nRecord: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External: {ExternalRecording}, \nFighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}\nHold Coroutine: {!(_stopQueueCor is null)}";
 				}
-				catch(System.Exception ex)
+				catch (System.Exception ex)
 				{
 					Log(ex.Message, true);
 				}
@@ -241,8 +217,11 @@ namespace ObsAutoRecorder
 		/// <summary>
 		/// Called when map is fully initialized reducing the risk of null references.
 		/// </summary>
-		private void OnMapInitialized()
+		private void PlayerUIFound(string map)
 		{
+
+			//SceneName = map.ToLower().Trim();
+			ReadSettings();
 
 
 
@@ -250,25 +229,27 @@ namespace ObsAutoRecorder
 			//addButtonsToFriendsScreen();
 			if (SceneName == "gym")
 			{
-				_scrollBar = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
-				_selectedTag = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
-				TagFrame = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
-				RecentTags = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
+				_scrollBar = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+				_selectedTag = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
+				TagFrame = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+				RecentTags = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
 
 			}
 			if (SceneName == "park")
 			{
-				_scrollBar = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
-				_selectedTag = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
-				TagFrame = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
-				RecentTags = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
+				_scrollBar = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+				_selectedTag = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
+				TagFrame = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+				RecentTags = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
 			}
 
 			if (SceneName != "loader")
 			{
-				
+
 				if (isFirstLoad)
 				{
+					DDOLParent = new GameObject("ObsAutoRecorder_DDOLParent");
+					GameObject.DontDestroyOnLoad(DDOLParent);
 					FirstLoad();
 				}
 				BuildPlayerIndicators();
@@ -276,10 +257,6 @@ namespace ObsAutoRecorder
 
 			if (SceneName == "gym" || SceneName == "park")
 			{
-
-
-
-
 				for (int i = 0; i < 4; i++)
 				{
 					_scrollBar.transform.GetChild(i).GetChild(0).GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
@@ -303,13 +280,8 @@ namespace ObsAutoRecorder
 				BuildTagHolders();
 
 				isFirstLoad = false;
-				
+
 			}
-
-
-
-
-
 			//Solo recording start test
 			if (SceneName == "park")
 			{
@@ -354,7 +326,6 @@ namespace ObsAutoRecorder
 
 			//PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
 			UpdateAutoRecordFile();
-			SaveSettings();
 
 			foreach (TagHolder friend in _displayedFriendTags)
 			{
@@ -398,7 +369,7 @@ namespace ObsAutoRecorder
 				info.AutoRecordable = IsInAutoRecordList(info);
 				//Log(info.PublicName, true);
 			}
-			foreach(TagHolder info in _recentlyMetTags)
+			foreach (TagHolder info in _recentlyMetTags)
 			{
 				info.AutoRecordable = IsInAutoRecordList(info);
 
@@ -440,7 +411,7 @@ namespace ObsAutoRecorder
 		{
 
 			return _displayedFriendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
-			
+
 
 		}
 
@@ -464,7 +435,7 @@ namespace ObsAutoRecorder
 			{
 				Log($"Found target: {entry}", true);
 			}
-			
+
 			bool result = targets.Count > 0;
 			return result;
 		}
@@ -495,7 +466,7 @@ namespace ObsAutoRecorder
 
 		private void LogDiff(string message, int logLevel = 0)
 		{
-			if(message != lastLogDiff)
+			if (message != lastLogDiff)
 			{
 				Log($"##LOGDIFF: {message}", true, logLevel);
 				lastLogDiff = message;
@@ -505,31 +476,6 @@ namespace ObsAutoRecorder
 
 
 
-		private IEnumerator StartRecordingAfterStopCoroutine()
-		{
-			float startTime = Time.realtimeSinceStartup;
-			float currentTime = Time.realtimeSinceStartup - startTime;
-			while ((OBS.IsRecordingActive() || IsPaused) && currentTime < 5f)
-			{
-				yield return null;
-				currentTime = Time.realtimeSinceStartup - startTime;
-				Log($"Waiting for last recording end", true);
-			}
-
-			if (currentTime >= 5f && OBS.IsRecordingActive())
-			{
-				Log($"Restart recording for new player failed: timeout", false, 1);
-			}
-			else
-			{
-				Log($"Last recording stopped. Starting new recording for {LastRecordedPlayer.ToString()}");
-				//StartRecording(NextPlayerToRecord);
-			}
-			//_recordingWaitCor = null;
-		}
-
-		
-		
 
 	}
 }

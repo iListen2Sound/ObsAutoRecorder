@@ -4,6 +4,7 @@ using Il2CppRUMBLE.Interactions.InteractionBase;
 using Il2CppRUMBLE.Managers;
 using Il2CppRUMBLE.Social;
 using Il2CppRUMBLE.UI;
+using Il2CppRUMBLE.Players;
 using Il2CppTMPro;
 using JetBrains.Annotations;
 using MelonLoader;
@@ -25,8 +26,10 @@ using System.Threading.Tasks;
 using System.Threading;
 using static OBS_Control_API.RequestResponse;
 using Il2CppPlayFab.EconomyModels;
-using Il2CppSystem;
+//using Il2CppSystem;
+using System;
 using UnityEngine.Rendering;
+using Player = Il2CppRUMBLE.Players.Player;
 
 namespace ObsAutoRecorder
 {
@@ -53,7 +56,7 @@ namespace ObsAutoRecorder
 		private bool IsWaitingForLastRecordStop { get; set; } = false;
 
 		private int ParkPlayers { get { return PlayerManager.instance.AllPlayers.Count - 1; } }
-		private void onPlayerSpawn()
+		private void onPlayerSpawn(Player player)
 		{
 			if (SceneName == "park")
 			{
@@ -89,6 +92,8 @@ namespace ObsAutoRecorder
 			ModInitiatedPause = false;
 			//QueuedForStopping = false;
 			ModInitiatedStop = false;
+
+			TempFileDir = "";
 
 			//NextPlayerToRecord = null;
 
@@ -131,7 +136,7 @@ namespace ObsAutoRecorder
 		}
 		private void SetRecordingState()
 		{
-			StartTryReconnecting();
+			//StartTryReconnecting();
 			
 			if (SceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
 				ActivePlayerInArena = new PlayfabInfo(PlayerManager.instance.AllPlayers[1]);
@@ -214,11 +219,13 @@ namespace ObsAutoRecorder
 			//Null currentRecorded player means no recording active. Start new one.
 			if (LastRecordedPlayer is null)
 			{
+				Log($"Starting new recording for player {ActivePlayerInArena.ToString()}", true);
 				if (OBS.IsRecordingActive() || IsPaused)
 				{
-					Log($"FightSessionStart: Internal recording active but LastRecordedPlayer is null. Please report. IsRecordingActive: {OBS.IsRecordingActive()}, IsPaused: {IsPaused}, LastRecordedPlayer is null: {LastRecordedPlayer is null}");
+					Log($"FightSessionStart: Internal recording active but LastRecordedPlayer is null. Please report. IsRecordingActive: {OBS.IsRecordingActive()}, IsPaused: {IsPaused}, LastRecordedPlayer is null: {LastRecordedPlayer is null}", false, 1);
 					RequestRecordingStop();
 				}
+
 				RequestStartRecording(ActivePlayerInArena);
 				return;
 			}
@@ -383,6 +390,9 @@ namespace ObsAutoRecorder
 		}
 		private void onRecordStart(string outputPath)
 		{
+			TimeFileName = outputPath;
+
+
 			if (_stopQueueCor != null)
 			{
 				MelonCoroutines.Stop(_stopQueueCor);
@@ -480,6 +490,13 @@ namespace ObsAutoRecorder
 		}
 		private void onReplayBufferSaved(string outputPath)
 		{
+			//Temporary timestamp file location for when recording is ongoing but with the location is unknown.
+			if(TempFileDir == "")
+			{
+				TempFileDir = System.IO.Path.GetDirectoryName(outputPath);
+			}
+			AddNowStamp();
+
 			if (!(_replayBufferBlink is null))
 			{
 				replayBufferBlinker = false;
@@ -495,12 +512,16 @@ namespace ObsAutoRecorder
 			{
 
 			}
-			newFileName = RenameOutput(outputPath, "R- " + AutoRenameString.Value, ActivePlayerInArena, true);
+			if (DoAutoRename.Value)
+			{
+				newFileName = RenameOutput(outputPath, ReplayAutoRenameString.Value, ActivePlayerInArena, true);
+			}
 			newFileName = System.IO.Path.GetFileNameWithoutExtension(newFileName);
 			if (AddChapterMarkers.Value)
 			{
+				//Since 2025-11-29 18-17-06, chapter names have been submitted as empty strings and don't contain new file name. That same day at 17-30-51, it was still working. No changes have been made to the code that I remember. Adding "Clip" at the start to ensure empty strings don't get through
 				Log("Attempting to add chapter marker", true);
-				var param = new { chapterName = newFileName };
+				var param = new { chapterName = "clip: " + newFileName};
 				Task.Run(() => { Log($"CreateChapterResponse: {OBS.SendRequest("CreateRecordChapter", param)}"); Log("Chapter Marker Request Sent"); });
 
 				Log("Adding Chapter Marker", true);
@@ -524,6 +545,7 @@ namespace ObsAutoRecorder
 		/// <returns></returns>
 		private string RenameOutput(string oldOutputPath, string newName, PlayfabInfo player, bool isReplay = false)
 		{
+
 			//File renaming
 			if (String.IsNullOrEmpty(oldOutputPath))
 			{
@@ -545,23 +567,45 @@ namespace ObsAutoRecorder
 
 
 			Log($"Player name for file rename: {player.Name}");
-
-			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time);
-			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
-			int copyIndex = 1;
-
-
-			while (System.IO.File.Exists(newPath))
+			string mapName;
+			switch (SceneName)
 			{
-				Log($"File exists: {newPath} ", false, 1);
-				newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
-
-				copyIndex++;
+				case "map0":
+					mapName = "Ring";
+					break;
+				case "map1":
+					mapName = "Pit";
+					break;
+				case "gym":
+					mapName = "Gym";
+					break;
+				case "park":
+					mapName = "Park";
+					break;
+				default:
+					mapName = "Unknown";
+					break;
 			}
 
+			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time).Replace("{map}", mapName);
 
+			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
 			Task.Run(() =>
 			{
+				int copyIndex = 1;
+				FileInfo fileInfo = new FileInfo(newPath);
+				fileInfo.Directory.Create();
+
+				while (System.IO.File.Exists(newPath))
+				{
+					Log($"File exists: {newPath} ", false, 1);
+					newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
+					
+					copyIndex++;
+				}
+
+				
+
 				bool success = false;
 				float startTime = Time.realtimeSinceStartup;
 				float currentTime = Time.realtimeSinceStartup;
@@ -595,6 +639,9 @@ namespace ObsAutoRecorder
 				{
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
+
+				if(!isReplay) 
+					FinalRename(newPath);
 
 				if (SceneName == "gym")
 				{

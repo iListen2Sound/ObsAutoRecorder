@@ -1,11 +1,11 @@
 # ObsAutoRecorder
 
-Automatically controls OBS to record match sessions based on your preferences.
+Automatically controls OBS to record match sessions based on your preferences. Also renames clips and writes chapter markers coinciding with said clips to videos.
 
 ## Quick Start: 
 
 ### Install [Kalamart's OBS control API](https://thunderstore.io/c/rumble/p/Kalamart/OBS_Control_API/) and just go to your friends list and start picking people to auto record by clicking their name in fighter options
-![bippit](img/bippit.png)
+![bippit](https://i.imgur.com/fyFDi5Z.png)
 #### If not go set it up even if you're not gonna use this mod it's honestly not that hard and it's very useful
 
 ## Features
@@ -45,10 +45,7 @@ Automatically controls OBS to record match sessions based on your preferences.
     - When the mod is inactive due to external recording, the OBS logo will blink and the minimal icon will appear red.
     - When active, the recording status is displayed on the health bar.
 6. **Managing AutoRecord List**:
-    - You can manually edit `AutoRecordList.txt` in your **userdata** folder for people not in your friends list:
-```
-{playfabID} - {public name}
-```
+    - You can manually edit `AutoRecordList.txt` in your **userdata** folder for people not in your friends list: `{playfabID} - {public name}`
 7. **Config file in UserData/ObsAutoRecorder** 
     - Generated after first launching the game. 
 
@@ -60,10 +57,10 @@ Automatically controls OBS to record match sessions based on your preferences.
 | Option | Default | Description |
 |---|---|---|
 | Enable Auto Rename | true | Automatically rename recorded files. |
-| Auto Rename String | `{date}` `{time}` vs `{player}` | Format for renaming. Use `{player}`, `{date}`, `{time}` as placeholders. The date and time is according to when you enter the match with the player |
+| Auto Rename String | `{date}` `{time}` vs `{player}` | Format for renaming. Use `{player}`, `{date}`, `{map}`, and `{time}` as placeholders. The date and time is according to when you enter the match with the player. Supports folder creation e.g. `{player}/{date} {time}` |
+| Clip Auto Rename String | R-`{date}` `{time}` vs `{player}` | Rename format for saved replay buffer files |
 | Date Format | yyyy-MM-dd | Date format for renaming. [Format Reference](https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) |
 | Time Format | HH-mm-ss | Time format for renaming. |
-| Replay Prefix | R- | Prefix for replay buffer files. |
 ### Recording Settings
 | Option | Default | Description |
 |---|---|---|
@@ -77,6 +74,8 @@ Automatically controls OBS to record match sessions based on your preferences.
 | Prefer Minimal Icon | false | Use minimal OBS icon for recording indicator. (a little broken but usable. No motivation to fix it)|
 | Clip Icon Default Visibility | true | Show replay buffer icon always; otherwise, only shown blinking when a clip is saved. |
 | Show Icons on Camera | true | Display icons on Rock Cam and Legacy Cam. |
+| OBS Icon Position | 0 | Position of OBS Icon along healthbar. Left to right from 0 to 100 |
+| Replay OBS Offset | 5 | Offset of Replay Buffer Icon from main OBS Icon | 
 ### ObsAutoRecorder
 | Option | Default | Description |
 |---|---|---|
@@ -88,5 +87,5 @@ Automatically controls OBS to record match sessions based on your preferences.
 
 - Fight sessions are determined by entry into a map, and then exits when you go back to your gym. 
 - Uses Kalamart's OBS Control API to connect to OBS. Make sure it is [properly configured and connected](https://github.com/Kalamart1/OBS_Control_API?tab=readme-ov-file#setup)
-- ModUI support is not planned.
+- ModUI support is not planned (until it adds melon preferences support)
 - Chapter marker support is only available for Hybrid MP4 output. Check your OBS settings 
