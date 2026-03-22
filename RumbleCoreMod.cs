@@ -136,7 +136,7 @@ namespace ObsAutoRecorder
 
 
 			InitPreferences();
-			UIFramework.UIFramework.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
+			UI.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
