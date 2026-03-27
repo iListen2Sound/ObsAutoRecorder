@@ -1,3 +1,7 @@
+# Version 1.3.0
+- Added UIFramework support
+- Added timestamp file feature
+
 # Version 1.2.0
 - Added folder creation and relative file path support in auto-rename string
 - Deprecated Replay Buffer Prefix in favor of using its own independent auto-rename string

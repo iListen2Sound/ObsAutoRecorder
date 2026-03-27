@@ -1,0 +1,12 @@
+{
+  "name": "ObsAutoRecorder",
+  "version_number": "1.3.0",
+  "description": "Manage, rename, and move clips and recordings automatically",
+  "website_url": "",
+  "dependencies": [
+    "LavaGang-MelonLoader-0.7.2",
+    "UlvakSkillz-RumbleModdingAPI-5.1.1",
+    "Kalamart-OBS_Control_API-1.3.0",
+    "Reverb_and___and_Spice-UIFramework-0.4.0"
+  ]
+}

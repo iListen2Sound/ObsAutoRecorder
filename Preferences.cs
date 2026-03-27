@@ -70,9 +70,9 @@ namespace ObsAutoRecorder
 			PauseAfterMatch = RecordingSettings.CreateEntry("Pause recording after match", false, null, "Pause recording on returning to gym. Replay buffer will not work when paused");
 			RecordByBPThreshold = RecordingSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
 			AddChapterMarkers = RecordingSettings.CreateEntry("Chapter Markers", true, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
-			TimeStampFile = RecordingSettings.CreateEntry("Write Timestamp File", true, null, "Enabling will write timestamps to a text file for when a replay buffer is saved. Only available when recording");
+			TimeStampFile = RecordingSettings.CreateEntry("Write Timestamp File", false, null, "Create a timestamp file when clipping while recording");
 			TimestampOffset = RecordingSettings.CreateEntry("Offset Duration", 45, null, "Define a start offset for when the event you were clipping started");
-			TimestampFormat = RecordingSettings.CreateEntry("Timestamp Format", "{offsettime}-{timestamp}", null, "Format how timestamps are saved to make it easier to paste into utilities like ffmpeg or MKVToolNix or YouTube descriptions. Possible values are: {offsettime}, {timestamp}, {offsetduration}");
+			TimestampFormat = RecordingSettings.CreateEntry("Timestamp Format", "{offsettime}-{timestamp}", null, "Format how timestamps are saved to the file. Parameters: {offsettime}, {timestamp}, {offsetduration}");
 			TimecodeFormat = RecordingSettings.CreateEntry("Timecode Format", @"HH:mm:ss.ff", null, "The format of the timecodes in the timestamp");
 			//SuppressRBuffer = RecordingSettings.CreateEntry("Suppress Replay Buffer", false, "Suppress replay buffer when recording with timestamps");
 
