@@ -1,6 +1,10 @@
+# Version 1.3.1
+- Changed Default Timestamp value to a valid strirng
+
 # Version 1.3.0
 - Added UIFramework support
 - Added timestamp file feature
+- Rumble 0.5.x.x support
 
 # Version 1.2.0
 - Added folder creation and relative file path support in auto-rename string
