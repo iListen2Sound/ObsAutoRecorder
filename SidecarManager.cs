@@ -31,8 +31,8 @@ namespace ObsAutoRecorder
 		private void AddNowStamp()
 		{
 			//TimeFileName = LatestOutputPath;
-
-
+			if(!TimeStampFile.Value)
+				return;
 			Task.Run(() =>
 			{
 				RequestResponse.GetRecordStatus req = OBS.GetRecordStatus();
