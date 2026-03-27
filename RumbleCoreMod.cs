@@ -41,7 +41,7 @@ namespace ObsAutoRecorder
 	{
 		public const string Name = "ObsAutoRecorder";
 		public const string Author = "iListen2Sound";
-		public const string Version = "1.3.0";
+		public const string Version = "1.3.1";
 	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
@@ -120,7 +120,6 @@ namespace ObsAutoRecorder
 				Log("Game Closing. Forcing recording stop");
 				RequestRecordingStop();
 			}
-			SaveSettings();
 			FindDeprecatedConfs();
 		}
 
@@ -169,6 +168,10 @@ namespace ObsAutoRecorder
 			File.WriteAllLines(fullAutoRecordPath, AutoRecordList);
 		}
 
+		public override void OnDeinitializeMelon()
+		{
+		}
+		
 
 		public override void OnLateInitializeMelon()
 		{

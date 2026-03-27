@@ -73,7 +73,7 @@ namespace ObsAutoRecorder
 			TimeStampFile = RecordingSettings.CreateEntry("Write Timestamp File", false, null, "Create a timestamp file when clipping while recording");
 			TimestampOffset = RecordingSettings.CreateEntry("Offset Duration", 45, null, "Define a start offset for when the event you were clipping started");
 			TimestampFormat = RecordingSettings.CreateEntry("Timestamp Format", "{offsettime}-{timestamp}", null, "Format how timestamps are saved to the file. Parameters: {offsettime}, {timestamp}, {offsetduration}");
-			TimecodeFormat = RecordingSettings.CreateEntry("Timecode Format", @"HH:mm:ss.ff", null, "The format of the timecodes in the timestamp");
+			TimecodeFormat = RecordingSettings.CreateEntry("Timecode Format", @"hh\:mm\:ss\.ff", null, "The format of the timecodes in the timestamp");
 			//SuppressRBuffer = RecordingSettings.CreateEntry("Suppress Replay Buffer", false, "Suppress replay buffer when recording with timestamps");
 
 			IndicatorSettings = MelonPreferences.CreateCategory("Indicator Settings");
