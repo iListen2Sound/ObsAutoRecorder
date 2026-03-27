@@ -129,7 +129,7 @@ namespace ObsAutoRecorder
 		private void CreateAutoRecordBlock()
 		{
 			//0130
-			PlatformStatus = TagObject.transform.GetChild(0).GetChild(1).GetChild(3).GetChild(0).gameObject;
+			PlatformStatus = TagObject.transform.GetChild(0).GetChild(1).GetChild(3).gameObject;
 			RecordIconBlock = GameObject.Instantiate(TagObject.transform.GetChild(0).GetChild(0).GetChild(0).gameObject);
 			RecordIconBlock.SetName("RecordIconBlock");
 

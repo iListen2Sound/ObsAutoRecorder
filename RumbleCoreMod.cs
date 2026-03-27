@@ -10,6 +10,8 @@ using MelonLoader;
 using OBS_Control_API;
 using System.IO;
 using RumbleModdingAPI;
+using RumbleModdingAPI.RMAPI;
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,12 +25,15 @@ using UnityEngine.Video;
 using Il2CppSteamworks;
 using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
+using UIFramework;
+using System.Diagnostics;
 
 
 [assembly: MelonInfo(typeof(ObsAutoRecorder.ObsAutoRecorder), ObsAutoRecorder.BuildInfo.Name, ObsAutoRecorder.BuildInfo.Version, ObsAutoRecorder.BuildInfo.Author)]
 [assembly: MelonGame("Buckethead Entertainment", "RUMBLE")]
 [assembly: MelonAuthorColor(255, 87, 166, 80)]
 [assembly: MelonColor(255, 87, 166, 80)]
+[assembly: MelonAdditionalDependencies("UIFramework")]
 
 namespace ObsAutoRecorder
 {
@@ -36,7 +41,7 @@ namespace ObsAutoRecorder
 	{
 		public const string Name = "ObsAutoRecorder";
 		public const string Author = "iListen2Sound";
-		public const string Version = "1.2.1";
+		public const string Version = "1.3.0";
 	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
@@ -62,7 +67,7 @@ namespace ObsAutoRecorder
 		private object _pollPageCor = null;
 
 		//private object _recordingWaitCor = null;
-		
+
 		public static GameObject GetIndicator()
 		{
 			return GameObject.Instantiate(IndicatorsBase);
@@ -70,8 +75,44 @@ namespace ObsAutoRecorder
 		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
 		{
 			SceneName = sceneName.ToLower();
-
+			Log("SceneLoaded: " + sceneName, true, 1);
+			MelonCoroutines.Start(DelayPlayerRetrieval());
 		}
+
+		private IEnumerator DelayPlayerRetrieval()
+		{
+			float defaultWaitTime = 0.01f;
+			int attempts = 0;
+			Stopwatch timeLimiter = Stopwatch.StartNew();
+			do
+			{
+				try
+				{
+					PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
+				}
+				catch (System.Exception)
+				{
+					PlayerUi = null;
+				}
+				if (PlayerUi is null)
+				{
+					Log("Player UI not found. Retrying...", true, 1);
+					attempts++;
+					yield return new WaitForSeconds(defaultWaitTime * attempts * 2);
+				}
+
+
+			} while (PlayerUi is null && timeLimiter.ElapsedMilliseconds < 10000);
+			if (timeLimiter.ElapsedMilliseconds >= 10000)
+			{
+				Log("Failed to retrieve Player UI after multiple attempts. Aborting initialization to prevent errors.", false, 2);
+				yield break;
+			}
+			timeLimiter.Stop();
+			PlayerUIFound(SceneName);
+			yield break;
+		}
+
 		public override void OnApplicationQuit()
 		{
 			if (!ExternalRecording)
@@ -84,7 +125,8 @@ namespace ObsAutoRecorder
 		}
 
 		public override void OnInitializeMelon()
-		{
+		{	
+			
 
 			if (!Directory.Exists(USER_DATA))
 				Directory.CreateDirectory(USER_DATA);
@@ -94,8 +136,7 @@ namespace ObsAutoRecorder
 
 
 			InitPreferences();
-
-
+			UI.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
@@ -107,6 +148,7 @@ namespace ObsAutoRecorder
 				Log(entry, true);
 			}
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
+
 
 		}
 
@@ -130,7 +172,9 @@ namespace ObsAutoRecorder
 
 		public override void OnLateInitializeMelon()
 		{
-			Calls.onMapInitialized += OnMapInitialized;
+
+
+			//Actions.onMapInitialized += PlayerUIFound;
 
 			OBS.onRecordingPaused += onRecordPause;
 			OBS.onRecordingStopped += onRecordStop;
@@ -141,7 +185,7 @@ namespace ObsAutoRecorder
 			OBS.onDisconnect += onDisconnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
 
-			Calls.onPlayerSpawned += onPlayerSpawn;
+			Actions.onPlayerSpawned += onPlayerSpawn;
 			Instance = this;
 		}
 		public override void OnSceneWasUnloaded(int buildIndex, string sceneName)
@@ -150,21 +194,21 @@ namespace ObsAutoRecorder
 		}
 		public override void OnUpdate()
 		{
-			
+
 			if (!_sceneIsLoaded)
 				return;
 
 			SetIndicatorState();
 
-			LogDiff($"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External Recording: {ExternalRecording}, FighterInMap: {(ActivePlayerInArena  is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}" );
+			LogDiff($"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External Recording: {ExternalRecording}, FighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}");
 
-			if(isDebugMode.Value && DebugUiText != null)
+			if (isDebugMode.Value && DebugUiText != null)
 			{
 				try
 				{
-					DebugUiText.text = $"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External: {ExternalRecording}, \nFighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}\nHold Coroutine: {!(_stopQueueCor is null)}";
+					DebugUiText.text = $"TempTimeDir: {TempFileDir}\nTimeFileName: {TimeFileName} \nRecord: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External: {ExternalRecording}, \nFighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}\nHold Coroutine: {!(_stopQueueCor is null)}";
 				}
-				catch(System.Exception ex)
+				catch (System.Exception ex)
 				{
 					Log(ex.Message, true);
 				}
@@ -173,8 +217,11 @@ namespace ObsAutoRecorder
 		/// <summary>
 		/// Called when map is fully initialized reducing the risk of null references.
 		/// </summary>
-		private void OnMapInitialized()
+		private void PlayerUIFound(string map)
 		{
+			ReadSettings();
+
+			//SceneName = map.ToLower().Trim();
 			ReadSettings();
 
 
@@ -183,23 +230,23 @@ namespace ObsAutoRecorder
 			//addButtonsToFriendsScreen();
 			if (SceneName == "gym")
 			{
-				_scrollBar = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
-				_selectedTag = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
-				TagFrame = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
-				RecentTags = Calls.GameObjects.Gym.LOGIC.Heinhouserproducts.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
+				_scrollBar = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+				_selectedTag = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
+				TagFrame = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+				RecentTags = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
 
 			}
 			if (SceneName == "park")
 			{
-				_scrollBar = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
-				_selectedTag = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
-				TagFrame = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
-				RecentTags = Calls.GameObjects.Park.LOGIC.Heinhouwserproducts.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
+				_scrollBar = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+				_selectedTag = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
+				TagFrame = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+				RecentTags = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
 			}
 
 			if (SceneName != "loader")
 			{
-				
+
 				if (isFirstLoad)
 				{
 					DDOLParent = new GameObject("ObsAutoRecorder_DDOLParent");
@@ -234,7 +281,7 @@ namespace ObsAutoRecorder
 				BuildTagHolders();
 
 				isFirstLoad = false;
-				
+
 			}
 			//Solo recording start test
 			if (SceneName == "park")
@@ -323,7 +370,7 @@ namespace ObsAutoRecorder
 				info.AutoRecordable = IsInAutoRecordList(info);
 				//Log(info.PublicName, true);
 			}
-			foreach(TagHolder info in _recentlyMetTags)
+			foreach (TagHolder info in _recentlyMetTags)
 			{
 				info.AutoRecordable = IsInAutoRecordList(info);
 
@@ -365,7 +412,7 @@ namespace ObsAutoRecorder
 		{
 
 			return _displayedFriendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
-			
+
 
 		}
 
@@ -389,7 +436,7 @@ namespace ObsAutoRecorder
 			{
 				Log($"Found target: {entry}", true);
 			}
-			
+
 			bool result = targets.Count > 0;
 			return result;
 		}
@@ -420,7 +467,7 @@ namespace ObsAutoRecorder
 
 		private void LogDiff(string message, int logLevel = 0)
 		{
-			if(message != lastLogDiff)
+			if (message != lastLogDiff)
 			{
 				Log($"##LOGDIFF: {message}", true, logLevel);
 				lastLogDiff = message;
@@ -428,8 +475,8 @@ namespace ObsAutoRecorder
 
 		}
 
-		
-		
+
+
 
 	}
 }

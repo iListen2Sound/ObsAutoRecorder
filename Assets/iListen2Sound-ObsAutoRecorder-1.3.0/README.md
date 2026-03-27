@@ -4,12 +4,19 @@ Automatically controls OBS to record match sessions based on your preferences. A
 
 ## Quick Start: 
 
-### Install [Kalamart's OBS control API](https://thunderstore.io/c/rumble/p/Kalamart/OBS_Control_API/) and just go to your friends list and start picking people to auto record by clicking their name in fighter options
+### Install [Kalamart's OBS control API](https://thunderstore.io/c/rumble/p/Kalamart/OBS_Control_API/) and [UIFramework](https://thunderstore.io/c/rumble/p/Reverb_and___and_Spice/UIFramework/). Then just go to your friends list and start picking people to auto record by clicking their name in fighter options
 ![bippit](https://i.imgur.com/fyFDi5Z.png)
 #### If not go set it up even if you're not gonna use this mod it's honestly not that hard and it's very useful
 
 ## Features
+### New features Create a timestamp file
+- When a recording is active, this setting saves a timestamp of the current timecode of the recording.
+    - You can use these timestamps to add to a YouTube description or use them as part of an ffmpeg command to extract your clips later
+### New Feature: [UIFramework](https://thunderstore.io/c/rumble/p/Reverb_and___and_Spice/UIFramework/) support
+- UIFramework is now a dependency. Press F9 to open the new settings UI that lets you edit MelonPreferences which is the settings framework used by this mod. You can now save settings without reloading the scene
+- Press F9 (default) to open the new UI
 
+### Other features
 - Auto-record matches based on a BP threshold or a custom list.
 - Automatically rename recordings to include opponent names.
 - Display OBS recording status on the health bar. (Can be hidden from rock cam and legacy cam)
@@ -56,30 +63,34 @@ Automatically controls OBS to record match sessions based on your preferences. A
 ### Auto Rename Settings
 | Option | Default | Description |
 |---|---|---|
-| Enable Auto Rename | true | Automatically rename recorded files. |
+| Enable Auto Rename | `true` | Automatically rename recorded files. |
 | Auto Rename String | `{date}` `{time}` vs `{player}` | Format for renaming. Use `{player}`, `{date}`, `{map}`, and `{time}` as placeholders. The date and time is according to when you enter the match with the player. Supports folder creation e.g. `{player}/{date} {time}` |
-| Clip Auto Rename String | R-`{date}` `{time}` vs `{player}` | Rename format for saved replay buffer files |
-| Date Format | yyyy-MM-dd | Date format for renaming. [Format Reference](https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) |
-| Time Format | HH-mm-ss | Time format for renaming. |
+| Clip Auto Rename String | `R-{date} {time} vs {player}` | Rename format for saved replay buffer files |
+| Date Format | `yyyy-MM-dd` | Date format for renaming. [Format Reference](https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) |
+| Time Format | `HH-mm-ss` | Time format for renaming. |
 ### Recording Settings
 | Option | Default | Description |
 |---|---|---|
-| Recording Hold Timeout | 0 | Seconds to keep recording paused before auto-stop. |
-| Pause After Match | false | Pause recording on returning to gym (Replay buffer doesn't work while recording is paused). |
-| BP Threshold | -1 | Record players with BP greater than this value. -1 disables threshold. |
-| Chapter Markers | true | Add chapter markers to video when clipping (Hybrid MP4 only). |
+| Recording Hold Timeout | `0` | Seconds to keep recording paused before auto-stop. |
+| Pause After Match | `false` | Pause recording on returning to gym (Replay buffer doesn't work while recording is paused). |
+| BP Threshold | `-1` | Record players with BP greater than this value. -1 disables threshold. |
+| Chapter Markers | `true` | Add chapter markers to video when clipping (Hybrid MP4 only). |
+|Write Timestamp File|`false`|Create a timestamp file when clipping while recording| 
+|Offset Duration|`45`|Define an offset duration to narrow down when the event you were clipping started|
+|Timestamp Format|`{offsettime}-{timestamp}`|Format how timestamps are saved to the file. Parameters: `{offsettime}`, `{timestamp}`, `{offsetduration}`|
+|Timecode Format|`@"HH:mm:ss.ff"`|The format of the timecodes in the timestamp|
 ### Indicator Settings
 | Option | Default | Description |
 |---|---|---|
-| Prefer Minimal Icon | false | Use minimal OBS icon for recording indicator. (a little broken but usable. No motivation to fix it)|
-| Clip Icon Default Visibility | true | Show replay buffer icon always; otherwise, only shown blinking when a clip is saved. |
-| Show Icons on Camera | true | Display icons on Rock Cam and Legacy Cam. |
-| OBS Icon Position | 0 | Position of OBS Icon along healthbar. Left to right from 0 to 100 |
-| Replay OBS Offset | 5 | Offset of Replay Buffer Icon from main OBS Icon | 
+| Prefer Minimal Icon | `false` | Use minimal OBS icon for recording indicator. (a little broken but usable. No motivation to fix it)|
+| Clip Icon Default Visibility | `true` | Show replay buffer icon always; otherwise, only shown blinking when a clip is saved. |
+| Show Icons on Camera | `true` | Display icons on Rock Cam and Legacy Cam. |
+| OBS Icon Position | `0` | Position of OBS Icon along healthbar. Left to right from 0 to 100 |
+| Replay OBS Offset | `5` | Offset of Replay Buffer Icon from main OBS Icon | 
 ### ObsAutoRecorder
 | Option | Default | Description |
 |---|---|---|
-| Debug Mode | false | Enable verbose logging for troubleshooting. (Also enables an in-game debug monitor)|
+| Debug Mode | `false` | Enable verbose logging for troubleshooting. (Also enables an in-game debug monitor)|
 
 ---
 
@@ -88,4 +99,5 @@ Automatically controls OBS to record match sessions based on your preferences. A
 - Fight sessions are determined by entry into a map, and then exits when you go back to your gym. 
 - Uses Kalamart's OBS Control API to connect to OBS. Make sure it is [properly configured and connected](https://github.com/Kalamart1/OBS_Control_API?tab=readme-ov-file#setup)
 - ModUI support is not planned (until it adds melon preferences support)
+    - Still no ModUI Support but I made my own UI Framework instead. 
 - Chapter marker support is only available for Hybrid MP4 output. Check your OBS settings 
