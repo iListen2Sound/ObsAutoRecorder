@@ -1,3 +1,6 @@
+# Version 1.3.2
+- Reimplemented OnMapInit()
+
 # Version 1.3.1
 - Changed Default Timestamp value to a valid strirng
 

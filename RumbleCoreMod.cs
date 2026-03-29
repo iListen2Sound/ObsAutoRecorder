@@ -26,7 +26,7 @@ using Il2CppSteamworks;
 using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
 using UIFramework;
-using System.Diagnostics;
+using System.Diagnostics;	
 
 
 [assembly: MelonInfo(typeof(ObsAutoRecorder.ObsAutoRecorder), ObsAutoRecorder.BuildInfo.Name, ObsAutoRecorder.BuildInfo.Version, ObsAutoRecorder.BuildInfo.Author)]
@@ -41,7 +41,7 @@ namespace ObsAutoRecorder
 	{
 		public const string Name = "ObsAutoRecorder";
 		public const string Author = "iListen2Sound";
-		public const string Version = "1.3.1";
+		public const string Version = "1.3.2";
 	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
@@ -76,11 +76,26 @@ namespace ObsAutoRecorder
 		{
 			SceneName = sceneName.ToLower();
 			Log("SceneLoaded: " + sceneName, true, 1);
-			MelonCoroutines.Start(DelayPlayerRetrieval());
+
+			//MelonCoroutines.Start(DelayPlayerRetrieval());
+		}
+
+		public void OnMapInit(string scene)
+		{
+			try
+			{
+				PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
+				PlayerUIFound(SceneName);
+			}
+			catch (System.Exception)
+			{
+				PlayerUi = null;
+			}
 		}
 
 		private IEnumerator DelayPlayerRetrieval()
 		{
+
 			float defaultWaitTime = 0.01f;
 			int attempts = 0;
 			Stopwatch timeLimiter = Stopwatch.StartNew();
@@ -102,10 +117,10 @@ namespace ObsAutoRecorder
 				}
 
 
-			} while (PlayerUi is null && timeLimiter.ElapsedMilliseconds < 10000);
-			if (timeLimiter.ElapsedMilliseconds >= 10000)
+			} while (PlayerUi is null && timeLimiter.ElapsedMilliseconds < 1000);
+			if (timeLimiter.ElapsedMilliseconds >= 1000)
 			{
-				Log("Failed to retrieve Player UI after multiple attempts. Aborting initialization to prevent errors.", false, 2);
+				//Log("Failed to retrieve Player UI after multiple attempts. Aborting initialization to prevent errors.", false, 2);
 				yield break;
 			}
 			timeLimiter.Stop();
@@ -129,7 +144,7 @@ namespace ObsAutoRecorder
 
 			if (!Directory.Exists(USER_DATA))
 				Directory.CreateDirectory(USER_DATA);
-
+			 
 			if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
 				File.Create(Path.Combine(USER_DATA, RECORD_LIST));
 
@@ -187,6 +202,8 @@ namespace ObsAutoRecorder
 			OBS.onConnect += onConnect;
 			OBS.onDisconnect += onDisconnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
+
+			RumbleModdingAPI.RMAPI.Actions.onMapInitialized += OnMapInit;
 
 			Actions.onPlayerSpawned += onPlayerSpawn;
 			Instance = this;
