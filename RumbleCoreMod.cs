@@ -34,14 +34,14 @@ using System.Diagnostics;
 [assembly: MelonAuthorColor(255, 87, 166, 80)]
 [assembly: MelonColor(255, 87, 166, 80)]
 [assembly: MelonAdditionalDependencies("UIFramework")]
-
+[assembly: UIInfo("OBS Auto Recorder")]
 namespace ObsAutoRecorder
 {
 	public static class BuildInfo
 	{
 		public const string Name = "ObsAutoRecorder";
 		public const string Author = "iListen2Sound";
-		public const string Version = "1.3.2";
+		public const string Version = "1.3.3";
 	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
@@ -135,7 +135,7 @@ namespace ObsAutoRecorder
 				Log("Game Closing. Forcing recording stop");
 				RequestRecordingStop();
 			}
-			FindDeprecatedConfs();
+			
 		}
 
 		public override void OnInitializeMelon()
@@ -150,20 +150,24 @@ namespace ObsAutoRecorder
 
 
 			InitPreferences();
-			UI.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
+			UI.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings).OnModSaved += SinglesaveClick;
+			
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
 			SaveSettings();
-			FindDeprecatedConfs();
 
 			foreach (string entry in AutoRecordList)
 			{
-				Log(entry, true);
+				//Log(entry, true);
 			}
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
 
 
+		}
+		private void SinglesaveClick()
+		{
+			Log("Clicked Single Save Button",true);
 		}
 
 		private void UpdateAutoRecordFile()
@@ -415,7 +419,7 @@ namespace ObsAutoRecorder
 			for (int i = 0; i < _previousList.Count; i++)
 			{
 				bool match = _previousList[i] == _displayedFriendTags[i].ToString();
-				Log($"{i} {match} {_previousList[i]} with {_displayedFriendTags[i].ToString()}", true);
+				//Log($"{i} {match} {_previousList[i]} with {_displayedFriendTags[i].ToString()}", true);
 				if (match)
 				{
 					return true;
@@ -452,10 +456,10 @@ namespace ObsAutoRecorder
 				Log($"Warning: More than one entry found for {playFabID.Split(" - ")[0]} in AutoRecord list. {targets.Count}", false, 1);
 			}
 
-			foreach (string entry in targets)
+			/*foreach (string entry in targets)
 			{
 				Log($"Found target: {entry}", true);
-			}
+			}*/
 
 			bool result = targets.Count > 0;
 			return result;

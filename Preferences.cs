@@ -1,5 +1,6 @@
 ﻿using MelonLoader;
 using System.IO;
+using UIFramework.ValidatorExtensions;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -52,7 +53,6 @@ namespace ObsAutoRecorder
 
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug with more verbose logging");
 
-
 			AutoRenameSettings = MelonPreferences.CreateCategory("Auto Rename Settings");
 			AutoRenameSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
@@ -82,8 +82,8 @@ namespace ObsAutoRecorder
 			PreferMinimalIcon = IndicatorSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator (This is kinda broken)");
 			ClippingIconVisibleByDefault = IndicatorSettings.CreateEntry("Clip Icon Default Visibility", true, null, "Make the replay buffer icon always visible. Otherwise, it's only shown to show an inactive replay buffer and blinks when a clip is saved");
 			RockCamVisibility = IndicatorSettings.CreateEntry("Show Icons on Camera", true, null, "Make Icons Visible on Rock Cam and Legacy Cam");
-			MainIconPosition = IndicatorSettings.CreateEntry("Main Icon Position", 0, null, "Position of OBS Icon along healthbar. Left to right from 0 to 100");
-			ReplayIconOffset = IndicatorSettings.CreateEntry("Replay Icon Offset", 5f, null, "Offset of Replay Buffer Icon from main OBS Icon");
+			MainIconPosition = IndicatorSettings.CreateEntry("Main Icon Position", 0, null, "Position of OBS Icon along healthbar. Left to right from 0 to 100",false, false, new SliderDescriptor { DecimalPlaces = 0, Max = 100, Min = 0 });
+			ReplayIconOffset = IndicatorSettings.CreateEntry("Replay Icon Offset", 5f, null, "Offset of Replay Buffer Icon from main OBS Icon", false, false, new SliderDescriptor { DecimalPlaces = 2, Max = 100, Min = -100 });
 
 			//easter egg
 			miscoar = MelonPreferences.CreateCategory("Misc ObsAutoRecorder");
@@ -91,23 +91,6 @@ namespace ObsAutoRecorder
 
 		}
 
-
-		private void FindDeprecatedConfs()
-		{
-			string[] lines = File.ReadAllLines(Path.Combine(USER_DATA, CONFIG_FILE));
-			string depIndicator = "\"deprecated: ";
-			for (int i = 0; i < lines.Length; i++)
-			{
-				if (lines[i].Contains("Replay Prefix") && !(lines[i].Contains(depIndicator)))
-				{
-					Log($"Found unmarked deprecated config option: \"{lines[i]}\".", false, 1);
-					Log("Marking...", false, 0);
-					lines[i] = "\n#↓↓↓ No longer used. Please delete\n" + depIndicator + lines[i].TrimStart('\"');
-				}
-			}
-
-			File.WriteAllLines(Path.Combine(USER_DATA, CONFIG_FILE), lines);
-		}
 
 		private void SaveSettings()
 		{
