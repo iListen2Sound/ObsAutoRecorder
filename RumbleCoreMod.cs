@@ -150,7 +150,7 @@ namespace ObsAutoRecorder
 
 
 			InitPreferences();
-			UI.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
+			UI.RegisterMelon(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 

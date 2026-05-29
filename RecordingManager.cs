@@ -493,7 +493,7 @@ namespace ObsAutoRecorder
 			//Temporary timestamp file location for when recording is ongoing but with the location is unknown.
 			if(TempFileDir == "")
 			{
-				TempFileDir = System.IO.Path.GetDirectoryName(outputPath);
+				TempFileDir = Path.GetDirectoryName(outputPath);
 			}
 			AddNowStamp();
 
@@ -516,7 +516,7 @@ namespace ObsAutoRecorder
 			{
 				newFileName = RenameOutput(outputPath, ReplayAutoRenameString.Value, ActivePlayerInArena, true);
 			}
-			newFileName = System.IO.Path.GetFileNameWithoutExtension(newFileName);
+			newFileName = Path.GetFileNameWithoutExtension(newFileName);
 			if (AddChapterMarkers.Value)
 			{
 				//Since 2025-11-29 18-17-06, chapter names have been submitted as empty strings and don't contain new file name. That same day at 17-30-51, it was still working. No changes have been made to the code that I remember. Adding "Clip" at the start to ensure empty strings don't get through
@@ -588,18 +588,20 @@ namespace ObsAutoRecorder
 			}
 
 			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time).Replace("{map}", mapName);
+            string dirName = Path.GetDirectoryName(oldOutputPath).Replace("\\", "/"); // unix-style path
+			string extension = Path.GetExtension(oldOutputPath);
 
-			newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + System.IO.Path.GetExtension(oldOutputPath);
+            newPath = Path.Combine(dirName, newFileName + extension);
 			Task.Run(() =>
 			{
 				int copyIndex = 1;
 				FileInfo fileInfo = new FileInfo(newPath);
 				fileInfo.Directory.Create();
 
-				while (System.IO.File.Exists(newPath))
+				while (File.Exists(newPath))
 				{
 					Log($"File exists: {newPath} ", false, 1);
-					newPath = System.IO.Path.GetDirectoryName(oldOutputPath) + "/" + newFileName + $" ({copyIndex})" + System.IO.Path.GetExtension(oldOutputPath);
+					newPath = Path.Combine(dirName, newFileName + $" ({copyIndex})" + extension);
 					
 					copyIndex++;
 				}
@@ -616,7 +618,7 @@ namespace ObsAutoRecorder
 					try
 					{
 
-						System.IO.File.Move(oldOutputPath, newPath);
+						File.Move(oldOutputPath, newPath);
 						oldOutputPath = newPath;
 						success = true;
 						Log($"Recording renamed to: {newFileName}", false);
