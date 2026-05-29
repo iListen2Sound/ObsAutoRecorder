@@ -150,8 +150,7 @@ namespace ObsAutoRecorder
 
 
 			InitPreferences();
-			UI.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings).OnModSaved += SinglesaveClick;
-			
+			UI.RegisterMelon(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
@@ -164,10 +163,6 @@ namespace ObsAutoRecorder
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
 
 
-		}
-		private void SinglesaveClick()
-		{
-			Log("Clicked Single Save Button",true);
 		}
 
 		private void UpdateAutoRecordFile()
