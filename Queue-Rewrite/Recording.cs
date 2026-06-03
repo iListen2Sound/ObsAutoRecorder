@@ -35,24 +35,22 @@ using RumbleModdingAPI;
 
 internal class Recording
 {
-    
-    internal static Queue<Recording> RecordingQueue = new();
 
     internal string OriginalOutputPath {get; set;}
     internal string TargetOutputPath {get; set;}
-
-    internal PlayFabinfo PlayerInfo {get; set;}
+    internal bool IsActivelyRecording {get; set;}
+    internal bool IsStopped {get; set;}
+    /// <summary>
+    /// List of Players
+    /// </summary>
+    internal List<PlayFabinfo> PlayerInfo {get; set;} = new ();
 
     internal void StartRecording()
     {
-        if(OBS.IsRecordingActive)
-        {
 
-        }
     }
-
     internal void StopRecording()
     {
-
+        
     }
 }
