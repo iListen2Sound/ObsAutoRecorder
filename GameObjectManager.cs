@@ -24,6 +24,8 @@ using Il2CppSteamworks;
 using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
 using Il2CppPhoton.Compression;
+using ObsAutoRecorder.Rewrite;
+using static ObsAutoRecorder.Rewrite.Debug;
 namespace ObsAutoRecorder
 {
 

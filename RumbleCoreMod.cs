@@ -27,7 +27,8 @@ using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
 using UIFramework;
 using System.Diagnostics;
-
+using ObsAutoRecorder.Rewrite;
+using static ObsAutoRecorder.Rewrite.Debug;
 
 [assembly: MelonInfo(typeof(ObsAutoRecorder.ObsAutoRecorder), ObsAutoRecorder.BuildInfo.Name, ObsAutoRecorder.BuildInfo.Version, ObsAutoRecorder.BuildInfo.Author)]
 [assembly: MelonGame("Buckethead Entertainment", "RUMBLE")]
@@ -209,7 +210,7 @@ namespace ObsAutoRecorder
 			{
 				try
 				{
-					DebugUiText.text = $"TempTimeDir: {TempFileDir}\nTimeFileName: {TimeFileName} \nRecord: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External: {ExternalRecording}, \nFighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}\nHold Coroutine: {!(_stopQueueCor is null)}";
+					UpdateDebugScreen($"TempTimeDir: {TempFileDir}\nTimeFileName: {TimeFileName} \nRecord: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External: {ExternalRecording}, \nFighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}\nHold Coroutine: {!(_stopQueueCor is null)}");
 				}
 				catch (System.Exception ex)
 				{
@@ -443,43 +444,5 @@ namespace ObsAutoRecorder
 			bool result = targets.Count > 0;
 			return result;
 		}
-		/// <summary>
-		/// Logs a message to the console
-		/// </summary>
-		/// <param name="message"></param>
-		/// <param name="debugOnly"></param>
-		/// <param name="logLevel">0 = normal, 1 = warning, 2 = error</param>
-		public void Log(string message, bool debugOnly = false, int logLevel = 0)
-		{
-			if (debugOnly && !isDebugMode.Value)
-				return;
-
-			switch (logLevel)
-			{
-				case 1:
-					LoggerInstance.Warning("Warn: " + message);
-					break;
-				case 2:
-					LoggerInstance.Error("Error: " + message);
-					break;
-				default:
-					LoggerInstance.Msg(message);
-					break;
-			}
-		}
-
-		private void LogDiff(string message, int logLevel = 0)
-		{
-			if (message != lastLogDiff)
-			{
-				Log($"##LOGDIFF: {message}", true, logLevel);
-				lastLogDiff = message;
-			}
-
-		}
-
-
-
-
 	}
 }

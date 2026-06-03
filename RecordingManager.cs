@@ -30,7 +30,8 @@ using Il2CppPlayFab.EconomyModels;
 using System;
 using UnityEngine.Rendering;
 using Player = Il2CppRUMBLE.Players.Player;
-
+using ObsAutoRecorder.Rewrite;
+using static ObsAutoRecorder.Rewrite.Debug;
 namespace ObsAutoRecorder
 {
 
