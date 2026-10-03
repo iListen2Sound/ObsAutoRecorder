@@ -9,7 +9,7 @@ Automatically controls OBS to record match sessions based on your preferences. A
 #### If not go set it up even if you're not gonna use this mod it's honestly not that hard and it's very useful
 
 ## Features
-### New features Create a timestamp file
+### New feature: Create a timestamp file
 - When a recording is active, this setting saves a timestamp of the current timecode of the recording.
     - You can use these timestamps to add to a YouTube description or use them as part of an ffmpeg command to extract your clips later
 ### New Feature: [UIFramework](https://thunderstore.io/c/rumble/p/Reverb_and___and_Spice/UIFramework/) support

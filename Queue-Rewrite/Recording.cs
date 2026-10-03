@@ -1,4 +1,3 @@
-namespace ObsAutoRecorder.Rewrite;
 using Il2CppPhoton.Realtime;
 using Il2CppRUMBLE;
 using Il2CppRUMBLE.Interactions.InteractionBase;
@@ -32,7 +31,8 @@ using System;
 using UnityEngine.Rendering;
 using Player = Il2CppRUMBLE.Players.Player;
 using RumbleModdingAPI;
-
+ 
+namespace ObsAutoRecorder.Rewrite;
 internal class Recording
 {
 

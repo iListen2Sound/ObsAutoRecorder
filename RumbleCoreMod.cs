@@ -35,14 +35,14 @@ using static ObsAutoRecorder.Rewrite.Debug;
 [assembly: MelonAuthorColor(255, 87, 166, 80)]
 [assembly: MelonColor(255, 87, 166, 80)]
 [assembly: MelonAdditionalDependencies("UIFramework")]
-
+[assembly: UIInfo("OBS Auto Recorder")]
 namespace ObsAutoRecorder
 {
 	public static class BuildInfo
 	{
 		public const string Name = "ObsAutoRecorder";
 		public const string Author = "iListen2Sound";
-		public const string Version = "1.3.1";
+		public const string Version = "1.4.0";
 	}
 	public partial class ObsAutoRecorder : MelonMod
 	{
@@ -67,6 +67,8 @@ namespace ObsAutoRecorder
 		private object _pollTagsCor = null;
 		private object _pollPageCor = null;
 
+		Stopwatch MarkerInputDebounce = new Stopwatch();
+
 		//private object _recordingWaitCor = null;
 
 		public static GameObject GetIndicator()
@@ -77,11 +79,26 @@ namespace ObsAutoRecorder
 		{
 			SceneName = sceneName.ToLower();
 			Log("SceneLoaded: " + sceneName, true, 1);
-			MelonCoroutines.Start(DelayPlayerRetrieval());
+
+			//MelonCoroutines.Start(DelayPlayerRetrieval());
+		}
+
+		public void OnMapInit(string scene)
+		{
+			try
+			{
+				PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
+				PlayerUIFound(SceneName);
+			}
+			catch (System.Exception)
+			{
+				PlayerUi = null;
+			}
 		}
 
 		private IEnumerator DelayPlayerRetrieval()
 		{
+
 			float defaultWaitTime = 0.01f;
 			int attempts = 0;
 			Stopwatch timeLimiter = Stopwatch.StartNew();
@@ -103,10 +120,10 @@ namespace ObsAutoRecorder
 				}
 
 
-			} while (PlayerUi is null && timeLimiter.ElapsedMilliseconds < 10000);
-			if (timeLimiter.ElapsedMilliseconds >= 10000)
+			} while (PlayerUi is null && timeLimiter.ElapsedMilliseconds < 1000);
+			if (timeLimiter.ElapsedMilliseconds >= 1000)
 			{
-				Log("Failed to retrieve Player UI after multiple attempts. Aborting initialization to prevent errors.", false, 2);
+				//Log("Failed to retrieve Player UI after multiple attempts. Aborting initialization to prevent errors.", false, 2);
 				yield break;
 			}
 			timeLimiter.Stop();
@@ -121,12 +138,12 @@ namespace ObsAutoRecorder
 				Log("Game Closing. Forcing recording stop");
 				RequestRecordingStop();
 			}
-			FindDeprecatedConfs();
+
 		}
 
 		public override void OnInitializeMelon()
-		{	
-			
+		{
+
 
 			if (!Directory.Exists(USER_DATA))
 				Directory.CreateDirectory(USER_DATA);
@@ -136,19 +153,18 @@ namespace ObsAutoRecorder
 
 
 			InitPreferences();
-			UI.Register(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
+			UI.RegisterMelon(this, OBSAutoRecorderSettings, AutoRenameSettings, RecordingSettings, IndicatorSettings);
 
 			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
 
 			SaveSettings();
-			FindDeprecatedConfs();
 
 			foreach (string entry in AutoRecordList)
 			{
-				Log(entry, true);
+				//Log(entry, true);
 			}
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
-
+			MarkerInputDebounce.Start();
 
 		}
 
@@ -172,7 +188,7 @@ namespace ObsAutoRecorder
 		public override void OnDeinitializeMelon()
 		{
 		}
-		
+
 
 		public override void OnLateInitializeMelon()
 		{
@@ -188,6 +204,8 @@ namespace ObsAutoRecorder
 			OBS.onConnect += onConnect;
 			OBS.onDisconnect += onDisconnect;
 			OBS.onReplayBufferSaved += onReplayBufferSaved;
+
+			RumbleModdingAPI.RMAPI.Actions.onMapInitialized += OnMapInit;
 
 			Actions.onPlayerSpawned += onPlayerSpawn;
 			Instance = this;
@@ -217,7 +235,47 @@ namespace ObsAutoRecorder
 					Log(ex.Message, true);
 				}
 			}
+			Log(MarkerInputDebounce.ElapsedMilliseconds.ToString(), true);
+			if (MarkerInputDebounce.ElapsedMilliseconds > 1000)
+			{
+
+				CheckMarkerInputs();
+
+			}
+
 		}
+
+
+		public void CheckMarkerInputs()
+		{
+
+
+
+			if (AddMarkerOn.Value is MarkerPrefs.None or MarkerPrefs.OnReplayBufferSaved)
+			{
+				return;
+			}
+
+			bool leftPrimary = Calls.ControllerMap.LeftController.GetPrimary() > 0.5f;
+			bool rightPrimary = Calls.ControllerMap.RightController.GetPrimary() > 0.5f;
+			bool leftSecondary = Calls.ControllerMap.LeftController.GetSecondary() > 0.5f;
+			bool rightSecondary = Calls.ControllerMap.RightController.GetSecondary() > 0.5f;
+
+			if (AddMarkerOn.Value == MarkerPrefs.OnLeftCombo && leftPrimary && leftSecondary)
+			{
+				MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
+				MarkerInputDebounce.Restart();
+			}
+			else if (AddMarkerOn.Value == MarkerPrefs.OnRightCombo && rightPrimary && rightSecondary)
+			{
+				MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
+				MarkerInputDebounce.Restart();
+			}
+
+		}
+
+
+
 		/// <summary>
 		/// Called when map is fully initialized reducing the risk of null references.
 		/// </summary>
@@ -399,7 +457,7 @@ namespace ObsAutoRecorder
 			for (int i = 0; i < _previousList.Count; i++)
 			{
 				bool match = _previousList[i] == _displayedFriendTags[i].ToString();
-				Log($"{i} {match} {_previousList[i]} with {_displayedFriendTags[i].ToString()}", true);
+				//Log($"{i} {match} {_previousList[i]} with {_displayedFriendTags[i].ToString()}", true);
 				if (match)
 				{
 					return true;
@@ -436,13 +494,52 @@ namespace ObsAutoRecorder
 				Log($"Warning: More than one entry found for {playFabID.Split(" - ")[0]} in AutoRecord list. {targets.Count}", false, 1);
 			}
 
-			foreach (string entry in targets)
+			/*foreach (string entry in targets)
 			{
 				Log($"Found target: {entry}", true);
-			}
+			}*/
 
 			bool result = targets.Count > 0;
 			return result;
 		}
+
+
+		/// <summary>
+		/// Logs a message to the console
+		/// </summary>
+		/// <param name="message"></param>
+		/// <param name="debugOnly"></param>
+		/// <param name="logLevel">0 = normal, 1 = warning, 2 = error</param>
+		public void Log(string message, bool debugOnly = false, int logLevel = 0)
+		{
+			if (debugOnly && !isDebugMode.Value)
+				return;
+
+			switch (logLevel)
+			{
+				case 1:
+					LoggerInstance.Warning("Warn: " + message);
+					break;
+				case 2:
+					LoggerInstance.Error("Error: " + message);
+					break;
+				default:
+					LoggerInstance.Msg(message);
+					break;
+			}
+		}
+
+		private void LogDiff(string message, int logLevel = 0)
+		{
+			if (message != lastLogDiff)
+			{
+				Log($"##LOGDIFF: {message}", true, logLevel);
+				lastLogDiff = message;
+			}
+
+		}
+
+
+
 	}
 }

@@ -1,97 +1,124 @@
 
-namespace ObsAutoRecorder.Rewrite;
+using Il2CppPhoton.Realtime;
+using Il2CppRUMBLE;
+using Il2CppRUMBLE.Interactions.InteractionBase;
+using Il2CppRUMBLE.Managers;
+using Il2CppRUMBLE.Social;
+using Il2CppRUMBLE.UI;
+using Il2CppTMPro;
+using JetBrains.Annotations;
+using MelonLoader;
+using OBS_Control_API;
+using System.IO;
 using RumbleModdingAPI;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Media;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.UIElements;
+using UnityEngine.Video;
+using Il2CppSteamworks;
+using System.Threading.Tasks;
+using static OBS_Control_API.RequestResponse;
+using Il2CppPhoton.Compression;
+namespace ObsAutoRecorder.Rewrite;
+
+
 
 internal static class Debug
 {
-    public static bool debugMode => Preferences.EnableDebugMode?.Value ?? true;
-    private static string lastDiffLogMessage = string.Empty;
+	public static bool debugMode = true;//=> Preferences.EnableDebugMode?.Value ?? true;
+	private static string lastDiffLogMessage = string.Empty;
 
-    private static GameObject DebugUi;
-    private static TextMeshPro DebugUiText;
-    private static GameObject PlayerUi;
+	private static GameObject DebugUi;
+	private static TextMeshPro DebugUiText;
+	private static GameObject PlayerUi;
 
-    /// <summary>
-    /// Creates a debug screen in front of the player 
-    /// </summary>
-    internal static void BuildDebugScreen()
-    {
-        PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
-        DebugUi = RumbleModdingAPI.RMAPI.Create.NewText("Placeholder text. You shouldn't be seeing this without some UE Shenanigans\n or decompiled code. Doesn't count if it's you, Ava. I (probably) told you about this.", 1f, Color.white, new Vector3(0f, 0.1f, 1f), Quaternion.Euler(0, 0, 0));
-        DebugUi.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-        DebugUi.transform.localPosition = new Vector3(0f, 0.1f, 0.96f);
-        DebugUi.transform.SetParent(PlayerUi.transform, false);
-        DebugUiText = DebugUi.GetComponent<TextMeshPro>();
-        DebugUi.SetActive(debugMode);
-    }
-
-
-    /// <summary>
-    /// updates the debug screen text
-    /// </summary>
-    /// <param name="message"></param>
-    internal static void UpdateDebugScreen(string message)
-    {
-        if (RumbleModdingAPI.RMAPI.Calls.IsMapInitialized()) { DebugUiText.text = message; }
-    }
+	/// <summary>
+	/// Creates a debug screen in front of the player 
+	/// </summary>
+	internal static void BuildDebugScreen()
+	{
+		PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
+		DebugUi = RumbleModdingAPI.RMAPI.Create.NewText("Placeholder text. You shouldn't be seeing this without some UE Shenanigans\n or decompiled code. Doesn't count if it's you, Ava. I (probably) told you about this.", 1f, Color.white, new Vector3(0f, 0.1f, 1f), Quaternion.Euler(0, 0, 0));
+		DebugUi.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+		DebugUi.transform.localPosition = new Vector3(0f, 0.1f, 0.96f);
+		DebugUi.transform.SetParent(PlayerUi.transform, false);
+		DebugUiText = DebugUi.GetComponent<TextMeshPro>();
+		DebugUi.SetActive(debugMode);
+	}
 
 
-    /// <summary>
-    /// Call in OnUpdate to monitor variables per frame but only logs if they change
-    /// </summary>
-    /// <param name="message"></param>
-    /// <param name="debugOnly"></param>
-    /// <param name="logLevel"></param>
-    internal static void DiffLog(string message, bool debugOnly = true, int logLevel = 0)
-    {
-        if (message != lastDiffLogMessage)
-        {
-            lastDiffLogMessage = message;
-            Log("DIFFLOG: " + message, debugOnly, logLevel);
-        }
-    }
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="message"></param>
-    /// <param name="debugOnly"></param>
-    /// <param name="logLevel"></param>
-    internal static void Log(string message, bool debugOnly = true, int logLevel = 0)
-    {
-        if (!debugMode && debugOnly)
-            return;
-        switch (logLevel)
-        {
-            case 1:
-                Melon<ObsAutoRecorder>.Logger.Warning(message);
-                break;
-            case 2:
-                Melon<ObsAutoRecorder>.Logger.Error(message);
-                break;
-            default:
-                Melon<ObsAutoRecorder>.Logger.Msg(message);
-                break;
-        }
-    }
+	/// <summary>
+	/// updates the debug screen text
+	/// </summary>
+	/// <param name="message"></param>
+	internal static void UpdateDebugScreen(string message)
+	{
+		if (RumbleModdingAPI.RMAPI.Calls.IsMapInitialized()) { DebugUiText.text = message; }
+	}
 
-    internal static void Deb(string message)
-    {
-        Log(message, true, 0);
-    }
 
-    internal static void Msg(string message)
-    {
-        Log(message, false, 0);
-    }
+	/// <summary>
+	/// Call in OnUpdate to monitor variables per frame but only logs if they change
+	/// </summary>
+	/// <param name="message"></param>
+	/// <param name="debugOnly"></param>
+	/// <param name="logLevel"></param>
+	internal static void DiffLog(string message, bool debugOnly = true, int logLevel = 0)
+	{
+		if (message != lastDiffLogMessage)
+		{
+			lastDiffLogMessage = message;
+			Log("DIFFLOG: " + message, debugOnly, logLevel);
+		}
+	}
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="message"></param>
+	/// <param name="debugOnly"></param>
+	/// <param name="logLevel"></param>
+	internal static void Log(string message, bool debugOnly = true, int logLevel = 0)
+	{
+		if (!debugMode && debugOnly)
+			return;
+		switch (logLevel)
+		{
+			case 1:
+				Melon<ObsAutoRecorder>.Logger.Warning(message);
+				break;
+			case 2:
+				Melon<ObsAutoRecorder>.Logger.Error(message);
+				break;
+			default:
+				Melon<ObsAutoRecorder>.Logger.Msg(message);
+				break;
+		}
+	}
 
-    internal static void Warning(string message)
-    {
-        Log(message, false, 1);
-    }
+	internal static void Deb(string message)
+	{
+		Log(message, true, 0);
+	}
 
-    internal static void Error(string message)
-    {
-        Log(message, false, 2);
-    }
+	internal static void Msg(string message)
+	{
+		Log(message, false, 0);
+	}
+
+	internal static void Warning(string message)
+	{
+		Log(message, false, 1);
+	}
+
+	internal static void Error(string message)
+	{
+		Log(message, false, 2);
+	}
 
 }
