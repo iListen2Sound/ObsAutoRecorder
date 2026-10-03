@@ -26,7 +26,7 @@ using Il2CppSteamworks;
 using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
 using UIFramework;
-using System.Diagnostics;	
+using System.Diagnostics;
 
 
 [assembly: MelonInfo(typeof(ObsAutoRecorder.ObsAutoRecorder), ObsAutoRecorder.BuildInfo.Name, ObsAutoRecorder.BuildInfo.Version, ObsAutoRecorder.BuildInfo.Author)]
@@ -65,6 +65,8 @@ namespace ObsAutoRecorder
 		private object _debounceCor = null;
 		private object _pollTagsCor = null;
 		private object _pollPageCor = null;
+
+		Stopwatch MarkerInputDebounce = new Stopwatch();
 
 		//private object _recordingWaitCor = null;
 
@@ -135,16 +137,16 @@ namespace ObsAutoRecorder
 				Log("Game Closing. Forcing recording stop");
 				RequestRecordingStop();
 			}
-			
+
 		}
 
 		public override void OnInitializeMelon()
-		{	
-			
+		{
+
 
 			if (!Directory.Exists(USER_DATA))
 				Directory.CreateDirectory(USER_DATA);
-			 
+
 			if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
 				File.Create(Path.Combine(USER_DATA, RECORD_LIST));
 
@@ -161,7 +163,7 @@ namespace ObsAutoRecorder
 				//Log(entry, true);
 			}
 			Log($"Debugging Mode Is: {isDebugMode.Value}");
-
+			MarkerInputDebounce.Start();
 
 		}
 
@@ -185,7 +187,7 @@ namespace ObsAutoRecorder
 		public override void OnDeinitializeMelon()
 		{
 		}
-		
+
 
 		public override void OnLateInitializeMelon()
 		{
@@ -232,7 +234,47 @@ namespace ObsAutoRecorder
 					Log(ex.Message, true);
 				}
 			}
+			Log(MarkerInputDebounce.ElapsedMilliseconds.ToString(), true);
+			if (MarkerInputDebounce.ElapsedMilliseconds > 1000)
+			{
+				
+				CheckMarkerInputs();
+				
+			}
+			
 		}
+		
+
+		public void CheckMarkerInputs()
+		{
+			
+			
+
+			if (AddMarkerOn.Value is MarkerPrefs.None or MarkerPrefs.OnReplayBufferSaved)
+			{
+				return;
+			}
+
+			bool leftPrimary = Calls.ControllerMap.LeftController.GetPrimary() > 0.5f;
+			bool rightPrimary = Calls.ControllerMap.RightController.GetPrimary() > 0.5f;
+			bool leftSecondary = Calls.ControllerMap.LeftController.GetSecondary() > 0.5f;
+			bool rightSecondary = Calls.ControllerMap.RightController.GetSecondary() > 0.5f;
+
+			if(AddMarkerOn.Value == MarkerPrefs.OnLeftCombo && leftPrimary && leftSecondary)
+			{
+				MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
+				MarkerInputDebounce.Restart();
+			}
+			else if (AddMarkerOn.Value == MarkerPrefs.OnRightCombo && rightPrimary && rightSecondary)
+			{
+				MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
+				MarkerInputDebounce.Restart();
+			}
+			
+		}
+		
+
+
 		/// <summary>
 		/// Called when map is fully initialized reducing the risk of null references.
 		/// </summary>
@@ -459,6 +501,9 @@ namespace ObsAutoRecorder
 			bool result = targets.Count > 0;
 			return result;
 		}
+
+
+
 		/// <summary>
 		/// Logs a message to the console
 		/// </summary>

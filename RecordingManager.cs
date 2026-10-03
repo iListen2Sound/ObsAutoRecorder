@@ -137,7 +137,7 @@ namespace ObsAutoRecorder
 		private void SetRecordingState()
 		{
 			//StartTryReconnecting();
-			
+
 			if (SceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
 				ActivePlayerInArena = new PlayfabInfo(PlayerManager.instance.AllPlayers[1]);
 
@@ -451,7 +451,7 @@ namespace ObsAutoRecorder
 			{
 				//warn if outputpath does not match expected output path assigned to player. Use player-assigned outputpath
 				Log($"onRecordStop: mismatch between event output path {outputPath} and LastRecordedPlayer.RecordingOutputPath: {LastRecordedPlayer.RecordingOutputPath}", false, 1);
-				if(LatestOutputPath != outputPath)
+				if (LatestOutputPath != outputPath)
 				{
 					LatestOutputPath = outputPath;
 				}
@@ -491,7 +491,7 @@ namespace ObsAutoRecorder
 		private void onReplayBufferSaved(string outputPath)
 		{
 			//Temporary timestamp file location for when recording is ongoing but with the location is unknown.
-			if(TempFileDir == "")
+			if (TempFileDir == "")
 			{
 				TempFileDir = Path.GetDirectoryName(outputPath);
 			}
@@ -517,17 +517,12 @@ namespace ObsAutoRecorder
 				newFileName = RenameOutput(outputPath, ReplayAutoRenameString.Value, ActivePlayerInArena, true);
 			}
 			newFileName = Path.GetFileNameWithoutExtension(newFileName);
-			if (AddChapterMarkers.Value)
+			if (AddMarkerOn.Value == MarkerPrefs.OnReplayBufferSaved)
 			{
-				//Since 2025-11-29 18-17-06, chapter names have been submitted as empty strings and don't contain new file name. That same day at 17-30-51, it was still working. No changes have been made to the code that I remember. Adding "Clip" at the start to ensure empty strings don't get through
-				Log("Attempting to add chapter marker", true);
-				var param = new { chapterName = "clip: " + newFileName};
-				Task.Run(() => { Log($"CreateChapterResponse: {OBS.SendRequest("CreateRecordChapter", param)}"); Log("Chapter Marker Request Sent"); });
-
-				Log("Adding Chapter Marker", true);
+				MelonCoroutines.Start(AddChapterMarker("Clip - Replay Buffer"));
 			}
 
-			if(SceneName == "gym")
+			if (SceneName == "gym")
 			{
 				misc.Value++;
 				miscoar.SaveToFile();
@@ -536,8 +531,40 @@ namespace ObsAutoRecorder
 		}
 
 		/// <summary>
-		/// 
+		/// Create a chapter marker request in OBS
 		/// </summary>
+		/// <param name="chapterName"></param>
+		private IEnumerator AddChapterMarker(string chapterName)
+		{
+
+			if (!OBS.IsRecordingActive())
+			{
+				Log("AddChapterMarker: Recording not active. Cannot add chapter marker", true, 1);
+				yield break;
+			}
+			//Don't add marker if a marker request was made in the same frame. 
+			if (markersInCooldown)
+			{
+				Log("AddChapterMarker: Marker debounce active. Skipping", true, 1);
+				yield break;
+			}
+
+			//turn on cooldown
+			markersInCooldown = true;
+			//Since 2025-11-29 18-17-06, chapter names have been submitted as empty strings and don't contain new file name. That same day at 17-30-51, it was still working. No changes have been made to the code that I remember. Adding "Clip" at the start to ensure empty strings don't get through
+			Log("Attempting to add chapter marker", true);
+			var param = new { chapterName = chapterName };
+			Task.Run(() => { Log($"CreateChapterResponse: {OBS.SendRequest("CreateRecordChapter", param)}"); Log("Chapter Marker Request Sent"); });
+
+			Log("Adding Chapter Marker", true);
+			//turn off cooldown on the next frame
+			yield return new WaitForFixedUpdate();
+			markersInCooldown = false;
+
+		}
+		bool markersInCooldown = false;
+
+		/// <summary>
 		/// <param name="oldOutputPath"> Location of the original file to be renamed. Should be the same as player.RecordingOutputPath if recording, and remain the same if it's a clip</param>
 		/// <param name="newName"></param>
 		/// <param name="player"></param>
@@ -588,10 +615,10 @@ namespace ObsAutoRecorder
 			}
 
 			string newFileName = newName.Replace("{player}", $"{GetSafeFilename(playerName)}").Replace("{date}", date).Replace("{time}", time).Replace("{map}", mapName);
-            string dirName = Path.GetDirectoryName(oldOutputPath).Replace("\\", "/"); // unix-style path
+			string dirName = Path.GetDirectoryName(oldOutputPath).Replace("\\", "/"); // unix-style path
 			string extension = Path.GetExtension(oldOutputPath);
 
-            newPath = Path.Combine(dirName, newFileName + extension);
+			newPath = Path.Combine(dirName, newFileName + extension);
 			Task.Run(() =>
 			{
 				int copyIndex = 1;
@@ -602,11 +629,11 @@ namespace ObsAutoRecorder
 				{
 					Log($"File exists: {newPath} ", false, 1);
 					newPath = Path.Combine(dirName, newFileName + $" ({copyIndex})" + extension);
-					
+
 					copyIndex++;
 				}
 
-				
+
 
 				bool success = false;
 				float startTime = Time.realtimeSinceStartup;
@@ -642,7 +669,7 @@ namespace ObsAutoRecorder
 					Log($"Tried renaming file for {secondsToRetry} seconds. Giving up. ", false, 2);
 				}
 
-				if(!isReplay) 
+				if (!isReplay)
 					FinalRename(newPath);
 
 				if (SceneName == "gym")
@@ -724,8 +751,8 @@ namespace ObsAutoRecorder
 			{
 				Log("TryConnectCoroutine: Not Connected Attempting to connect to OBS", true);
 				OBS.Connect();
-				yield return new WaitForSeconds(10f);			
-				
+				yield return new WaitForSeconds(10f);
+
 			}
 
 			Log("TryConnectCoroutine: Connected to OBS", true);
