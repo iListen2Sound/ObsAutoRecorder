@@ -1,3 +1,6 @@
+# Version 1.3.5
+- Added options for adding chapter markers by controller input or by replay buffer save.
+
 # Version 1.3.2
 - Reimplemented OnMapInit()
 
