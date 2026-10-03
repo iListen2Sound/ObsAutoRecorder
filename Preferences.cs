@@ -76,7 +76,7 @@ namespace ObsAutoRecorder
 			AddMarkerOn = RecordingSettings.CreateEntry("Add Marker On", MarkerPrefs.OnReplayBufferSaved, null, "When to add a chapter marker to the recording. Left and right bindings is pressing both the primary and secondary buttons on your controller.");
 
 
-			TimeStampFile = RecordingSettings.CreateEntry("Write Timestamp File", false, null, "Create a timestamp file when clipping while recording");
+			TimeStampFile = RecordingSettings.CreateEntry("Write Timestamp File (Beta)", false, null, "Create a timestamp file when clipping while recording\n<i><color=\"yellow\"> BETA NOTICE:</color></i> Game restarts not handled. Will cause a new file to be written after the restart or even, in rare cases, overwrite the existing one.");
 			TimestampOffset = RecordingSettings.CreateEntry("Offset Duration", 45, null, "Define a start offset for when the event you were clipping started");
 			TimestampFormat = RecordingSettings.CreateEntry("Timestamp Format", "{offsettime}-{timestamp}", null, "Format how timestamps are saved to the file. Parameters: {offsettime}, {timestamp}, {offsetduration}");
 			TimecodeFormat = RecordingSettings.CreateEntry("Timecode Format", @"hh\:mm\:ss\.ff", null, "The format of the timecodes in the timestamp");
