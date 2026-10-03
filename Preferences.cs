@@ -139,8 +139,8 @@ namespace ObsAutoRecorder
 
 		private void DeprecateAddChapterMarkers()
 		{
-			MelonPreferences_Entry<bool?> AddChapterMarkers = RecordingSettings.CreateEntry<bool?>("Chapter Markers", null, null,"[DEPRECATED use the new AddMarkerOn setting]", true);
-			Log("Checking for deprecated settings to migrate",false, 1);
+			MelonPreferences_Entry<bool?> AddChapterMarkers = RecordingSettings.CreateEntry<bool?>("Chapter Markers", null, null, "[DEPRECATED use the new AddMarkerOn setting]", true);
+			Log("Checking for deprecated settings to migrate", false, 1);
 			if (AddChapterMarkers.Value == true)
 			{
 				AddMarkerOn.Value = MarkerPrefs.OnReplayBufferSaved;
@@ -151,7 +151,7 @@ namespace ObsAutoRecorder
 				AddMarkerOn.Value = MarkerPrefs.None;
 				Log("Chapter markers disabled. AddMarkerOn = None", false, 1);
 			}
-			else if(AddChapterMarkers.Value is null)
+			else if (AddChapterMarkers.Value is null)
 			{
 				Log("Old Chapter marker settings not found. No migration needed", false, 0);
 			}

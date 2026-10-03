@@ -62,7 +62,6 @@ namespace ObsAutoRecorder
 			{
 				ActivePlayerInArena = new PlayfabInfo($"{ParkPlayers} park player{(ParkPlayers == 1 ? "" : "s")}", "-1");
 			}
-
 		}
 
 		private string LastSceneName { get; set; } = "loader";
