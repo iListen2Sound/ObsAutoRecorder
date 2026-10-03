@@ -180,7 +180,9 @@ namespace ObsAutoRecorder
 				Log("Existing recording hold coroutine found. Continuing", true, 0);
 			}
 			else
+			{
 				_stopQueueCor = MelonCoroutines.Start(RecordingHoldCoroutine(RecordingPauseHoldTimeout.Value));
+			}
 		}
 
 

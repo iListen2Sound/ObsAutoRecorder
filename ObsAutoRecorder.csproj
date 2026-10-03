@@ -6,6 +6,7 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DebugType>embedded</DebugType>
+		<RumblePath>G:\SteamLibrary\steamapps\common\RUMBLE</RumblePath>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -36,8 +37,22 @@
 		</Reference>
 	</ItemGroup>
 
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="copy &quot;$(TargetPath)&quot; &quot;G:\SteamLibrary\steamapps\common\RUMBLE\Mods\$(TargetFileName)&quot;" />
-	</Target>
+	<ItemGroup>
+	  <Folder Include="_Misc\ThunderstorePackage\Mods\" />
+	</ItemGroup>
 
+	<Target Name="PreBuild" AfterTargets="PreBuildEvent">
+		<Exec Command="taskkill /f /t /im RUMBLE.exe 2&gt;NUL | echo killed rumble" />
+	</Target>
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		
+	</Target>
+	
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<!--Copy to mods folder-->
+		<Exec Command="COPY &quot;$(TargetPath)&quot; &quot;$(RumblePath)\Mods&quot;" />
+		<!--Copy to thunderstore package-->
+		<Exec Command="COPY &quot;$(TargetPath)&quot; &quot;$(ProjectDir)_Misc\ThunderstorePackage\Mods&quot;" />
+		<Exec Command="COPY &quot;$(ProjectDir)README.md&quot; &quot;$(ProjectDir)_Misc\ThunderstorePackage\&quot;" />
+	</Target>
 </Project>

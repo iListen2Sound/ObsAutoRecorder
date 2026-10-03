@@ -2,6 +2,8 @@
 
 Automatically controls OBS to record match sessions based on your preferences. Also renames clips and writes chapter markers coinciding with said clips to videos.
 
+> [!WARNING] 
+> This mod does not currently work with the new friends board system. People can still be added manually by their PlayFab ID to the AutoRecordList.txt file in your UserData folder for now. 
 ## Quick Start: 
 
 ### Install [Kalamart's OBS control API](https://thunderstore.io/c/rumble/p/Kalamart/OBS_Control_API/) and [UIFramework](https://thunderstore.io/c/rumble/p/Reverb_and___and_Spice/UIFramework/). Then just go to your friends list and start picking people to auto record by clicking their name in fighter options

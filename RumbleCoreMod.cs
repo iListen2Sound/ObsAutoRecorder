@@ -234,7 +234,6 @@ namespace ObsAutoRecorder
 					Log(ex.Message, true);
 				}
 			}
-			Log(MarkerInputDebounce.ElapsedMilliseconds.ToString(), true);
 			if (MarkerInputDebounce.ElapsedMilliseconds > 1000)
 			{
 
@@ -350,11 +349,6 @@ namespace ObsAutoRecorder
 				//StartRecording(" Pre <#> <AEDF12> Invalid char test");
 			}
 
-			//Test code. Remove later
-			/*else if (SceneName.Contains("map") && PlayerManager.instance.AllPlayers.Count > 1)
-			{
-				
-			}*/
 
 			SetRecordingState();
 			_sceneIsLoaded = true;
@@ -456,7 +450,6 @@ namespace ObsAutoRecorder
 			for (int i = 0; i < _previousList.Count; i++)
 			{
 				bool match = _previousList[i] == _displayedFriendTags[i].ToString();
-				//Log($"{i} {match} {_previousList[i]} with {_displayedFriendTags[i].ToString()}", true);
 				if (match)
 				{
 					return true;
