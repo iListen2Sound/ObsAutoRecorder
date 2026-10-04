@@ -1,3 +1,10 @@
+# Version 1.3.5
+- Added options for adding chapter markers by controller input or by replay buffer save.
+- Reordered Preference Categories
+
+# Version 1.3.2
+- Reimplemented OnMapInit()
+
 # Version 1.3.1
 - Changed Default Timestamp value to a valid strirng
 

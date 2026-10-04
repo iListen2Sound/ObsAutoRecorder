@@ -1,9 +1,12 @@
 ﻿using MelonLoader;
 using System.IO;
+using UIFramework.ValidatorExtensions;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MelonLoader;
+using System.ComponentModel.DataAnnotations;
+using System;
 namespace ObsAutoRecorder
 {
 	public partial class ObsAutoRecorder
@@ -23,7 +26,8 @@ namespace ObsAutoRecorder
 
 
 		private MelonPreferences_Category RecordingSettings;
-		private MelonPreferences_Entry<bool> AddChapterMarkers;
+
+		private MelonPreferences_Entry<MarkerPrefs> AddMarkerOn;
 		private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
 		private MelonPreferences_Entry<int> RecordByBPThreshold;
 		private MelonPreferences_Entry<bool> PauseAfterMatch;
@@ -47,11 +51,10 @@ namespace ObsAutoRecorder
 
 		private void InitPreferences()
 		{
-			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
+			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder", "Misc Settings");
 			OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug with more verbose logging");
-
 
 			AutoRenameSettings = MelonPreferences.CreateCategory("Auto Rename Settings");
 			AutoRenameSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
@@ -69,8 +72,11 @@ namespace ObsAutoRecorder
 			RecordingPauseHoldTimeout = RecordingSettings.CreateEntry("Recording Hold Timeout", 0, null, "Seconds to keep the recording held before stopping automatically");
 			PauseAfterMatch = RecordingSettings.CreateEntry("Pause recording after match", false, null, "Pause recording on returning to gym. Replay buffer will not work when paused");
 			RecordByBPThreshold = RecordingSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
-			AddChapterMarkers = RecordingSettings.CreateEntry("Chapter Markers", true, null, "Enabling will write chapter markers to the output video if the format supports it (currently only Hybrid MP4)");
-			TimeStampFile = RecordingSettings.CreateEntry("Write Timestamp File", false, null, "Create a timestamp file when clipping while recording");
+
+			AddMarkerOn = RecordingSettings.CreateEntry("Add Marker On", MarkerPrefs.OnReplayBufferSaved, null, "When to add a chapter marker to the recording. Left and right bindings is pressing both the primary and secondary buttons on your controller.\n<i><color=\"yellow\"> Warning:</color></i> Certain VR Configurations don't support the left input combo.");
+
+
+			TimeStampFile = RecordingSettings.CreateEntry("Write Timestamp File (Beta)", false, null, "Create a timestamp file when clipping while recording\n<i><color=\"yellow\"> BETA NOTICE:</color></i> Game restarts not handled. Will cause a new file to be written after the restart or even, in rare cases, overwrite the existing one.");
 			TimestampOffset = RecordingSettings.CreateEntry("Offset Duration", 45, null, "Define a start offset for when the event you were clipping started");
 			TimestampFormat = RecordingSettings.CreateEntry("Timestamp Format", "{offsettime}-{timestamp}", null, "Format how timestamps are saved to the file. Parameters: {offsettime}, {timestamp}, {offsetduration}");
 			TimecodeFormat = RecordingSettings.CreateEntry("Timecode Format", @"hh\:mm\:ss\.ff", null, "The format of the timecodes in the timestamp");
@@ -79,53 +85,83 @@ namespace ObsAutoRecorder
 			IndicatorSettings = MelonPreferences.CreateCategory("Indicator Settings");
 			IndicatorSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
-			PreferMinimalIcon = IndicatorSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator (This is kinda broken)");
+			PreferMinimalIcon = IndicatorSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator (This is kinda broken)", true);
+			PreferMinimalIcon.Value = false; //untangle minimal icon from indicator settings
 			ClippingIconVisibleByDefault = IndicatorSettings.CreateEntry("Clip Icon Default Visibility", true, null, "Make the replay buffer icon always visible. Otherwise, it's only shown to show an inactive replay buffer and blinks when a clip is saved");
 			RockCamVisibility = IndicatorSettings.CreateEntry("Show Icons on Camera", true, null, "Make Icons Visible on Rock Cam and Legacy Cam");
-			MainIconPosition = IndicatorSettings.CreateEntry("Main Icon Position", 0, null, "Position of OBS Icon along healthbar. Left to right from 0 to 100");
-			ReplayIconOffset = IndicatorSettings.CreateEntry("Replay Icon Offset", 5f, null, "Offset of Replay Buffer Icon from main OBS Icon");
+			MainIconPosition = IndicatorSettings.CreateEntry("Main Icon Position", 0, null, "Position of OBS Icon along healthbar. Left to right from 0 to 100", false, false, new SliderDescriptor { DecimalPlaces = 0, Max = 100, Min = 0 });
+			ReplayIconOffset = IndicatorSettings.CreateEntry("Replay Icon Offset", 5f, null, "Offset of Replay Buffer Icon from main OBS Icon", false, false, new SliderDescriptor { DecimalPlaces = 2, Max = 100, Min = -100 });
 
 			//easter egg
 			miscoar = MelonPreferences.CreateCategory("Misc ObsAutoRecorder");
 			misc = miscoar.CreateEntry("Misc", 0);
+			try
+			{
+				DeprecateAddChapterMarkers();
+			}
+			catch (Exception ex)
+			{
+				Log($"Error deprecating old settings: {ex.Message}", true, 1);
 
+			}
 		}
 
-
-		private void FindDeprecatedConfs()
+		internal enum MarkerPrefs
 		{
-			string[] lines = File.ReadAllLines(Path.Combine(USER_DATA, CONFIG_FILE));
-			string depIndicator = "\"deprecated: ";
-			for (int i = 0; i < lines.Length; i++)
-			{
-				if (lines[i].Contains("Replay Prefix") && !(lines[i].Contains(depIndicator)))
-				{
-					Log($"Found unmarked deprecated config option: \"{lines[i]}\".", false, 1);
-					Log("Marking...", false, 0);
-					lines[i] = "\n#↓↓↓ No longer used. Please delete\n" + depIndicator + lines[i].TrimStart('\"');
-				}
-			}
+			[Display(Name = "None", Description = "No marker will be added")]
+			None,
 
-			File.WriteAllLines(Path.Combine(USER_DATA, CONFIG_FILE), lines);
+			[Display(Name = "Replay Buffer Saves", Description = "Add marker when replay buffer is saved")]
+			OnReplayBufferSaved,
+
+			[Display(Name = "Right Binding", Description = "Add marker when right binding is activated")]
+			OnRightCombo,
+
+			[Display(Name = "Left Binding", Description = "Add marker when left binding is activated")]
+			OnLeftCombo,
+			
+
 		}
 
 		private void SaveSettings()
 		{
 
-			OBSAutoRecorderSettings.SaveToFile();
-			AutoRenameSettings.SaveToFile();
-			RecordingSettings.SaveToFile();
-			IndicatorSettings.SaveToFile();
-			miscoar.SaveToFile();
+			OBSAutoRecorderSettings.SaveToFile(false);
+			AutoRenameSettings.SaveToFile(false);
+			RecordingSettings.SaveToFile(false);
+			IndicatorSettings.SaveToFile(false);
+			miscoar.SaveToFile(false);
 		}
 
 		private void ReadSettings()
 		{
-			OBSAutoRecorderSettings.LoadFromFile();
-			AutoRenameSettings.LoadFromFile();
-			RecordingSettings.LoadFromFile();
-			IndicatorSettings.LoadFromFile();
+			OBSAutoRecorderSettings.LoadFromFile(false);
+			AutoRenameSettings.LoadFromFile(false);
+			RecordingSettings.LoadFromFile(false);
+			IndicatorSettings.LoadFromFile(false);
 
+		}
+
+		private void DeprecateAddChapterMarkers()
+		{
+			MelonPreferences_Entry<bool?> AddChapterMarkers = RecordingSettings.CreateEntry<bool?>("Chapter Markers", null, null, "[DEPRECATED use the new AddMarkerOn setting]", true);
+			Log("Checking for deprecated settings to migrate", false, 1);
+			if (AddChapterMarkers.Value == true)
+			{
+				AddMarkerOn.Value = MarkerPrefs.OnReplayBufferSaved;
+				Log("Chapter markers enabled. AddMarkerOn = OnReplayBufferSaved", false, 1);
+			}
+			else if (AddChapterMarkers.Value == false)
+			{
+				AddMarkerOn.Value = MarkerPrefs.None;
+				Log("Chapter markers disabled. AddMarkerOn = None", false, 1);
+			}
+			else if (AddChapterMarkers.Value is null)
+			{
+				Log("Old Chapter marker settings not found. No migration needed", false, 0);
+			}
+			RecordingSettings.DeleteEntry(AddChapterMarkers.Identifier);
+			RecordingSettings.SaveToFile();
 		}
 	}
 }
