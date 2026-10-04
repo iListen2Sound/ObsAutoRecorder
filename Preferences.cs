@@ -51,7 +51,7 @@ namespace ObsAutoRecorder
 
 		private void InitPreferences()
 		{
-			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder");
+			OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder", "Misc Settings");
 			OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
 			isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug with more verbose logging");
@@ -73,7 +73,7 @@ namespace ObsAutoRecorder
 			PauseAfterMatch = RecordingSettings.CreateEntry("Pause recording after match", false, null, "Pause recording on returning to gym. Replay buffer will not work when paused");
 			RecordByBPThreshold = RecordingSettings.CreateEntry("BP Threshold", -1, "BP", "Record players with BP greater than value. -1 = disabled");
 
-			AddMarkerOn = RecordingSettings.CreateEntry("Add Marker On", MarkerPrefs.OnReplayBufferSaved, null, "When to add a chapter marker to the recording. Left and right bindings is pressing both the primary and secondary buttons on your controller.");
+			AddMarkerOn = RecordingSettings.CreateEntry("Add Marker On", MarkerPrefs.OnReplayBufferSaved, null, "When to add a chapter marker to the recording. Left and right bindings is pressing both the primary and secondary buttons on your controller.\n<i><color=\"yellow\"> Warning:</color></i> Certain VR Configurations don't support the left input combo.");
 
 
 			TimeStampFile = RecordingSettings.CreateEntry("Write Timestamp File (Beta)", false, null, "Create a timestamp file when clipping while recording\n<i><color=\"yellow\"> BETA NOTICE:</color></i> Game restarts not handled. Will cause a new file to be written after the restart or even, in rare cases, overwrite the existing one.");
@@ -85,7 +85,8 @@ namespace ObsAutoRecorder
 			IndicatorSettings = MelonPreferences.CreateCategory("Indicator Settings");
 			IndicatorSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
 
-			PreferMinimalIcon = IndicatorSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator (This is kinda broken)");
+			PreferMinimalIcon = IndicatorSettings.CreateEntry("Prefer Minimal Icon", false, null, "Prefer Minimal OBS Icon for Recording indicator (This is kinda broken)", true);
+			PreferMinimalIcon.Value = false; //untangle minimal icon from indicator settings
 			ClippingIconVisibleByDefault = IndicatorSettings.CreateEntry("Clip Icon Default Visibility", true, null, "Make the replay buffer icon always visible. Otherwise, it's only shown to show an inactive replay buffer and blinks when a clip is saved");
 			RockCamVisibility = IndicatorSettings.CreateEntry("Show Icons on Camera", true, null, "Make Icons Visible on Rock Cam and Legacy Cam");
 			MainIconPosition = IndicatorSettings.CreateEntry("Main Icon Position", 0, null, "Position of OBS Icon along healthbar. Left to right from 0 to 100", false, false, new SliderDescriptor { DecimalPlaces = 0, Max = 100, Min = 0 });
@@ -109,31 +110,35 @@ namespace ObsAutoRecorder
 		{
 			[Display(Name = "None", Description = "No marker will be added")]
 			None,
+
 			[Display(Name = "Replay Buffer Saves", Description = "Add marker when replay buffer is saved")]
 			OnReplayBufferSaved,
-			[Display(Name = "Left Binding", Description = "Add marker when left binding is activated")]
-			OnLeftCombo,
+
 			[Display(Name = "Right Binding", Description = "Add marker when right binding is activated")]
 			OnRightCombo,
+
+			[Display(Name = "Left Binding", Description = "Add marker when left binding is activated")]
+			OnLeftCombo,
+			
 
 		}
 
 		private void SaveSettings()
 		{
 
-			OBSAutoRecorderSettings.SaveToFile();
-			AutoRenameSettings.SaveToFile();
-			RecordingSettings.SaveToFile();
-			IndicatorSettings.SaveToFile();
-			miscoar.SaveToFile();
+			OBSAutoRecorderSettings.SaveToFile(false);
+			AutoRenameSettings.SaveToFile(false);
+			RecordingSettings.SaveToFile(false);
+			IndicatorSettings.SaveToFile(false);
+			miscoar.SaveToFile(false);
 		}
 
 		private void ReadSettings()
 		{
-			OBSAutoRecorderSettings.LoadFromFile();
-			AutoRenameSettings.LoadFromFile();
-			RecordingSettings.LoadFromFile();
-			IndicatorSettings.LoadFromFile();
+			OBSAutoRecorderSettings.LoadFromFile(false);
+			AutoRenameSettings.LoadFromFile(false);
+			RecordingSettings.LoadFromFile(false);
+			IndicatorSettings.LoadFromFile(false);
 
 		}
 
