@@ -76,7 +76,8 @@ Automatically controls OBS to record match sessions based on your preferences. A
 | Recording Hold Timeout | `0` | Seconds to keep recording paused before auto-stop. |
 | Pause After Match | `false` | Pause recording on returning to gym (Replay buffer doesn't work while recording is paused). |
 | BP Threshold | `-1` | Record players with BP greater than this value. -1 disables threshold. |
-| Chapter Markers | `true` | Add chapter markers to video when clipping (Hybrid MP4 only). |
+| ~~Chapter Markers (Deprecated)~~ | ~~`true`~~ | This setting has been replaced by AddMarkerOn|
+|AddMarkerOn|OnReplayBufferSaved|Choose when to add a marker. Left and right bindings is pressing both the primary and secondary buttons on your controller.|
 |Write Timestamp File|`false`|Create a timestamp file when clipping while recording| 
 |Offset Duration|`45`|Define an offset duration to narrow down when the event you were clipping started|
 |Timestamp Format|`{offsettime}-{timestamp}`|Format how timestamps are saved to the file. Parameters: `{offsettime}`, `{timestamp}`, `{offsetduration}`|
