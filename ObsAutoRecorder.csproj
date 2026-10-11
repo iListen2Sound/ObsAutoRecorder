@@ -2,6 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -39,6 +40,13 @@
 
 	<ItemGroup>
 	  <Folder Include="_Misc\ThunderstorePackage\Mods\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include=".ObsAutoRecorder\AutoRecordList.txt" />
+	  <None Include=".ObsAutoRecorder\config - Copy.cfg" />
+	  <None Include=".ObsAutoRecorder\config.cfg" />
+	  <None Include=".ObsAutoRecorder\started with duplicate replay indicator 26-3-6_17-12-14.log" />
 	</ItemGroup>
 
 	<Target Name="PreBuild" AfterTargets="PreBuildEvent">

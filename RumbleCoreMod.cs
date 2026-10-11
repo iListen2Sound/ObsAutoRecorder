@@ -240,12 +240,21 @@ public partial class ObsAutoRecorder : MelonMod
 		{
 
 			CheckForInputs();
+			InputEvents.PollButtons();
 
 		}
 
 
 	}
 
+	public bool IsLeftActive()
+	{
+		return Calls.ControllerMap.LeftController.GetPrimary() > 0.5f && Calls.ControllerMap.LeftController.GetSecondary() > 0.5f;
+	}
+	public bool IsRightActive()
+	{
+		return Calls.ControllerMap.RightController.GetPrimary() > 0.5f && Calls.ControllerMap.RightController.GetSecondary() > 0.5f;
+	}
 
 	public void CheckForInputs()
 	{
@@ -257,17 +266,13 @@ public partial class ObsAutoRecorder : MelonMod
 			return;
 		}
 
-		bool leftPrimary = Calls.ControllerMap.LeftController.GetPrimary() > 0.5f;
-		bool rightPrimary = Calls.ControllerMap.RightController.GetPrimary() > 0.5f;
-		bool leftSecondary = Calls.ControllerMap.LeftController.GetSecondary() > 0.5f;
-		bool rightSecondary = Calls.ControllerMap.RightController.GetSecondary() > 0.5f;
 
-		if (AddMarkerOn.Value == MarkerPrefs.OnLeftCombo && leftPrimary && leftSecondary)
+		if (AddMarkerOn.Value == MarkerPrefs.OnLeftCombo && IsLeftActive())
 		{
 			MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
 			MarkerInputDebounce.Restart();
 		}
-		else if (AddMarkerOn.Value == MarkerPrefs.OnRightCombo && rightPrimary && rightSecondary)
+		else if (AddMarkerOn.Value == MarkerPrefs.OnRightCombo && IsRightActive())
 		{
 			MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
 			MarkerInputDebounce.Restart();
