@@ -35,505 +35,467 @@ using System.Diagnostics;
 [assembly: MelonColor(255, 87, 166, 80)]
 [assembly: MelonAdditionalDependencies("UIFramework")]
 [assembly: UIInfo("OBS Auto Recorder")]
-namespace ObsAutoRecorder
+namespace ObsAutoRecorder;
+
+using static DebugHelper;
+
+public static class BuildInfo
 {
-	public static class BuildInfo
+	public const string Name = "ObsAutoRecorder";
+	public const string Author = "iListen2Sound";
+	public const string Version = "1.3.5";
+}
+public partial class ObsAutoRecorder : MelonMod
+{
+	//private string lastLogDiff;
+
+	//Hold button location 
+	//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
+	private const string USER_DATA = "UserData/ObsAutoRecorder/";
+	private const string RECORD_LIST = "AutoRecordList.txt";
+	private const string SEPARATOR = "\n";
+	public static ObsAutoRecorder Instance { get; private set; }
+
+	string SceneName { get; set; }
+
+	private List<string> AutoRecordList { get; set; } = new();
+
+	private static GameObject IndicatorsBase;
+
+	public static GameObject DDOLParent;
+
+	private object _debounceCor = null;
+	private object _pollTagsCor = null;
+	private object _pollPageCor = null;
+
+	Stopwatch MarkerInputDebounce = new Stopwatch();
+
+	//private object _recordingWaitCor = null;
+
+	public static GameObject GetIndicator()
 	{
-		public const string Name = "ObsAutoRecorder";
-		public const string Author = "iListen2Sound";
-		public const string Version = "1.3.5";
+		return GameObject.Instantiate(IndicatorsBase);
 	}
-	public partial class ObsAutoRecorder : MelonMod
+	public override void OnSceneWasLoaded(int buildIndex, string sceneName)
 	{
-		private string lastLogDiff;
+		SceneName = sceneName.ToLower();
+		Log("SceneLoaded: " + sceneName, true, 1);
 
-		//Hold button location 
-		//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
-		private const string USER_DATA = "UserData/ObsAutoRecorder/";
-		private const string RECORD_LIST = "AutoRecordList.txt";
-		private const string SEPARATOR = "\n";
-		public static ObsAutoRecorder Instance { get; private set; }
+		//MelonCoroutines.Start(DelayPlayerRetrieval());
+	}
 
-		string SceneName { get; set; }
-
-		private List<string> AutoRecordList { get; set; } = new();
-
-		private static GameObject IndicatorsBase;
-
-		public static GameObject DDOLParent;
-
-		private object _debounceCor = null;
-		private object _pollTagsCor = null;
-		private object _pollPageCor = null;
-
-		Stopwatch MarkerInputDebounce = new Stopwatch();
-
-		//private object _recordingWaitCor = null;
-
-		public static GameObject GetIndicator()
+	public void OnMapInit(string scene)
+	{
+		try
 		{
-			return GameObject.Instantiate(IndicatorsBase);
+			PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
+			PlayerUIFound(SceneName);
 		}
-		public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+		catch (System.Exception)
 		{
-			SceneName = sceneName.ToLower();
-			Log("SceneLoaded: " + sceneName, true, 1);
-
-			//MelonCoroutines.Start(DelayPlayerRetrieval());
+			PlayerUi = null;
 		}
+	}
 
-		public void OnMapInit(string scene)
+	private IEnumerator DelayPlayerRetrieval()
+	{
+
+		float defaultWaitTime = 0.01f;
+		int attempts = 0;
+		Stopwatch timeLimiter = Stopwatch.StartNew();
+		do
 		{
 			try
 			{
 				PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
-				PlayerUIFound(SceneName);
 			}
 			catch (System.Exception)
 			{
 				PlayerUi = null;
 			}
-		}
-
-		private IEnumerator DelayPlayerRetrieval()
-		{
-
-			float defaultWaitTime = 0.01f;
-			int attempts = 0;
-			Stopwatch timeLimiter = Stopwatch.StartNew();
-			do
+			if (PlayerUi is null)
 			{
-				try
-				{
-					PlayerUi = PlayerManager.Instance.LocalPlayer.Controller.gameObject.transform.GetChild(4).GetChild(0).gameObject;
-				}
-				catch (System.Exception)
-				{
-					PlayerUi = null;
-				}
-				if (PlayerUi is null)
-				{
-					Log("Player UI not found. Retrying...", true, 1);
-					attempts++;
-					yield return new WaitForSeconds(defaultWaitTime * attempts * 2);
-				}
-
-
-			} while (PlayerUi is null && timeLimiter.ElapsedMilliseconds < 1000);
-			if (timeLimiter.ElapsedMilliseconds >= 1000)
-			{
-				//Log("Failed to retrieve Player UI after multiple attempts. Aborting initialization to prevent errors.", false, 2);
-				yield break;
+				Log("Player UI not found. Retrying...", true, 1);
+				attempts++;
+				yield return new WaitForSeconds(defaultWaitTime * attempts * 2);
 			}
-			timeLimiter.Stop();
-			PlayerUIFound(SceneName);
+
+
+		} while (PlayerUi is null && timeLimiter.ElapsedMilliseconds < 1000);
+		if (timeLimiter.ElapsedMilliseconds >= 1000)
+		{
+			//Log("Failed to retrieve Player UI after multiple attempts. Aborting initialization to prevent errors.", false, 2);
 			yield break;
 		}
+		timeLimiter.Stop();
+		PlayerUIFound(SceneName);
+		yield break;
+	}
 
-		public override void OnApplicationQuit()
+	public override void OnApplicationQuit()
+	{
+		if (!ExternalRecording)
 		{
-			if (!ExternalRecording)
-			{
-				Log("Game Closing. Forcing recording stop");
-				RequestRecordingStop();
-			}
-
+			Log("Game Closing. Forcing recording stop");
+			RequestRecordingStop();
 		}
 
-		public override void OnInitializeMelon()
+	}
+
+	public override void OnInitializeMelon()
+	{
+
+
+		if (!Directory.Exists(USER_DATA))
+			Directory.CreateDirectory(USER_DATA);
+
+		if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
+			File.Create(Path.Combine(USER_DATA, RECORD_LIST));
+
+
+		InitPreferences();
+		UI.RegisterMelon(this, RecordingSettings, AutoRenameSettings, IndicatorSettings, OBSAutoRecorderSettings);
+
+		AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
+
+		SaveSettings();
+
+		foreach (string entry in AutoRecordList)
 		{
+			//Log(entry, true);
+		}
+		Log($"Debugging Mode Is: {isDebugMode.Value}");
+		MarkerInputDebounce.Start();
 
+	}
 
-			if (!Directory.Exists(USER_DATA))
-				Directory.CreateDirectory(USER_DATA);
-
-			if (!File.Exists(Path.Combine(USER_DATA, RECORD_LIST)))
-				File.Create(Path.Combine(USER_DATA, RECORD_LIST));
-
-
-			InitPreferences();
-			UI.RegisterMelon(this, RecordingSettings, AutoRenameSettings, IndicatorSettings, OBSAutoRecorderSettings);
-
-			AutoRecordList = File.ReadAllLines(Path.Combine(USER_DATA, RECORD_LIST)).ToList();
-
-			SaveSettings();
-
-			foreach (string entry in AutoRecordList)
-			{
-				//Log(entry, true);
-			}
-			Log($"Debugging Mode Is: {isDebugMode.Value}");
-			MarkerInputDebounce.Start();
-
+	private void UpdateAutoRecordFile()
+	{
+		string fullAutoRecordPath = (Path.Combine(USER_DATA, RECORD_LIST));
+		Log($"Writing people to file {RECORD_LIST}", true);
+		if (!File.Exists(fullAutoRecordPath))
+		{
+			Log($"Missing {RECORD_LIST} file. Creating File", false, 1);
+			File.Create(fullAutoRecordPath);
 		}
 
-		private void UpdateAutoRecordFile()
+		foreach (string person in AutoRecordList)
 		{
-			string fullAutoRecordPath = (Path.Combine(USER_DATA, RECORD_LIST));
-			Log($"Writing people to file {RECORD_LIST}", true);
-			if (!File.Exists(fullAutoRecordPath))
-			{
-				Log($"Missing {RECORD_LIST} file. Creating File", false, 1);
-				File.Create(fullAutoRecordPath);
-			}
-
-			foreach (string person in AutoRecordList)
-			{
-				Log($"{person}", true);
-			}
-			File.WriteAllLines(fullAutoRecordPath, AutoRecordList);
+			Log($"{person}", true);
 		}
+		File.WriteAllLines(fullAutoRecordPath, AutoRecordList);
+	}
 
-		public override void OnDeinitializeMelon()
+	public override void OnDeinitializeMelon()
+	{
+	}
+
+
+	public override void OnLateInitializeMelon()
+	{
+
+
+		//Actions.onMapInitialized += PlayerUIFound;
+
+		OBS.onRecordingPaused += onRecordPause;
+		OBS.onRecordingStopped += onRecordStop;
+		OBS.onRecordingStarted += onRecordStart;
+		OBS.onRecordingResumed += onRecordResume;
+
+		OBS.onConnect += onConnect;
+		OBS.onDisconnect += onDisconnect;
+		OBS.onReplayBufferSaved += onReplayBufferSaved;
+
+		RumbleModdingAPI.RMAPI.Actions.onMapInitialized += OnMapInit;
+
+		Actions.onPlayerSpawned += onPlayerSpawn;
+		Instance = this;
+	}
+	public override void OnSceneWasUnloaded(int buildIndex, string sceneName)
+	{
+		_sceneIsLoaded = false;
+	}
+	public override void OnUpdate()
+	{
+
+		if (!_sceneIsLoaded)
+			return;
+
+		SetIndicatorState();
+
+		LogDiff($"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External Recording: {ExternalRecording}, FighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}");
+
+		if (isDebugMode.Value && DebugUiText != null)
 		{
-		}
-
-
-		public override void OnLateInitializeMelon()
-		{
-
-
-			//Actions.onMapInitialized += PlayerUIFound;
-
-			OBS.onRecordingPaused += onRecordPause;
-			OBS.onRecordingStopped += onRecordStop;
-			OBS.onRecordingStarted += onRecordStart;
-			OBS.onRecordingResumed += onRecordResume;
-
-			OBS.onConnect += onConnect;
-			OBS.onDisconnect += onDisconnect;
-			OBS.onReplayBufferSaved += onReplayBufferSaved;
-
-			RumbleModdingAPI.RMAPI.Actions.onMapInitialized += OnMapInit;
-
-			Actions.onPlayerSpawned += onPlayerSpawn;
-			Instance = this;
-		}
-		public override void OnSceneWasUnloaded(int buildIndex, string sceneName)
-		{
-			_sceneIsLoaded = false;
-		}
-		public override void OnUpdate()
-		{
-
-			if (!_sceneIsLoaded)
-				return;
-
-			SetIndicatorState();
-
-			LogDiff($"Record: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External Recording: {ExternalRecording}, FighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}");
-
-			if (isDebugMode.Value && DebugUiText != null)
+			try
 			{
-				try
-				{
-					DebugUiText.text = $"TempTimeDir: {TempFileDir}\nTimeFileName: {TimeFileName} \nRecord: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External: {ExternalRecording}, \nFighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}\nHold Coroutine: {!(_stopQueueCor is null)}";
-				}
-				catch (System.Exception ex)
-				{
-					Log(ex.Message, true);
-				}
+				DebugUiText.text = $"TempTimeDir: {TempFileDir}\nTimeFileName: {TimeFileName} \nRecord: {OBS.IsRecordingActive()}, Pause: {IsPaused}, External: {ExternalRecording}, \nFighterInMap: {(ActivePlayerInArena is null ? "-" : ActivePlayerInArena.Name)}, LastRecorded: {(LastRecordedPlayer is null ? "-" : LastRecordedPlayer.Name)}\nHold Coroutine: {!(_stopQueueCor is null)}";
 			}
-			if (MarkerInputDebounce.ElapsedMilliseconds > 1000)
+			catch (System.Exception ex)
 			{
-
-				CheckMarkerInputs();
-
-			}
-
-		}
-
-
-		public void CheckMarkerInputs()
-		{
-
-
-
-			if (AddMarkerOn.Value is MarkerPrefs.None or MarkerPrefs.OnReplayBufferSaved)
-			{
-				return;
-			}
-
-			bool leftPrimary = Calls.ControllerMap.LeftController.GetPrimary() > 0.5f;
-			bool rightPrimary = Calls.ControllerMap.RightController.GetPrimary() > 0.5f;
-			bool leftSecondary = Calls.ControllerMap.LeftController.GetSecondary() > 0.5f;
-			bool rightSecondary = Calls.ControllerMap.RightController.GetSecondary() > 0.5f;
-
-			if (AddMarkerOn.Value == MarkerPrefs.OnLeftCombo && leftPrimary && leftSecondary)
-			{
-				MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
-				MarkerInputDebounce.Restart();
-			}
-			else if (AddMarkerOn.Value == MarkerPrefs.OnRightCombo && rightPrimary && rightSecondary)
-			{
-				MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
-				MarkerInputDebounce.Restart();
-			}
-
-		}
-
-
-
-		/// <summary>
-		/// Called when map is fully initialized reducing the risk of null references.
-		/// </summary>
-		private void PlayerUIFound(string map)
-		{
-			ReadSettings();
-
-			//SceneName = map.ToLower().Trim();
-			ReadSettings();
-
-
-
-
-			//addButtonsToFriendsScreen();
-			if (SceneName == "gym")
-			{
-				_scrollBar = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
-				_selectedTag = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
-				TagFrame = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
-				RecentTags = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
-
-			}
-			if (SceneName == "park")
-			{
-				_scrollBar = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
-				_selectedTag = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
-				TagFrame = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
-				RecentTags = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
-			}
-
-			if (SceneName != "loader")
-			{
-
-				if (isFirstLoad)
-				{
-					DDOLParent = new GameObject("ObsAutoRecorder_DDOLParent");
-					GameObject.DontDestroyOnLoad(DDOLParent);
-					FirstLoad();
-				}
-				BuildPlayerIndicators();
-			}
-
-			if (SceneName == "gym" || SceneName == "park")
-			{
-				for (int i = 0; i < 4; i++)
-				{
-					_scrollBar.transform.GetChild(i).GetChild(0).GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
-					{
-						_previousList.Clear();
-						_previousList = _displayedFriendTags.Select(x => x.ToString()).ToList();
-						foreach (string entry in _previousList)
-						{
-							Log(entry, true);
-						}
-						if (_pollPageCor != null)
-						{
-
-							MelonCoroutines.Stop(_pollPageCor);
-							_pollPageCor = null;
-						}
-						_pollPageCor = MelonCoroutines.Start(PollPageTurnCoRoutine());
-					});
-				}
-
-				BuildTagHolders();
-
-				isFirstLoad = false;
-
-			}
-			//Solo recording start test
-			if (SceneName == "park")
-			{
-				//StartRecording(" Pre <#> <AEDF12> Invalid char test");
-			}
-
-
-			SetRecordingState();
-			_sceneIsLoaded = true;
-			LastSceneName = SceneName;
-		}
-
-
-
-		/// <summary>
-		/// Toggles the auto-record status for the selected tag. Adds or removes the friend from the auto-record list
-		/// based on their current status.
-		/// </summary>
-		/// <remarks>Only run on the selected tag in the settings screen</remarks>
-		/// <param name="selected">The friend whose auto-record status is to be toggled. Cannot be null. The friend's PlayFabID is used to identify
-		/// them in the auto-record list.</param>
-		private void ToggleAutoRecord(TagHolder selected)
-		{
-
-			if (IsInAutoRecordList(selected))
-			{
-				AutoRecordList.RemoveAll(x => x.Split(" - ")[0].Trim().ToLower() == selected.PlayFabID.Trim().ToLower());
-				selected.AutoRecordable = false;
-				Log($"Removed {selected.ToString()} from AutoRecord list", false);
-			}
-			else
-			{
-				AutoRecordList.Add($"{selected.PlayFabID} - {selected.PublicName}");
-				selected.AutoRecordable = true;
-				Log($"Added {selected.ToString()} to AutoRecord list", false);
-			}
-
-			//PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
-			UpdateAutoRecordFile();
-
-			foreach (TagHolder friend in _displayedFriendTags)
-			{
-				friend.AutoRecordable = IsInAutoRecordList(friend);
-			}
-
-		}
-
-
-
-		private IEnumerator DebounceCoRoutine(TagHolder holder)
-		{
-			holder.WasPressed = true;
-			yield return new WaitForSeconds(0.5f);
-			holder.WasPressed = false;
-			_debounceCor = null;
-		}
-
-		private IEnumerator PollPlayerTagsCoroutine()
-		{
-			_isPolling = true;
-			float startTime = Time.realtimeSinceStartup;
-			Log("Starting to poll for player tags...", true);
-
-
-			while (!IsFriendInfoLoaded())
-			{
-				yield return null;
-			}
-			UpdateDisplayedTags();
-			_selectedFriend.PlatformStatus.SetActive(false);
-
-
-			_isPolling = false;
-			_pollPageCor = null;
-		}
-		void UpdateDisplayedTags()
-		{
-			foreach (TagHolder info in _displayedFriendTags)
-			{
-				info.AutoRecordable = IsInAutoRecordList(info);
-				//Log(info.PublicName, true);
-			}
-			foreach (TagHolder info in _recentlyMetTags)
-			{
-				info.AutoRecordable = IsInAutoRecordList(info);
-
+				Log(ex.Message, true);
 			}
 		}
-		private IEnumerator PollPageTurnCoRoutine()
-		{
-			float start = Time.realtimeSinceStartup;
-
-
-			while (/*SameTagsAsLast() &&*/ Time.realtimeSinceStartup - start < 1.5f)
-			{
-				UpdateDisplayedTags();
-				yield return new WaitForSeconds(0.1f);
-				Log("\n", true);
-			}
-			_pollPageCor = null;
-		}
-
-		private bool SameTagsAsLast()
-		{
-			for (int i = 0; i < _previousList.Count; i++)
-			{
-				bool match = _previousList[i] == _displayedFriendTags[i].ToString();
-				if (match)
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-		/// <summary>
-		/// Scans the player tags collection and updates the displayed friend tags list.
-		/// </summary>
-		/// <remarks></remarks>
-		/// <returns>true if all player tags are found and processed successfully; otherwise, false.</returns>
-		bool IsFriendInfoLoaded()
+		if (MarkerInputDebounce.ElapsedMilliseconds > 1000)
 		{
 
-			return _displayedFriendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
-
-
-		}
-
-
-		private bool IsInAutoRecordList(TagHolder friend)
-		{
-			return IsInAutoRecordList(friend.ToString());
-		}
-
-		private bool IsInAutoRecordList(string playFabID)
-		{
-
-			var targets = AutoRecordList.Where(x => x.Split(" - ")[0].Trim().ToLower() == playFabID.Split(" - ")[0].Trim().ToLower()).ToList();
-
-			if (targets.Count > 1)
-			{
-				Log($"Warning: More than one entry found for {playFabID.Split(" - ")[0]} in AutoRecord list. {targets.Count}", false, 1);
-			}
-
-			/*foreach (string entry in targets)
-			{
-				Log($"Found target: {entry}", true);
-			}*/
-
-			bool result = targets.Count > 0;
-			return result;
-		}
-
-
-
-		/// <summary>
-		/// Logs a message to the console
-		/// </summary>
-		/// <param name="message"></param>
-		/// <param name="debugOnly"></param>
-		/// <param name="logLevel">0 = normal, 1 = warning, 2 = error</param>
-		public void Log(string message, bool debugOnly = false, int logLevel = 0)
-		{
-			if (debugOnly && !isDebugMode.Value)
-				return;
-
-			switch (logLevel)
-			{
-				case 1:
-					LoggerInstance.Warning("Warn: " + message);
-					break;
-				case 2:
-					LoggerInstance.Error("Error: " + message);
-					break;
-				default:
-					LoggerInstance.Msg(message);
-					break;
-			}
-		}
-
-		private void LogDiff(string message, int logLevel = 0)
-		{
-			if (message != lastLogDiff)
-			{
-				Log($"##LOGDIFF: {message}", true, logLevel);
-				lastLogDiff = message;
-			}
+			CheckForInputs();
 
 		}
-
-
 
 
 	}
+
+
+	public void CheckForInputs()
+	{
+
+
+
+		if (AddMarkerOn.Value is MarkerPrefs.None or MarkerPrefs.OnReplayBufferSaved)
+		{
+			return;
+		}
+
+		bool leftPrimary = Calls.ControllerMap.LeftController.GetPrimary() > 0.5f;
+		bool rightPrimary = Calls.ControllerMap.RightController.GetPrimary() > 0.5f;
+		bool leftSecondary = Calls.ControllerMap.LeftController.GetSecondary() > 0.5f;
+		bool rightSecondary = Calls.ControllerMap.RightController.GetSecondary() > 0.5f;
+
+		if (AddMarkerOn.Value == MarkerPrefs.OnLeftCombo && leftPrimary && leftSecondary)
+		{
+			MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
+			MarkerInputDebounce.Restart();
+		}
+		else if (AddMarkerOn.Value == MarkerPrefs.OnRightCombo && rightPrimary && rightSecondary)
+		{
+			MelonCoroutines.Start(AddChapterMarker("Clip - Controller"));
+			MarkerInputDebounce.Restart();
+		}
+
+
+	}
+
+
+
+	/// <summary>
+	/// Called when map is fully initialized reducing the risk of null references.
+	/// </summary>
+	private void PlayerUIFound(string map)
+	{
+		ReadSettings();
+
+		//SceneName = map.ToLower().Trim();
+		ReadSettings();
+
+
+
+
+		//addButtonsToFriendsScreen();
+		if (SceneName == "gym")
+		{
+			_scrollBar = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+			_selectedTag = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
+			TagFrame = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+			RecentTags = RumbleModdingAPI.RMAPI.GameObjects.Gym.INTERACTABLES.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
+
+		}
+		if (SceneName == "park")
+		{
+			_scrollBar = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.FriendScrollBar.GetGameObject();
+			_selectedTag = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.SettingsScreen.PlayerTags.PlayerTag201.GetGameObject();
+			TagFrame = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.FriendScreen.PlayerTags.GetGameObject();
+			RecentTags = RumbleModdingAPI.RMAPI.GameObjects.Park.INTERACTABLES.Telephone20REDUXspecialedition.RecentScreen.PlayerTags.GetGameObject();
+		}
+
+		if (SceneName != "loader")
+		{
+
+			if (isFirstLoad)
+			{
+				DDOLParent = new GameObject("ObsAutoRecorder_DDOLParent");
+				GameObject.DontDestroyOnLoad(DDOLParent);
+				FirstLoad();
+			}
+			BuildPlayerIndicators();
+		}
+
+		if (SceneName == "gym" || SceneName == "park")
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				_scrollBar.transform.GetChild(i).GetChild(0).GetComponent<InteractionButton>().onPressed.AddListener((System.Action)delegate
+				{
+					_previousList.Clear();
+					_previousList = _displayedFriendTags.Select(x => x.ToString()).ToList();
+					foreach (string entry in _previousList)
+					{
+						Log(entry, true);
+					}
+					if (_pollPageCor != null)
+					{
+
+						MelonCoroutines.Stop(_pollPageCor);
+						_pollPageCor = null;
+					}
+					_pollPageCor = MelonCoroutines.Start(PollPageTurnCoRoutine());
+				});
+			}
+
+			BuildTagHolders();
+
+			isFirstLoad = false;
+
+		}
+		//Solo recording start test
+		if (SceneName == "park")
+		{
+			//StartRecording(" Pre <#> <AEDF12> Invalid char test");
+		}
+
+
+		SetRecordingState();
+		_sceneIsLoaded = true;
+		LastSceneName = SceneName;
+	}
+
+
+
+	/// <summary>
+	/// Toggles the auto-record status for the selected tag. Adds or removes the friend from the auto-record list
+	/// based on their current status.
+	/// </summary>
+	/// <remarks>Only run on the selected tag in the settings screen</remarks>
+	/// <param name="selected">The friend whose auto-record status is to be toggled. Cannot be null. The friend's PlayFabID is used to identify
+	/// them in the auto-record list.</param>
+	private void ToggleAutoRecord(TagHolder selected)
+	{
+
+		if (IsInAutoRecordList(selected))
+		{
+			AutoRecordList.RemoveAll(x => x.Split(" - ")[0].Trim().ToLower() == selected.PlayFabID.Trim().ToLower());
+			selected.AutoRecordable = false;
+			Log($"Removed {selected.ToString()} from AutoRecord list", false);
+		}
+		else
+		{
+			AutoRecordList.Add($"{selected.PlayFabID} - {selected.PublicName}");
+			selected.AutoRecordable = true;
+			Log($"Added {selected.ToString()} to AutoRecord list", false);
+		}
+
+		//PlayersToRecord.Value = string.Join(SEPARATOR, AutoRecordList);
+		UpdateAutoRecordFile();
+
+		foreach (TagHolder friend in _displayedFriendTags)
+		{
+			friend.AutoRecordable = IsInAutoRecordList(friend);
+		}
+
+	}
+
+
+
+	private IEnumerator DebounceCoRoutine(TagHolder holder)
+	{
+		holder.WasPressed = true;
+		yield return new WaitForSeconds(0.5f);
+		holder.WasPressed = false;
+		_debounceCor = null;
+	}
+
+	private IEnumerator PollPlayerTagsCoroutine()
+	{
+		_isPolling = true;
+		float startTime = Time.realtimeSinceStartup;
+		Log("Starting to poll for player tags...", true);
+
+
+		while (!IsFriendInfoLoaded())
+		{
+			yield return null;
+		}
+		UpdateDisplayedTags();
+		_selectedFriend.PlatformStatus.SetActive(false);
+
+
+		_isPolling = false;
+		_pollPageCor = null;
+	}
+	void UpdateDisplayedTags()
+	{
+		foreach (TagHolder info in _displayedFriendTags)
+		{
+			info.AutoRecordable = IsInAutoRecordList(info);
+			//Log(info.PublicName, true);
+		}
+		foreach (TagHolder info in _recentlyMetTags)
+		{
+			info.AutoRecordable = IsInAutoRecordList(info);
+
+		}
+	}
+	private IEnumerator PollPageTurnCoRoutine()
+	{
+		float start = Time.realtimeSinceStartup;
+
+
+		while (/*SameTagsAsLast() &&*/ Time.realtimeSinceStartup - start < 1.5f)
+		{
+			UpdateDisplayedTags();
+			yield return new WaitForSeconds(0.1f);
+			Log("\n", true);
+		}
+		_pollPageCor = null;
+	}
+
+	private bool SameTagsAsLast()
+	{
+		for (int i = 0; i < _previousList.Count; i++)
+		{
+			bool match = _previousList[i] == _displayedFriendTags[i].ToString();
+			if (match)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	/// <summary>
+	/// Scans the player tags collection and updates the displayed friend tags list.
+	/// </summary>
+	/// <remarks></remarks>
+	/// <returns>true if all player tags are found and processed successfully; otherwise, false.</returns>
+	bool IsFriendInfoLoaded()
+	{
+
+		return _displayedFriendTags.TrueForAll(x => !(string.IsNullOrEmpty(x.PlayFabID)));
+
+	}
+
+
+	private bool IsInAutoRecordList(TagHolder friend)
+	{
+		return IsInAutoRecordList(friend.ToString());
+	}
+
+	private bool IsInAutoRecordList(string playFabID)
+	{
+
+		var targets = AutoRecordList.Where(x => x.Split(" - ")[0].Trim().ToLower() == playFabID.Split(" - ")[0].Trim().ToLower()).ToList();
+
+		if (targets.Count > 1)
+		{
+			Log($"Warning: More than one entry found for {playFabID.Split(" - ")[0]} in AutoRecord list. {targets.Count}", false, 1);
+		}
+
+		/*foreach (string entry in targets)
+		{
+			Log($"Found target: {entry}", true);
+		}*/
+
+		bool result = targets.Count > 0;
+		return result;
+	}
+
 }
