@@ -14,10 +14,12 @@ internal class Chord
 	internal List<Button> Buttons;
 	internal Chord(params Button[] buttons)
 	{
+		//Sort buttons by their assignment
 		Buttons = [.. buttons.OrderBy(x => x.Assignment).ToList()];
 
+		//Only check other inputs when the final button in the polling order is pressed
+		//This makes sure the other buttons have been registered as pressed for that frame already
 		Buttons[Buttons.Count - 1].ButtonDown += CheckButtons;
-
 	}
 
 	private void CheckButtons()
@@ -38,35 +40,3 @@ internal class Chord
 
 }
 
-internal class Button
-{
-	private static readonly Func<bool>[] ButtonPressGetters = new Func<bool>[]
-	{
-		() => Calls.ControllerMap.LeftController.GetPrimary() > 0.5f,
-		() => Calls.ControllerMap.RightController.GetPrimary() > 0.5f,
-		() => Calls.ControllerMap.LeftController.GetSecondary() > 0.5f,
-		() => Calls.ControllerMap.RightController.GetSecondary() > 0.5f,
-
-	};
-	internal Action ButtonDown;
-	internal Action ButtonUp;
-	internal ControllerButtons Assignment { get; private set; }
-	internal bool LastFrameWasPressed { get; private set; }
-	internal bool ThisFrameWasPressed { get; private set; }
-
-	internal Button(ControllerButtons assignment)
-	{
-		Assignment = assignment;
-	}
-
-	internal void UpdateCurrent()
-	{
-		ThisFrameWasPressed = ButtonPressGetters[((int)Assignment)]();
-
-		if (!LastFrameWasPressed && ThisFrameWasPressed)
-			ButtonDown?.Invoke();
-		if (LastFrameWasPressed && !ThisFrameWasPressed)
-			ButtonUp?.Invoke();
-		LastFrameWasPressed = ButtonPressGetters[((int)Assignment)]();
-	}
-}

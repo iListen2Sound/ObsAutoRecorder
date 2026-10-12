@@ -1,0 +1,53 @@
+using RumbleModdingAPI.RMAPI;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ObsAutoRecorder;
+
+internal class Button
+{
+    private static float pressThreshold = 0.8;
+    private static float releaseThreshold = 0.2;
+	private static readonly Func<bool>[] ButtonPressGetters = new Func<bool>[]
+	{
+		() => Calls.ControllerMap.LeftController.GetPrimary() > pressThreshold,
+		() => Calls.ControllerMap.RightController.GetPrimary() > pressThreshold,
+		() => Calls.ControllerMap.LeftController.GetSecondary() > pressThreshold,
+		() => Calls.ControllerMap.RightController.GetSecondary() > pressThreshold,
+
+	};
+    private static readonly Func<bool>[] ButtonReleaseGetters = new Func<bool>[]
+	{
+		() => Calls.ControllerMap.LeftController.GetPrimary() > releaseThreshold,
+		() => Calls.ControllerMap.RightController.GetPrimary() > releaseThreshold,
+		() => Calls.ControllerMap.LeftController.GetSecondary() > releaseThreshold,
+		() => Calls.ControllerMap.RightController.GetSecondary() > releaseThreshold,
+
+	};
+	internal Action ButtonDown;
+	internal Action ButtonUp;
+	internal ControllerButtons Assignment { get; private set; }
+	internal bool LastFrameWasPressed { get; private set; }
+	internal bool ThisFrameWasPressed { get; private set; }
+
+	internal Button(ControllerButtons assignment)
+	{
+		Assignment = assignment;
+	}
+
+	internal void UpdateCurrent()
+	{
+        //Compare button to the lighter threshold if button is already pressed. 
+        ThisFrameWasPressed = LastFramePressed ? ButtonReleaseGetters : ButtonPressGetters;
+
+		if (!LastFrameWasPressed && ThisFrameWasPressed)
+			ButtonDown?.Invoke();
+		if (LastFrameWasPressed && !ThisFrameWasPressed)
+			ButtonUp?.Invoke();
+
+		LastFrameWasPressed = ThisFrameWasPressed
+	}
+}

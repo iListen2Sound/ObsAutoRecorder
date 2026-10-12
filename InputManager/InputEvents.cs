@@ -9,6 +9,7 @@ namespace ObsAutoRecorder;
 
 internal static class InputEvents
 {
+	//Make always make sure to sort this according to assignment value
 	static Button[] Buttons { get; } =
 		{
 		new (ControllerButtons.LeftPrimary),
@@ -21,7 +22,7 @@ internal static class InputEvents
 		new(Buttons[((int)ControllerButtons.LeftPrimary)], Buttons[((int)ControllerButtons.LeftSecondary)]),
 		new(Buttons[((int)ControllerButtons.RightPrimary)], Buttons[((int)ControllerButtons.RightSecondary)]),
 		new(Buttons[((int)ControllerButtons.LeftPrimary)], Buttons[((int)ControllerButtons.RightPrimary)])
-		];
+		]; 
 	static InputEvents()
 	{
 		
@@ -32,6 +33,11 @@ internal static class InputEvents
 		{
 			button.UpdateCurrent();
 		}
+	}
+
+	internal void AssignInput(Action delegate, params ControllerButtons[] digitalInputs)
+	{
+		
 	}
 }
 internal enum ControllerButtons
