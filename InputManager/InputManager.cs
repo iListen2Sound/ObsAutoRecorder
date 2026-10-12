@@ -13,17 +13,27 @@ namespace ObsAutoRecorder;
 using static DebugHelper;
 internal static class InputOperationManager
 {
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="delay"></param>
+	/// <returns></returns>
 	internal static IEnumerator SaveReplayBuffer(float delay)
 	{
 		yield return new WaitForSeconds(delay);
 		OBS.SaveReplayBuffer();
 		yield break;
 	}
+	/// <summary>
+	/// 
+	/// </summary>
 	internal static void SaveTimeStamp()
 	{
 		ObsAutoRecorder.Instance.AddNowStamp();
 	}
-
+	/// <summary>
+	/// 
+	/// </summary>
 	static bool markersInCooldown = false;
 
 	/// <summary>

@@ -7,7 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ObsAutoRecorder;
-
+/// <summary>
+/// 
+/// </summary>
 internal class Chord : Invokable
 {
 	internal List<ControllerButtons> ChordComponents {get;}
@@ -16,7 +18,10 @@ internal class Chord : Invokable
 	internal Action OnDeactivate;*/
 	private List<Button> Buttons;
 	private bool wasEnteredLastCheck = false;
-
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="buttons"></param>
 	internal Chord(params Button[] buttons)
 	{
 		//Sort buttons by their assignment

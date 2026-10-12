@@ -1,14 +1,18 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MelonLoader;
+using UnityEngine;
 using static ObsAutoRecorder.DebugHelper;
 
 namespace ObsAutoRecorder.InputManager;
 
 internal abstract class Invokable
 {
+	bool isInCooldown = false;
 	protected List<Action> OnActivateSubscribers { get; set; } = [];
 	protected List<Action> OnDeactivateSubscribers { get; set; } = [];
 	/// <summary>
@@ -36,6 +40,14 @@ internal abstract class Invokable
 	/// <param name="isForExit"></param>
 	protected void InvokeSubscribers(bool isForExit = false)
 	{
+		if(isInCooldown)
+		{
+			Log("This input still in cooldown");
+			return;
+		}
+
+		MelonCoroutines.Start(Debouncer());
+
 		List<Action> currentList = isForExit ? OnDeactivateSubscribers : OnActivateSubscribers;
 		for (int i = currentList.Count - 1; i >= 0; i--)
 		{
@@ -60,6 +72,17 @@ internal abstract class Invokable
 					$"{ex.ToString()}");
 			}
 		}
+	}
+
+	internal IEnumerator Debouncer()
+	{
+		if(isInCooldown)
+			yield break;
+
+		isInCooldown = true;
+
+		yield return new WaitForSeconds(0.25f);
+		isInCooldown = false;
 	}
 
 }
