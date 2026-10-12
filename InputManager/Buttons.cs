@@ -1,3 +1,4 @@
+using ObsAutoRecorder.InputManager;
 using RumbleModdingAPI.RMAPI;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ObsAutoRecorder;
 
-internal class Button
+internal class Button : Invokable
 {
     private static float pressThreshold = 0.8f;
     private static float releaseThreshold = 0.2f;
@@ -27,8 +28,8 @@ internal class Button
 		() => Calls.ControllerMap.RightController.GetSecondary() > releaseThreshold,
 
 	};
-	internal Action ButtonDown;
-	internal Action ButtonUp;
+/*	internal Action OnActivate;
+	internal Action OnDeactivate;*/
 	internal ControllerButtons Assignment { get; private set; }
 	internal bool LastFrameWasPressed { get; private set; }
 	internal bool ThisFrameWasPressed { get; private set; }
@@ -38,15 +39,18 @@ internal class Button
 		Assignment = assignment;
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
 	internal void UpdateCurrent()
 	{
         //Compare button to the lighter threshold if button is already pressed. 
         ThisFrameWasPressed = LastFrameWasPressed ? ButtonReleaseGetters[((int)Assignment)]() : ButtonPressGetters[((int)Assignment)]();
 
 		if (!LastFrameWasPressed && ThisFrameWasPressed)
-			ButtonDown?.Invoke();
+			InvokeSubscribers();
 		if (LastFrameWasPressed && !ThisFrameWasPressed)
-			ButtonUp?.Invoke();
+			InvokeSubscribers();
 
 		LastFrameWasPressed = ThisFrameWasPressed;
 	}
