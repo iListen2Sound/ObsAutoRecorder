@@ -22,10 +22,10 @@ internal static class InputEvents
 		new(Buttons[((int)ControllerButtons.LeftPrimary)], Buttons[((int)ControllerButtons.LeftSecondary)]),
 		new(Buttons[((int)ControllerButtons.RightPrimary)], Buttons[((int)ControllerButtons.RightSecondary)]),
 		new(Buttons[((int)ControllerButtons.LeftPrimary)], Buttons[((int)ControllerButtons.RightPrimary)])
-		]; 
+		];
 	static InputEvents()
 	{
-		
+
 	}
 	internal static void PollButtons()
 	{
@@ -35,10 +35,11 @@ internal static class InputEvents
 		}
 	}
 
-	internal void AssignInput(Action delegate, params ControllerButtons[] digitalInputs)
+	internal static void AssignInput(Action method, params ControllerButtons[] digitalInputs)
 	{
-		
+
 	}
+
 }
 internal enum ControllerButtons
 {

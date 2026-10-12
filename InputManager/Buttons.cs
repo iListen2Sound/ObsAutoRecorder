@@ -9,8 +9,8 @@ namespace ObsAutoRecorder;
 
 internal class Button
 {
-    private static float pressThreshold = 0.8;
-    private static float releaseThreshold = 0.2;
+    private static float pressThreshold = 0.8f;
+    private static float releaseThreshold = 0.2f;
 	private static readonly Func<bool>[] ButtonPressGetters = new Func<bool>[]
 	{
 		() => Calls.ControllerMap.LeftController.GetPrimary() > pressThreshold,
@@ -41,13 +41,13 @@ internal class Button
 	internal void UpdateCurrent()
 	{
         //Compare button to the lighter threshold if button is already pressed. 
-        ThisFrameWasPressed = LastFramePressed ? ButtonReleaseGetters : ButtonPressGetters;
+        ThisFrameWasPressed = LastFrameWasPressed ? ButtonReleaseGetters[((int)Assignment)]() : ButtonPressGetters[((int)Assignment)]();
 
 		if (!LastFrameWasPressed && ThisFrameWasPressed)
 			ButtonDown?.Invoke();
 		if (LastFrameWasPressed && !ThisFrameWasPressed)
 			ButtonUp?.Invoke();
 
-		LastFrameWasPressed = ThisFrameWasPressed
+		LastFrameWasPressed = ThisFrameWasPressed;
 	}
 }
