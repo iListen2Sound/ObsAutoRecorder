@@ -29,12 +29,13 @@ internal class Chord : Invokable
 
 		//Only check other inputs when the final button in the polling order is pressed
 		//This makes sure the other buttons have been registered as pressed for that frame already
-		Buttons[Buttons.Count - 1].RegisterNewSubscriber(CheckButtons);
+		//Buttons[Buttons.Count - 1].RegisterNewSubscriber(CheckButtons);
 		ChordComponents = Buttons.Select(b => b.Assignment).ToList();
 
 		foreach (Button b in Buttons)
 		{
-			b.RegisterNewSubscriber(CheckRelease);
+			b.RegisterNewSubscriber(CheckButtons);
+			b.RegisterNewSubscriber(CheckRelease, true);
 		}
 	}
 

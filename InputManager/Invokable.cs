@@ -19,14 +19,18 @@ internal abstract class Invokable
 	/// 
 	/// </summary>
 	/// <param name="subscriber"></param>
-	internal void RegisterNewSubscriber(Action subscriber)
+	internal void RegisterNewSubscriber(Action subscriber, bool isForExit = false)
 	{
-		OnActivateSubscribers.Add(subscriber);
+		if(isForRelease)
+			OnDeactivateSubscribers.Add(subscriber);
+		else
+			OnActivateSubscribers.Add(subscriber);
 	}
 	/// <summary>
 	/// 
 	/// </summary>
 	/// <param name="subscriber"></param>
+	/// <remarks>TODO: Distinguish between unsubscribing from exit list or enter list</remarks>
 	internal void UnRegisterSubscriber(Action subscriber)
 	{
 		bool found = OnActivateSubscribers.Remove(subscriber);
