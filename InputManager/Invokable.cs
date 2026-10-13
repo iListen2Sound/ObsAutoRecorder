@@ -19,12 +19,12 @@ internal abstract class Invokable
 	/// 
 	/// </summary>
 	/// <param name="subscriber"></param>
-	internal void RegisterNewSubscriber(Action subscriber, bool isForExit = false)
+	internal void RegisterNewSubscriber(Action subscriber, bool isForEnter = true)
 	{
-		if(isForRelease)
-			OnDeactivateSubscribers.Add(subscriber);
-		else
+		if(isForEnter)
 			OnActivateSubscribers.Add(subscriber);
+		else
+			OnDeactivateSubscribers.Add(subscriber);
 	}
 	/// <summary>
 	/// 
@@ -41,8 +41,8 @@ internal abstract class Invokable
 	/// <summary>
 	/// 
 	/// </summary>
-	/// <param name="isForExit"></param>
-	protected void InvokeSubscribers(bool isForExit = false)
+	/// <param name="isForEnter"></param>
+	protected void InvokeSubscribers(bool isForEnter = true)
 	{
 		if(isInCooldown)
 		{
@@ -52,7 +52,7 @@ internal abstract class Invokable
 
 		MelonCoroutines.Start(Debouncer());
 
-		List<Action> currentList = isForExit ? OnDeactivateSubscribers : OnActivateSubscribers;
+		List<Action> currentList = isForEnter ? OnActivateSubscribers : OnDeactivateSubscribers;
 		for (int i = currentList.Count - 1; i >= 0; i--)
 		{
 			Action subscriber = currentList[i];

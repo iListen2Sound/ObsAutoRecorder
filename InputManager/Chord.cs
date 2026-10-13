@@ -35,7 +35,7 @@ internal class Chord : Invokable
 		foreach (Button b in Buttons)
 		{
 			b.RegisterNewSubscriber(CheckButtons);
-			b.RegisterNewSubscriber(CheckRelease, true);
+			b.RegisterNewSubscriber(CheckRelease, false);
 		}
 	}
 
