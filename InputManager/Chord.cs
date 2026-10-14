@@ -65,7 +65,7 @@ internal class Chord : Invokable
 	{
 		if (!wasEnteredLastCheck)
 			return;
-		InvokeSubscribers(true);
+		InvokeSubscribers(false);
 		wasEnteredLastCheck = false;
 	}
 }
