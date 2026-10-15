@@ -1,10 +1,12 @@
-﻿using ObsAutoRecorder.InputManager;
+﻿using Il2CppPlayFab.Internal;
+using ObsAutoRecorder.InputManager;
 using RumbleModdingAPI.RMAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static ObsAutoRecorder.DebugHelper;
 
 namespace ObsAutoRecorder;
 /// <summary>
@@ -12,10 +14,14 @@ namespace ObsAutoRecorder;
 /// </summary>
 internal class Chord : Invokable
 {
-	internal List<ControllerButtons> ChordComponents {get;}
+	internal List<ControllerButtons> ChordComponents { get; }
+	public override string ToString()
+	{
+		return string.Join(", ", ChordComponents);
+	}
 
-/*	internal Action OnActivate;
-	internal Action OnDeactivate;*/
+	/*	internal Action OnActivate;
+		internal Action OnDeactivate;*/
 	private List<Button> Buttons;
 	private bool wasEnteredLastCheck = false;
 	/// <summary>
@@ -46,17 +52,18 @@ internal class Chord : Invokable
 	{
 
 		bool allPressed = true;
-		foreach(Button b in Buttons)
+		foreach (Button b in Buttons)
 		{
-			if(!b.ThisFrameWasPressed)
+			if (!b.ThisFrameWasPressed)
 			{
 				allPressed = false;
 				break;
 			}
 		}
-		if (allPressed)	
+		if (allPressed)
 		{
-			InvokeSubscribers();		
+			InvokeSubscribers();
+			Log($"Chord Enter: {this.ToString()}");
 			wasEnteredLastCheck = allPressed;
 		}
 	}
@@ -67,5 +74,6 @@ internal class Chord : Invokable
 			return;
 		InvokeSubscribers(false);
 		wasEnteredLastCheck = false;
+		Log($"Chord Exit: {this.ToString()}");
 	}
 }
