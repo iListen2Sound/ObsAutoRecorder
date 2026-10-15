@@ -98,7 +98,7 @@ public partial class ObsAutoRecorder
 		MainIconPosition = IndicatorSettings.CreateEntry("Main Icon Position", 0, null, "Position of OBS Icon along healthbar. Left to right from 0 to 100", false, false, new SliderDescriptor { DecimalPlaces = 0, Max = 100, Min = 0 });
 		ReplayIconOffset = IndicatorSettings.CreateEntry("Replay Icon Offset", 5f, null, "Offset of Replay Buffer Icon from main OBS Icon", false, false, new SliderDescriptor { DecimalPlaces = 2, Max = 100, Min = -100 });
 
-
+		AssignChord(AddMarkerOn.Value, AddMarkerOn.Value);
 		
 
 		//easter egg
@@ -113,6 +113,9 @@ public partial class ObsAutoRecorder
 			Log($"Error deprecating old settings: {ex.Message}", true, 1);
 
 		}
+
+		AddMarkerOn.OnEntryValueChanged.Subscribe(AssignChord);
+
 	}
 
 	internal enum MarkerPrefs
@@ -171,5 +174,22 @@ public partial class ObsAutoRecorder
 		}
 		RecordingSettings.DeleteEntry(AddChapterMarkers.Identifier);
 		RecordingSettings.SaveToFile();
+	}
+	
+	private void AssignChord(MarkerPrefs old, MarkerPrefs newPref)
+	{
+
+		switch (newPref)
+		{
+			case MarkerPrefs.OnLeftCombo:
+				InputEvents.RegisterForChord(AddNowStamp, "XY");
+				break;
+			case MarkerPrefs.OnRightCombo:
+				InputEvents.RegisterForChord(AddNowStamp, "AB");
+				break;
+			default:
+				InputEvents.RemoveFromChord(AddNowStamp, "ALL");
+				break;
+		}
 	}
 }

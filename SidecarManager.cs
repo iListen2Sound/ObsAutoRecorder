@@ -31,6 +31,7 @@ public partial class ObsAutoRecorder : MelonMod
 
 	internal void AddNowStamp()
 	{
+		Log("AddNowStampCalled");
 		//TimeFileName = LatestOutputPath;
 		if(!TimeStampFile.Value)
 			return;

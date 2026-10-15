@@ -35,8 +35,11 @@ internal abstract class Invokable
 	{
 		bool found = OnActivateSubscribers.Remove(subscriber);
 		if (!found)
-			Warning("Tried to remove action but it doesn't exist in this delegate");
+			Warning("Tried to remove action from OnActivate but it doesn't exist in this delegate");
 
+		found = OnDeactivateSubscribers.Remove(subscriber);
+		if (!found)
+			Warning("Tried to remove action onDeactivate but it doesn't exist in this delegate");
 	}
 	/// <summary>
 	/// 

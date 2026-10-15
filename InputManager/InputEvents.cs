@@ -48,6 +48,37 @@ internal static class InputEvents
 
 	}
 
+
+	internal static void RegisterForChord(Action method, string chordComponents)
+	{
+		RemoveFromChord(method, "ALL");
+		if (Combos.TryGetValue(chordComponents, out Chord value))
+		{
+			value.RegisterNewSubscriber(method);
+		}
+	}
+	internal static void RemoveFromChord(Action method, string chordComponents)
+	{
+		if(chordComponents == "ALL")
+		{
+			foreach (Chord c in Chords)
+			{
+				c.UnRegisterSubscriber(method);
+			}
+			return;
+		}
+
+		
+
+
+		if (Combos.TryGetValue(chordComponents, out Chord value))
+		{
+			
+			value.UnRegisterSubscriber(method);
+		}
+	}
+
+
 }
 internal enum ControllerButtons
 {
