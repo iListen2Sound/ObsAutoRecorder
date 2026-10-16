@@ -3,63 +3,37 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<LangVersion>latest</LangVersion>
+		<Platforms>AnyCPU;x64</Platforms>
+		<PlatformTarget>x64</PlatformTarget>
+
+		<!--Add the rumble install path to your computer's environment variables. -->
+		<RumblePath>$(Rumble)</RumblePath>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<DebugType>embedded</DebugType>
-		<RumblePath>G:\SteamLibrary\steamapps\common\RUMBLE</RumblePath>
-	</PropertyGroup>
-
 	<ItemGroup>
-		<None Remove="Assets\obsasset" />
+		<!-- Melonloader/il2cpp stuff -->
+		<RumbleGameAssemblies Include="$(RumblePath)\MelonLoader\net6\**\*.dll" />
+		<RumbleGameAssemblies Include="$(RumblePath)\MelonLoader\net35\**\*.dll" />
+		<RumbleGameAssemblies Include="$(RumblePath)\MelonLoader\Il2CppAssemblies\**\*.dll" />
+
+		<!-- Expand Wildcards -->
+		<Reference Include="@(RumbleGameAssemblies)" Private="false" />
+
+		<Reference Include="$(RumblePath)\Mods\OBS_Control_API.dll"/>
+		<Reference Include="$(RumblePath)\Mods\RumbleModdingAPI.dll"/>
+		<Reference Include="$(RumblePath)\Mods\UIFramework.dll"/>
 	</ItemGroup>
 
-	<ItemGroup>
-		<EmbeddedResource Include="Assets\obsasset" />
-		<EmbeddedResource Include="Assets\obsasset - Working pre minimal mesh" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="LavaGang.MelonLoader" Version="0.7.1" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="G:\SteamLibrary\steamapps\common\RUMBLE\MelonLoader\net6\**\*.dll" Private="false" />
-		<Reference Include="G:\SteamLibrary\steamapps\common\RUMBLE\MelonLoader\net35\**\*.dll" Private="false" />
-		<Reference Include="G:\SteamLibrary\steamapps\common\RUMBLE\MelonLoader\Il2CppAssemblies\**\*.dll" Private="false" />
-		<Reference Include="OBS_Control_API">
-			<HintPath>G:\SteamLibrary\steamapps\common\RUMBLE\Mods\OBS_Control_API.dll</HintPath>
-		</Reference>
-		<Reference Include="RumbleModdingAPI">
-			<HintPath>G:\SteamLibrary\steamapps\common\RUMBLE\Mods\RumbleModdingAPI.dll</HintPath>
-		</Reference>
-		<Reference Include="OBS_Control_API">
-			<HintPath>G:\SteamLibrary\steamapps\common\RUMBLE\Mods\UIFramework.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="_Misc\ThunderstorePackage\Mods\" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Include=".ObsAutoRecorder\AutoRecordList.txt" />
-	  <None Include=".ObsAutoRecorder\config - Copy.cfg" />
-	  <None Include=".ObsAutoRecorder\config.cfg" />
-	  <None Include=".ObsAutoRecorder\started with duplicate replay indicator 26-3-6_17-12-14.log" />
-	</ItemGroup>
-
+	<!--Kill Rumble before building-->
 	<Target Name="PreBuild" AfterTargets="PreBuildEvent">
 		<Exec Command="taskkill /f /t /im RUMBLE.exe 2&gt;NUL | echo killed rumble" />
 	</Target>
+
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		
-	</Target>
-	
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<!--Copy to mods folder-->
+		<!-- Copy dll to Rumble Mods directory -->
 		<Exec Command="COPY &quot;$(TargetPath)&quot; &quot;$(RumblePath)\Mods&quot;" />
-		<!--Copy to thunderstore package-->
+		
+		<!-- Copy to Thunderstore package -->
 		<Exec Command="COPY &quot;$(TargetPath)&quot; &quot;$(ProjectDir)_Misc\ThunderstorePackage\Mods&quot;" />
 		<Exec Command="COPY &quot;$(ProjectDir)README.md&quot; &quot;$(ProjectDir)_Misc\ThunderstorePackage\&quot;" />
 	</Target>
