@@ -34,7 +34,7 @@ public partial class ObsAutoRecorder
 	private MelonPreferences_Entry<int> RecordByBPThreshold;
 	private MelonPreferences_Entry<bool> PauseAfterMatch;
 	private MelonPreferences_Entry<bool> TimeStampFile;
-	private MelonPreferences_Entry<int> TimestampOffset;
+	internal MelonPreferences_Entry<int> TimestampOffset;
 	private MelonPreferences_Entry<string> TimestampFormat;
 	private MelonPreferences_Entry<string> TimecodeFormat;
 

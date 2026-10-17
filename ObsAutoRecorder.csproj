@@ -19,14 +19,14 @@
 		<!-- Expand Wildcards -->
 		<Reference Include="@(RumbleGameAssemblies)" Private="false" />
 
-		<Reference Include="$(RumblePath)\Mods\OBS_Control_API.dll"/>
-		<Reference Include="$(RumblePath)\Mods\RumbleModdingAPI.dll"/>
-		<Reference Include="$(RumblePath)\Mods\UIFramework.dll"/>
+		<Reference Include="$(RumblePath)\Mods\OBS_Control_API.dll" />
+		<Reference Include="$(RumblePath)\Mods\RumbleModdingAPI.dll" />
+		<Reference Include="$(RumblePath)\Mods\UIFramework.dll" />
 	</ItemGroup>
 
 	<!--Kill Rumble before building-->
 	<Target Name="PreBuild" AfterTargets="PreBuildEvent">
-		<Exec Command="taskkill /f /t /im RUMBLE.exe 2&gt;NUL | echo killed rumble" />
+		  <Exec Command="taskkill /f /t /im RUMBLE.exe 2&gt;NUL &amp;&amp; echo Killed rumble || echo Rumble was not running" IgnoreExitCode="true"/>
 	</Target>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
