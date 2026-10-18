@@ -13,17 +13,18 @@ internal static class TimesCSV
 	internal static int PreOffset => ObsAutoRecorder.Instance?.TimestampOffset ?? 0;
 	internal static int PostOffset => 0;
 	internal static string RowDefinition => 
-	"Marker," +
+	"StreamTime," +
 	"Title," + 
 	"PreOffset," +
 	"PostOffset";
+	
 	
 	// internal static TimeSpan Marker { get; set; }
 	// internal static int PreOffset => ObsAutoRecorder.Instance?.TimestampOffset ?? 0;
 	// internal static TimeSpan PostOffset { get; set; }
 	// internal static string Title { get; set; }
 
-	internal static WriteRow(TimeSpan marker, string title)
+	internal static WriteRow(string title, TimeSpan StreamTime = null, TimeSpan RecordTime = null)
 	{
 		
 		if(!File.Exists(FilePath))
@@ -31,8 +32,8 @@ internal static class TimesCSV
 			File.AppendAllText(FilePath, RowDefinition);
 		}
 		File.AppendAllText(FilePath, 
-			$"{marker},"+
-			$"{title},"+
+			$"{StreamTime?.ToString("c", CultureInfo.InvariantCulture) ?? "NULL"},"+
+			$"{CsvSanitize(title)},"+
 			$"{PreOffset},"+
 			$"{PostOffset}";
 		)
