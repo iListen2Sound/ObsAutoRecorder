@@ -52,7 +52,7 @@ public partial class ObsAutoRecorder : MelonMod
 
 	//Hold button location 
 	//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
-	private const string USER_DATA = Path.Combine(MelonEnvironment.UserDataDirectory,"ObsAutoRecorder");
+	private string USER_DATA => Path.Combine(MelonEnvironment.UserDataDirectory,"ObsAutoRecorder");
 	private const string RECORD_LIST = "AutoRecordList.txt";
 	private const string SEPARATOR = "\n";
 	public static ObsAutoRecorder Instance { get; private set; }

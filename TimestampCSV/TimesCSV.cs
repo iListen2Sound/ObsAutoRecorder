@@ -18,7 +18,8 @@ internal static class TimesCSV
 	"StreamTime," +
 	"Title," + 
 	"PreOffset," +
-	"PostOffset";
+	"PostOffset," + 
+	"Date";
 	
 	
 	// internal static TimeSpan Marker { get; set; }
@@ -37,7 +38,8 @@ internal static class TimesCSV
 			$"{(StreamTime == default ? "NULL" : StreamTime.ToString("c", CultureInfo.InvariantCulture))}," +
 			$"{CsvSanitize(title)}," +
 			$"{PreOffset}," +
-			$"{PostOffset}"
+			$"{PostOffset}," +
+			$"{DateTime.Now.ToString("c", CultureInfo.InvariantCulture)}"
 		);
 
 	}
