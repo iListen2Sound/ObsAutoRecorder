@@ -27,6 +27,7 @@ using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
 using UIFramework;
 using System.Diagnostics;
+using MelonLoader.Utils;
 
 
 [assembly: MelonInfo(typeof(ObsAutoRecorder.ObsAutoRecorder), ObsAutoRecorder.BuildInfo.Name, ObsAutoRecorder.BuildInfo.Version, ObsAutoRecorder.BuildInfo.Author)]
@@ -51,7 +52,7 @@ public partial class ObsAutoRecorder : MelonMod
 
 	//Hold button location 
 	//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
-	private const string USER_DATA = "UserData/ObsAutoRecorder/";
+	private const string USER_DATA = Path.Combine(MelonEnvironment.UserDataDirectory,"ObsAutoRecorder");
 	private const string RECORD_LIST = "AutoRecordList.txt";
 	private const string SEPARATOR = "\n";
 	public static ObsAutoRecorder Instance { get; private set; }

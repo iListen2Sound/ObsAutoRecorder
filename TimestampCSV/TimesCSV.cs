@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using static ObsAutoRecorder.DebugHelper;
+using System.Globalization;
 namespace ObsAutoRecorder.TimestampCSV;
 //{time}
 internal static class TimesCSV
 {
 
 	internal static string FilePath {get; set;}
-	internal static int PreOffset => ObsAutoRecorder.Instance?.TimestampOffset ?? 0;
+	internal static int PreOffset => ObsAutoRecorder.Instance?.TimestampOffset?.Value ?? 0;
 	internal static int PostOffset => 0;
 	internal static string RowDefinition => 
 	"StreamTime," +
@@ -24,19 +26,19 @@ internal static class TimesCSV
 	// internal static TimeSpan PostOffset { get; set; }
 	// internal static string Title { get; set; }
 
-	internal static WriteRow(string title, TimeSpan StreamTime = null, TimeSpan RecordTime = null)
+	internal static void WriteRow(string title, TimeSpan StreamTime = default, TimeSpan RecordTime = default)
 	{
 		
 		if(!File.Exists(FilePath))
 		{
 			File.AppendAllText(FilePath, RowDefinition);
 		}
-		File.AppendAllText(FilePath, 
-			$"{StreamTime?.ToString("c", CultureInfo.InvariantCulture) ?? "NULL"},"+
-			$"{CsvSanitize(title)},"+
-			$"{PreOffset},"+
-			$"{PostOffset}";
-		)
+		File.AppendAllText(FilePath,
+			$"{(StreamTime == default ? "NULL" : StreamTime.ToString("c", CultureInfo.InvariantCulture))}," +
+			$"{CsvSanitize(title)}," +
+			$"{PreOffset}," +
+			$"{PostOffset}"
+		);
 
 	}
 
