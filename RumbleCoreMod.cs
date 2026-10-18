@@ -52,7 +52,7 @@ public partial class ObsAutoRecorder : MelonMod
 
 	//Hold button location 
 	//--------------LOGIC--------------/Heinhouser products/Telephone 2.0 REDUX special edition/Settings Screen/InteractionButton (1)/
-	private string USER_DATA => Path.Combine(MelonEnvironment.UserDataDirectory,"ObsAutoRecorder");
+	internal static string USER_DATA => Path.Combine(MelonEnvironment.UserDataDirectory,"ObsAutoRecorder");
 	private const string RECORD_LIST = "AutoRecordList.txt";
 	private const string SEPARATOR = "\n";
 	public static ObsAutoRecorder Instance { get; private set; }
@@ -211,6 +211,8 @@ public partial class ObsAutoRecorder : MelonMod
 
 		Actions.onPlayerSpawned += onPlayerSpawn;
 		Instance = this;
+		//InputEvents.DebugTestKeyDown += TimestampCSV.TimesCSV.CreateStreamStamp;
+		TimestampCSV.TimesCSV.Initialize();
 	}
 	public override void OnSceneWasUnloaded(int buildIndex, string sceneName)
 	{
@@ -289,6 +291,10 @@ public partial class ObsAutoRecorder : MelonMod
 	/// </summary>
 	private void PlayerUIFound(string map)
 	{
+		SetRecordingState();
+		_sceneIsLoaded = true;
+		LastSceneName = SceneName;
+
 		ReadSettings();
 
 		//SceneName = map.ToLower().Trim();
@@ -360,9 +366,7 @@ public partial class ObsAutoRecorder : MelonMod
 		}
 
 
-		SetRecordingState();
-		_sceneIsLoaded = true;
-		LastSceneName = SceneName;
+		
 	}
 
 

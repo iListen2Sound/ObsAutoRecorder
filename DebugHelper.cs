@@ -9,7 +9,7 @@ namespace ObsAutoRecorder;
 
 internal static class DebugHelper
 {
-	static bool DebugMode => ObsAutoRecorder.Instance?.isDebugMode?.Value ?? true;
+	internal static bool DebugMode => ObsAutoRecorder.Instance?.isDebugMode?.Value ?? true;
 	private static string lastDiffLogMessage = string.Empty;
 	internal static void LogDiff(string message, bool debugOnly = true, int logLevel = 0)
 	{

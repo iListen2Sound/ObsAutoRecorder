@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RumbleModdingAPI.RMAPI;
+using UnityEngine;
+using UnityEngine.UI;
 using static ObsAutoRecorder.DebugHelper;
 
 namespace ObsAutoRecorder;
@@ -41,6 +43,7 @@ internal static class InputEvents
 		{
 			button.UpdateCurrent();
 		}
+		PollTestKey();
 	}
 
 	internal static void AssignInput(Action method, params ControllerButtons[] digitalInputs)
@@ -69,7 +72,7 @@ internal static class InputEvents
 		}
 
 		
-
+			
 
 		if (Combos.TryGetValue(chordComponents, out Chord value))
 		{
@@ -78,7 +81,22 @@ internal static class InputEvents
 		}
 	}
 
+	internal static Action DebugTestKeyDown;
+	static bool testKeyPressedLastFrame;
+	static void PollTestKey()
+	{
+		if (!DebugHelper.DebugMode)
+			return;
+		//Log("Polling Test Key");
+		bool testPress = Input.GetKeyDown(KeyCode.Semicolon);
 
+		if(testPress && !testKeyPressedLastFrame)
+		{
+			DebugTestKeyDown?.Invoke();
+			Log("TestKeyPressed");
+		}
+
+	}
 }
 internal enum ControllerButtons
 {
