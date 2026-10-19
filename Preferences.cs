@@ -115,7 +115,8 @@ public partial class ObsAutoRecorder
 		RecordingTimesFile = OarClipping.CreateEntry("IncludeRecording", false, "Make timestamp files for recordings", "This should be unnecessary as recordings can use markers that get embedded into the output video");
 		TimeStampBinding = OarClipping.CreateEntry("TimestampBinding", MarkerPrefs.OnLeftCombo, "Controller Bindings for Recording a timestamp/marker");
 		TimeStampFileLocation = OarClipping.CreateEntry("FileLocation", Path.Combine(USER_DATA, "TimestampFileLocation", "File location for timestamp file"), false, false, new TextInputBehaviorDescriptor() {IsReadOnly = true});
-		
+		PreClipOffset = OarClipping.CreateEntry("OffsetPre", 45, "Offset to include in extraction before the timestamp");
+		PostClipOffset = OarClipping.CreateEntry("OffsetPost", 5, "Offset after timestamp to include in extraction");
 
 		//easter egg
 		miscoar = MelonPreferences.CreateCategory("Misc ObsAutoRecorder");
