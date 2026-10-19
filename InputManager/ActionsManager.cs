@@ -11,7 +11,7 @@ using ObsAutoRecorder;
 namespace ObsAutoRecorder;
 
 using static DebugHelper;
-internal static class InputOperationManager
+internal static class ActionsManager
 {
 	/// <summary>
 	/// 
