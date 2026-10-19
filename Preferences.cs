@@ -13,47 +13,56 @@ using static DebugHelper;
 
 public partial class ObsAutoRecorder
 {
-	private const string CONFIG_FILE = "config.cfg";
+	internal const string CONFIG_FILE = "config.cfg";
 
-	private MelonPreferences_Category OBSAutoRecorderSettings;
+	internal MelonPreferences_Category OBSAutoRecorderSettings;
 	internal MelonPreferences_Entry<bool> isDebugMode;
 
-	private MelonPreferences_Category AutoRenameSettings;
-	//private MelonPreferences_Entry<string> PlayersToRecord;
-	private MelonPreferences_Entry<string> AutoRenameString;
-	private MelonPreferences_Entry<string> ReplayAutoRenameString;
-	private MelonPreferences_Entry<bool> DoAutoRename;
-	private MelonPreferences_Entry<string> DateFormat;
-	private MelonPreferences_Entry<string> TimeFormat;
+	internal MelonPreferences_Category AutoRenameSettings;
+	//internal MelonPreferences_Entry<string> PlayersToRecord;
+	internal MelonPreferences_Entry<string> AutoRenameString;
+	internal MelonPreferences_Entry<string> ReplayAutoRenameString;
+	internal MelonPreferences_Entry<bool> DoAutoRename;
+	internal MelonPreferences_Entry<string> DateFormat;
+	internal MelonPreferences_Entry<string> TimeFormat;
 
 
-	private MelonPreferences_Category RecordingSettings;
+	internal MelonPreferences_Category RecordingSettings;
 
-	private MelonPreferences_Entry<MarkerPrefs> AddMarkerOn;
-	private MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
-	private MelonPreferences_Entry<int> RecordByBPThreshold;
-	private MelonPreferences_Entry<bool> PauseAfterMatch;
-	private MelonPreferences_Entry<bool> TimeStampFile;
+	internal MelonPreferences_Entry<MarkerPrefs> AddMarkerOn;
+	internal MelonPreferences_Entry<int> RecordingPauseHoldTimeout;
+	internal MelonPreferences_Entry<int> RecordByBPThreshold;
+	internal MelonPreferences_Entry<bool> PauseAfterMatch;
+	internal MelonPreferences_Entry<bool> TimeStampFile;
 	internal MelonPreferences_Entry<int> TimestampOffset;
-	private MelonPreferences_Entry<string> TimestampFormat;
-	private MelonPreferences_Entry<string> TimecodeFormat;
+	internal MelonPreferences_Entry<string> TimestampFormat;
+	internal MelonPreferences_Entry<string> TimecodeFormat;
+
+	internal MelonPreferences_Entry<string> MarkerExclusive;
 
 
-	private MelonPreferences_Category IndicatorSettings;
-	private MelonPreferences_Entry<bool> PreferMinimalIcon;
-	private MelonPreferences_Entry<bool> ClippingIconVisibleByDefault;
-	private MelonPreferences_Entry<bool> RockCamVisibility;
-	private MelonPreferences_Entry<int> MainIconPosition;
-	private MelonPreferences_Entry<float> ReplayIconOffset;
+	internal MelonPreferences_Category IndicatorSettings;
+	internal MelonPreferences_Entry<bool> PreferMinimalIcon;
+	internal MelonPreferences_Entry<bool> ClippingIconVisibleByDefault;
+	internal MelonPreferences_Entry<bool> RockCamVisibility;
+	internal MelonPreferences_Entry<int> MainIconPosition;
+	internal MelonPreferences_Entry<float> ReplayIconOffset;
 
-	private MelonPreferences_Category TimestampFiles;
+	internal MelonPreferences_Category OarClipping;
+	internal MelonPreferences_Entry<bool> StreamTimesFile;
+	internal MelonPreferences_Entry<bool> RecordingTimesFile;
+	internal MelonPreferences_Entry<MarkerPrefs> TimestampBinding;
+	internal MelonPreferences_Entry<string> TimeStampFileLocation;
+	
+	internal MelonPreferences_Entry<int> PreClipOffset;
+	internal MelonPreferences_Entry<int> PostClipOffset;
 	
 
 
-	private MelonPreferences_Category miscoar;
-	private MelonPreferences_Entry<int> misc;
+	internal MelonPreferences_Category miscoar;
+	internal MelonPreferences_Entry<int> misc;
 
-	private void InitPreferences()
+	internal void InitPreferences()
 	{
 
 		//=====OBS AutoRecorderSettings=====
@@ -100,6 +109,13 @@ public partial class ObsAutoRecorder
 
 		AssignChord(AddMarkerOn.Value, AddMarkerOn.Value);
 		
+		
+		OarClipping = MelonPreferences.CreateCategory("Clipping", "Timestamps and Clips");
+		StreamTimesFile = OarClipping.CreateEntry("TimeStampFile", true, "Make Timestams file", "<i><color=\"yellow\">(Beta) </color></i>Write a timestamp file for streams which records points in the stream you wanna extract from.");
+		RecordingTimesFile = OarClipping.CreateEntry("IncludeRecording", false, "Make timestamp files for recordings", "This should be unnecessary as recordings can use markers that get embedded into the output video");
+		TimeStampBinding = OarClipping.CreateEntry("TimestampBinding", MarkerPrefs.OnLeftCombo, "Controller Bindings for Recording a timestamp/marker");
+		TimeStampFileLocation = OarClipping.CreateEntry("FileLocation", Path.Combine(USER_DATA, "TimestampFileLocation", "File location for timestamp file"), false, false, new TextInputBehaviorDescriptor() {IsReadOnly = true});
+		
 
 		//easter egg
 		miscoar = MelonPreferences.CreateCategory("Misc ObsAutoRecorder");
@@ -135,7 +151,7 @@ public partial class ObsAutoRecorder
 
 	}
 
-	private void SaveSettings()
+	internal void SaveSettings()
 	{
 
 		OBSAutoRecorderSettings.SaveToFile(false);
@@ -145,7 +161,7 @@ public partial class ObsAutoRecorder
 		miscoar.SaveToFile(false);
 	}
 
-	private void ReadSettings()
+	internal void ReadSettings()
 	{
 		OBSAutoRecorderSettings.LoadFromFile(false);
 		AutoRenameSettings.LoadFromFile(false);
@@ -154,7 +170,7 @@ public partial class ObsAutoRecorder
 
 	}
 
-	private void DeprecateAddChapterMarkers()
+	internal void DeprecateAddChapterMarkers()
 	{
 		MelonPreferences_Entry<bool?> AddChapterMarkers = RecordingSettings.CreateEntry<bool?>("Chapter Markers", null, null, "[DEPRECATED use the new AddMarkerOn setting]", true);
 		Log("Checking for deprecated settings to migrate", false, 1);
@@ -176,7 +192,7 @@ public partial class ObsAutoRecorder
 		RecordingSettings.SaveToFile();
 	}
 	
-	private void AssignChord(MarkerPrefs old, MarkerPrefs newPref)
+	internal void AssignChord(MarkerPrefs old, MarkerPrefs newPref)
 	{
 
 		switch (newPref)
