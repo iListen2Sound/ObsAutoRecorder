@@ -46,7 +46,7 @@ internal static class TimesCSV
 			$"{CsvSanitize(title)}," +
 			$"{PreOffset}," +
 			$"{PostOffset}," +
-			$"{DateTime.Now.ToString("s", CultureInfo.InvariantCulture)}";
+			$"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
 
 		Log($"Row to write: {row}");
 		File.AppendAllText(FilePath, row + "\n");
@@ -83,7 +83,7 @@ internal static class TimesCSV
 	}
 	internal static void Initialize()
 	{
-		sessionString = DateTime.Now.ToString("s", CultureInfo.InvariantCulture);
+		sessionString = DateTime.UtcNow.ToString("s", CultureInfo.InvariantCulture);
 		InputEvents.DebugTestKeyDown += CreateStreamStamp;
 	}
 }
