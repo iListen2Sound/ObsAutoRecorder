@@ -14,7 +14,7 @@ namespace ObsAutoRecorder.TimestampCSV;
 internal static class TimesCSV
 {
 	private static string sessionString;
-	internal static string TimeFolderPath => ObsAutoRecorder?.TimeStampFileLocation ?? Path.Combine(ObsAutoRecorder.USER_DATA, "TimeFIles");
+	internal static string TimeFolderPath => ObsAutoRecorder.Instance.TimeStampFileLocation?.Value ?? Path.Combine(ObsAutoRecorder.USER_DATA, "TimeFIles");
 	internal static string FilePath => Path.Combine(TimeFolderPath, $"{sessionString}.csv");
 	internal static int PreOffset => ObsAutoRecorder.Instance?.TimestampOffset?.Value ?? 0;
 	internal static int PostOffset => 0;

@@ -1,12 +1,12 @@
 ﻿using MelonLoader;
 using System.IO;
-using UIFramework.ValidatorExtensions;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MelonLoader;
 using System.ComponentModel.DataAnnotations;
 using System;
+using UIFramework.UiExtensions;
 namespace ObsAutoRecorder;
 
 using static DebugHelper;
@@ -51,7 +51,7 @@ public partial class ObsAutoRecorder
 	internal MelonPreferences_Category OarClipping;
 	internal MelonPreferences_Entry<bool> StreamTimesFile;
 	internal MelonPreferences_Entry<bool> RecordingTimesFile;
-	internal MelonPreferences_Entry<MarkerPrefs> TimestampBinding;
+	internal MelonPreferences_Entry<MarkerPrefs> TimeStampBinding;
 	internal MelonPreferences_Entry<string> TimeStampFileLocation;
 	
 	internal MelonPreferences_Entry<int> PreClipOffset;
@@ -114,7 +114,7 @@ public partial class ObsAutoRecorder
 		StreamTimesFile = OarClipping.CreateEntry("TimeStampFile", true, "Make Timestams file", "<i><color=\"yellow\">(Beta) </color></i>Write a timestamp file for streams which records points in the stream you wanna extract from.");
 		RecordingTimesFile = OarClipping.CreateEntry("IncludeRecording", false, "Make timestamp files for recordings", "This should be unnecessary as recordings can use markers that get embedded into the output video");
 		TimeStampBinding = OarClipping.CreateEntry("TimestampBinding", MarkerPrefs.OnLeftCombo, "Controller Bindings for Recording a timestamp/marker");
-		TimeStampFileLocation = OarClipping.CreateEntry("FileLocation", Path.Combine(USER_DATA, "TimestampFileLocation", "File location for timestamp file"), false, false, new TextInputBehaviorDescriptor() {IsReadOnly = true});
+		TimeStampFileLocation = OarClipping.CreateEntry("FileLocation", Path.Combine(USER_DATA, "TimeStamps"), "TimestampFileLocation", "File location for timestamp file", false, false, new TextInputBehaviorDescriptor() {IsReadOnly = true});
 		PreClipOffset = OarClipping.CreateEntry("OffsetPre", 45, "Offset to include in extraction before the timestamp");
 		PostClipOffset = OarClipping.CreateEntry("OffsetPost", 5, "Offset after timestamp to include in extraction");
 
