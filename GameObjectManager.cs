@@ -24,7 +24,10 @@ using Il2CppSteamworks;
 using System.Threading.Tasks;
 using static OBS_Control_API.RequestResponse;
 using Il2CppPhoton.Compression;
+
 namespace ObsAutoRecorder;
+
+using InputManager;
 
 using static DebugHelper;
 
@@ -87,6 +90,9 @@ public partial class ObsAutoRecorder : MelonMod
 		IndicatorsBase.SetActive(false);
 
 		MelonCoroutines.Start(ExternalRecordingBlinkerCoroutine());
+
+		SfxManager.Init();
+		
 	}
 
 	public float Remap(float s )

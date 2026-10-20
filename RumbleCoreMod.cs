@@ -299,7 +299,6 @@ public partial class ObsAutoRecorder : MelonMod
 		ReadSettings();
 
 		//SceneName = map.ToLower().Trim();
-		ReadSettings();
 
 
 

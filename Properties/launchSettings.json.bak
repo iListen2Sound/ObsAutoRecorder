@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "ObsAutoRecorder": {
+      "commandName": "Project",
+      "hotReloadEnabled": false
+    },
+    "Launch Game": {
+      "commandName": "Executable",
+      "executablePath": "%game%\\game.exe",
+      "commandLineArgs": "--melonloader.debug --melonloader.launchdebugger",
+      "workingDirectory": "%game%"
+    }
+  }
+}

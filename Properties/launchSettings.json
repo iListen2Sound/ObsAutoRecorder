@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Launch Game": {
+      "commandName": "Executable",
+      "executablePath": "%rumble%\\rumble.exe",
+      "commandLineArgs": "--melonloader.debug --melonloader.launchdebugger",
+      "workingDirectory": "%rumble%"
+    }
+  }
+}

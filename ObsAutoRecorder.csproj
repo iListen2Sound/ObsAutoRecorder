@@ -15,6 +15,10 @@
 		<RumbleGameAssemblies Include="$(RumblePath)\MelonLoader\net6\**\*.dll" />
 		<RumbleGameAssemblies Include="$(RumblePath)\MelonLoader\net35\**\*.dll" />
 		<RumbleGameAssemblies Include="$(RumblePath)\MelonLoader\Il2CppAssemblies\**\*.dll" />
+		
+		<!--Include auidio assets-->
+		<None Remove="Assets\obsasset" />
+		<EmbeddedResource Include="Assets\obsasset" />
 		<EmbeddedResource Include="Assets\SFXAssets\inputConfirm.wav" />
 
 		<!-- Expand Wildcards -->

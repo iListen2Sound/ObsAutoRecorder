@@ -52,8 +52,9 @@ internal class SfxManager
 
 		string[] files = Directory.GetFiles(SfxDir).Select(Path.GetFileName).ToArray();
 
-		if (files.Contains(InputConfirm))
+		if (!files.Contains(InputConfirm))
 		{
+			Log($"SfxManager: No Sfx files found. Extracting...");
 			var assembly = typeof(ObsAutoRecorder).Assembly;
 			var resourceNames = assembly.GetManifestResourceNames()
 				.Where(r => r.StartsWith($"ObsAutoRecorder.Assets.{SfxManager.SfxDir}.", StringComparison.OrdinalIgnoreCase));
@@ -68,6 +69,7 @@ internal class SfxManager
 				{
 					resourceStream.CopyTo(fileStream);
 				}
+				Log($"Successfully extracted {fileName}");
 			}
 		}
 
