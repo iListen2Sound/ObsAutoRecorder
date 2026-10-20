@@ -12,8 +12,35 @@ namespace ObsAutoRecorder.InputManager;
 
 internal class AudioManager
 {
+    
+    internal static AudioCall Confirmation;
+
     static string InputConfirm => "inputConfirm.wav";
-    static string AudioAssets => "AudioAssets"
+    static string AudioAssets => "AudioAssets";
+    static float VolumeSetting => ObsAutoRecorder.Instance.AudioVolume.Value;
+
+    internal static void Init()
+    {
+        PopulateMissingAudio();
+        try
+        {
+            Confirmation = CreateAudioCall(Path.Combine(SfxDir, InputConfirm), VolumeSetting); 
+        }
+        catch (Exception e)
+        {
+            Error($"Error initializing audio calls: \n{e}");
+        }
+        ObsAutoRecorder.Instance.AudioVolume.OnPreferenceValueChanged += UpdateVolumes
+    }
+
+    internal void UpdateVolumes(float oldVal, float newVal)
+    {
+        AudioCall.GeneralAudioSettings generalAudioSettings = new AudioCall.GeneralAudioSettings();
+        generalAudioSettings.SetVolume(SFXvolume);
+        generalAudioSettings.Pitch = 1f;
+        if (null!=Confirmation) Confirmation.generalSettings = generalAudioSettings;
+    }
+
     static void PopulateMissingAudio()
     {
         string SfxDir => Path.Combine(ObsAutoRecorder.USER_DATA, AudioAssets);

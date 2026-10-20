@@ -17,6 +17,7 @@ public partial class ObsAutoRecorder
 
 	internal MelonPreferences_Category OBSAutoRecorderSettings;
 	internal MelonPreferences_Entry<bool> isDebugMode;
+	internal MelonPreferences_Entry<float> AudioVolume;
 
 	internal MelonPreferences_Category AutoRenameSettings;
 	//internal MelonPreferences_Entry<string> PlayersToRecord;
@@ -68,8 +69,10 @@ public partial class ObsAutoRecorder
 		//=====OBS AutoRecorderSettings=====
 		OBSAutoRecorderSettings = MelonPreferences.CreateCategory("ObsAutoRecorder", "Misc Settings");
 		OBSAutoRecorderSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
+		
 
 		isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug with more verbose logging");
+		AudioVolume = OBSAutoRecorderSettings.CreateEntry("Audio Volume", 1f, null, "Set Volume for confirmation sound effects", false, false, new SliderDescriptor {Min = 0f, Max = 1f});
 
 		AutoRenameSettings = MelonPreferences.CreateCategory("Auto Rename Settings");
 		AutoRenameSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
