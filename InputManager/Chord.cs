@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static ObsAutoRecorder.DebugHelper;
 
-namespace ObsAutoRecorder;
+namespace ObsAutoRecorder.InputManager;
 /// <summary>
 /// 
 /// </summary>

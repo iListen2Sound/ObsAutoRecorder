@@ -8,9 +8,9 @@ using UnityEngine;
 using OBS_Control_API;
 using ObsAutoRecorder;
 
-namespace ObsAutoRecorder;
+namespace ObsAutoRecorder.InputManager;
 
-using static DebugHelper;
+using static ObsAutoRecorder.DebugHelper;
 internal static class ActionsManager
 {
 	/// <summary>

@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using static ObsAutoRecorder.DebugHelper;
 
-namespace ObsAutoRecorder;
+namespace ObsAutoRecorder.InputManager;
 
 internal static class InputEvents
 {
