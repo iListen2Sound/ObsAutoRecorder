@@ -18,7 +18,10 @@ public partial class ObsAutoRecorder
 	internal MelonPreferences_Category OBSAutoRecorderSettings;
 	internal MelonPreferences_Entry<bool> isDebugMode;
 	internal MelonPreferences_Entry<float> AudioVolume;
-
+	internal MelonPreferences_Entry<Combo> SaveReplayOn;
+	internal MelonPreferences_Entry<int> ReplayBufferDelay;
+	internal MelonPreferences_Entry<bool> SuppressRBufferOnRecord;
+	
 	internal MelonPreferences_Category AutoRenameSettings;
 	//internal MelonPreferences_Entry<string> PlayersToRecord;
 	internal MelonPreferences_Entry<string> AutoRenameString;
@@ -73,6 +76,9 @@ public partial class ObsAutoRecorder
 
 		isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug with more verbose logging");
 		AudioVolume = OBSAutoRecorderSettings.CreateEntry("Audio Volume", 1f, null, "Set Volume for confirmation sound effects", false, false, new SliderDescriptor {Min = 0f, Max = 1f});
+		SaveReplayOn = ObsAutoRecorder.CreateEntry("ReplayBufferChord", Combo.None, "Replay Buffer Combo", "WARNING: Make sure to disable OBS_Control_API's own save replay buffer action otherwise, you'll be saving two clips at a time");
+		ReplayBufferDelay = ObsAutoRecorder.CreateEntry("ReplayDelay", 5, "Replay Delay", "Amount to delay replay buffer by after the combo is pressed in seconds");
+		SuppressRBufferOnRecord = ObsAutoRecorder.CreateEntry("SuppressRbOnRecord", false, "Suppress On Replay Save", "Don't save Replay Buffer when doing a full recording.\nUseful for relying on markers instead. Make sure markers are enabled");
 
 		AutoRenameSettings = MelonPreferences.CreateCategory("Auto Rename Settings");
 		AutoRenameSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));
@@ -150,6 +156,18 @@ public partial class ObsAutoRecorder
 		OnRightCombo,
 
 		[Display(Name = "Left Binding", Description = "Add marker when left binding is activated")]
+		OnLeftCombo,
+
+
+	}
+
+	internal enum Combo
+	{
+		[Display(Name = "None", Description = "No marker will be added")]
+		None,
+		[Display(Name = "Left Binding", Description = "When Right Combo is Pressed")]
+		OnRightCombo,
+		[Display(Name = "Right Binding", Description = "When Left Combo is Pressed")]
 		OnLeftCombo,
 
 
