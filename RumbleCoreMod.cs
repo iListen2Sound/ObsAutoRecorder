@@ -292,11 +292,7 @@ public partial class ObsAutoRecorder : MelonMod
 	/// </summary>
 	private void PlayerUIFound(string map)
 	{
-		SetRecordingState();
-		_sceneIsLoaded = true;
-		LastSceneName = SceneName;
-
-		ReadSettings();
+		
 
 		//SceneName = map.ToLower().Trim();
 
@@ -364,9 +360,13 @@ public partial class ObsAutoRecorder : MelonMod
 		{
 			//StartRecording(" Pre <#> <AEDF12> Invalid char test");
 		}
+		SetRecordingState();
+		_sceneIsLoaded = true;
+		LastSceneName = SceneName;
+
+		ReadSettings();
 
 
-		
 	}
 
 

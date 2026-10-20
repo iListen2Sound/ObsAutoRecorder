@@ -48,6 +48,7 @@ internal class SfxManager
 	{
 		string SfxDir = Path.Combine(ObsAutoRecorder.USER_DATA, SfxManager.SfxDir);
 
+		Deb($"PopulateMissingAudio - SfxDir: {SfxDir}");
 		Directory.CreateDirectory(SfxDir);
 
 		string[] files = Directory.GetFiles(SfxDir).Select(Path.GetFileName).ToArray();
