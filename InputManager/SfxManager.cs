@@ -19,7 +19,7 @@ internal class SfxManager
 	internal static AudioCall Confirmation;
 
 	static string InputConfirm => "inputConfirm.wav";
-	static string SfxDir => "SfxDir";
+	static string SfxDir => "SFXAssets";
 	static float VolumeSetting => ObsAutoRecorder.Instance.AudioVolume.Value;
 
 	internal static void Init()

@@ -15,6 +15,7 @@
 		<RumbleGameAssemblies Include="$(RumblePath)\MelonLoader\net6\**\*.dll" />
 		<RumbleGameAssemblies Include="$(RumblePath)\MelonLoader\net35\**\*.dll" />
 		<RumbleGameAssemblies Include="$(RumblePath)\MelonLoader\Il2CppAssemblies\**\*.dll" />
+		<EmbeddedResource Include="Assets\SFXAssets\inputConfirm.wav" />
 
 		<!-- Expand Wildcards -->
 		<Reference Include="@(RumbleGameAssemblies)" Private="false" />
@@ -26,7 +27,7 @@
 
 	<!--Kill Rumble before building-->
 	<Target Name="PreBuild" AfterTargets="PreBuildEvent">
-		  <Exec Command="taskkill /f /t /im RUMBLE.exe 2&gt;NUL &amp;&amp; echo Killed rumble || echo Rumble was not running" IgnoreExitCode="true"/>
+		  <Exec Command="taskkill /f /t /im RUMBLE.exe 2&gt;NUL &amp;&amp; echo Killed rumble || echo Rumble was not running" IgnoreExitCode="true" />
 	</Target>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
