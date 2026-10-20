@@ -8,8 +8,10 @@ using static ObsAutoRecorder.DebugHelper;
 using System.Globalization;
 using OBS_Control_API;
 using Il2CppPlayFab.ProgressionModels;
+
 namespace ObsAutoRecorder.TimestampCSV;
 
+using InputManager;
 //{time}
 internal static class TimesCSV
 {

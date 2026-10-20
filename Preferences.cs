@@ -3,12 +3,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MelonLoader;
 using System.ComponentModel.DataAnnotations;
 using System;
 using UIFramework.UiExtensions;
+
 namespace ObsAutoRecorder;
 
+using InputManager;
 using static DebugHelper;
 
 public partial class ObsAutoRecorder
@@ -76,9 +77,9 @@ public partial class ObsAutoRecorder
 
 		isDebugMode = OBSAutoRecorderSettings.CreateEntry("Debug Mode", false, null, "Enable debug with more verbose logging");
 		AudioVolume = OBSAutoRecorderSettings.CreateEntry("Audio Volume", 1f, null, "Set Volume for confirmation sound effects", false, false, new SliderDescriptor {Min = 0f, Max = 1f});
-		SaveReplayOn = ObsAutoRecorder.CreateEntry("ReplayBufferChord", Combo.None, "Replay Buffer Combo", "WARNING: Make sure to disable OBS_Control_API's own save replay buffer action otherwise, you'll be saving two clips at a time");
-		ReplayBufferDelay = ObsAutoRecorder.CreateEntry("ReplayDelay", 5, "Replay Delay", "Amount to delay replay buffer by after the combo is pressed in seconds");
-		SuppressRBufferOnRecord = ObsAutoRecorder.CreateEntry("SuppressRbOnRecord", false, "Suppress On Replay Save", "Don't save Replay Buffer when doing a full recording.\nUseful for relying on markers instead. Make sure markers are enabled");
+		SaveReplayOn = OBSAutoRecorderSettings.CreateEntry("ReplayBufferChord", Combo.None, "Replay Buffer Combo", "WARNING: Make sure to disable OBS_Control_API's own save replay buffer action otherwise, you'll be saving two clips at a time");
+		ReplayBufferDelay = OBSAutoRecorderSettings.CreateEntry("ReplayDelay", 5, "Replay Delay", "Amount to delay replay buffer by after the combo is pressed in seconds");
+		SuppressRBufferOnRecord = OBSAutoRecorderSettings.CreateEntry("SuppressRbOnRecord", false, "Suppress On Replay Save", "Don't save Replay Buffer when doing a full recording.\nUseful for relying on markers instead. Make sure markers are enabled");
 
 		AutoRenameSettings = MelonPreferences.CreateCategory("Auto Rename Settings");
 		AutoRenameSettings.SetFilePath(Path.Combine(USER_DATA, CONFIG_FILE));

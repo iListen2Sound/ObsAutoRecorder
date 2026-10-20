@@ -38,6 +38,7 @@ using MelonLoader.Utils;
 [assembly: UIInfo("OBS Auto Recorder")]
 namespace ObsAutoRecorder;
 
+using InputManager;
 using static DebugHelper;
 
 public static class BuildInfo
