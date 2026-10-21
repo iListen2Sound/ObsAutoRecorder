@@ -119,7 +119,7 @@ public class TagHolder
 		set
 		{
 			_tagObject = value;
-			Log($"TagObject set for {PublicName}", true);
+			//Log($"TagObject set for {PublicName}", true);
 			CreateAutoRecordBlock();
 		}
 	}
