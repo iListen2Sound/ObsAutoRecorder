@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<StepFilter xmlns="http://microsoft.com">
+  <Function Action="NoStepInto" Module=".*" />
+  <Function Action="StepInto" Module="ObsAutoRecorder" />
+</StepFilter>
