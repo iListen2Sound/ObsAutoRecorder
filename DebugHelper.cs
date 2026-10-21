@@ -1,6 +1,7 @@
 ﻿using MelonLoader;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ internal static class DebugHelper
 			Log("DIFFLOG: " + message, debugOnly, logLevel);
 		}
 	}
+	[DebuggerStepThrough]
 	internal static void Log(string message, bool debugOnly = true, int logLevel = 0)
 	{
 		if (!DebugMode && debugOnly)
@@ -37,21 +39,22 @@ internal static class DebugHelper
 		}
 	}
 
+	[DebuggerStepThrough]
 	internal static void Deb(string message)
 	{
 		Log(message, true, 0);
 	}
-
+	[DebuggerStepThrough]
 	internal static void Msg(string message)
 	{
 		Log(message, false, 0);
 	}
-
+	[DebuggerStepThrough]
 	internal static void Warning(string message)
 	{
 		Log(message, false, 1);
 	}
-
+	[DebuggerStepThrough]
 	internal static void Error(string message)
 	{
 		Log(message, false, 2);

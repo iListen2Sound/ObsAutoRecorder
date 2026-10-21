@@ -46,34 +46,42 @@ internal class SfxManager
 
 	static void PopulateMissingAudio()
 	{
-		string SfxDir = Path.Combine(ObsAutoRecorder.USER_DATA, SfxManager.SfxDir);
-
-		Deb($"PopulateMissingAudio - SfxDir: {SfxDir}");
-		Directory.CreateDirectory(SfxDir);
-
-		string[] files = Directory.GetFiles(SfxDir).Select(Path.GetFileName).ToArray();
-
-		if (!files.Contains(InputConfirm))
+		try
 		{
-			Log($"SfxManager: No Sfx files found. Extracting...");
-			var assembly = typeof(ObsAutoRecorder).Assembly;
-			var resourceNames = assembly.GetManifestResourceNames()
-				.Where(r => r.StartsWith($"ObsAutoRecorder.Assets.{SfxManager.SfxDir}.", StringComparison.OrdinalIgnoreCase));
 
-			foreach (var resourceName in resourceNames)
+
+			string sfxFolderCandidate = Path.Combine(ObsAutoRecorder.USER_DATA, SfxManager.SfxDir);
+
+			Deb($"PopulateMissingAudio - sfxFolderCandidate: {sfxFolderCandidate}");
+			Directory.CreateDirectory(sfxFolderCandidate);
+
+			string[] files = Directory.GetFiles(sfxFolderCandidate).Select(Path.GetFileName).ToArray();
+
+			if (!files.Contains(InputConfirm))
 			{
-				string fileName = resourceName.Substring($"ObsAutoRecorder.Assets.{SfxDir}.".Length);
-				string outPath = Path.Combine(SfxDir, fileName);
+				Log($"SfxManager: No Sfx files found. Extracting...");
+				var assembly = typeof(ObsAutoRecorder).Assembly;
+				var resourceNames = assembly.GetManifestResourceNames()
+					.Where(r => r.StartsWith($"ObsAutoRecorder.Assets.{SfxManager.SfxDir}.", StringComparison.OrdinalIgnoreCase));
 
-				using (var resourceStream = assembly.GetManifestResourceStream(resourceName))
-				using (var fileStream = File.Create(outPath))
+				foreach (var resourceName in resourceNames)
 				{
-					resourceStream.CopyTo(fileStream);
+					Deb($"PopulateMissingAudio Resource Name: { resourceName}");
+					string fileName = resourceName.Substring($"ObsAutoRecorder.Assets.{SfxDir}.".Length);
+					string outPath = Path.Combine(sfxFolderCandidate, fileName);
+
+					using (var resourceStream = assembly.GetManifestResourceStream(resourceName))
+					using (var fileStream = File.Create(outPath))
+					{
+						resourceStream.CopyTo(fileStream);
+					}
+					Log($"Successfully extracted {fileName}");
 				}
-				Log($"Successfully extracted {fileName}");
 			}
+
+		}catch(Exception e)
+		{
+			Error($"PopulateMissingAudio():\n{e.ToString()}");
 		}
-
-
 	}
 }
